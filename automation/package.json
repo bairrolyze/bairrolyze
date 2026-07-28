@@ -1,0 +1,12 @@
+{
+  "name": "homescope-automation",
+  "version": "1.0.0",
+  "description": "Appium automation for HomeScope",
+  "scripts": {
+    "appium": "appium server --port 4723 --log-level error",
+    "install-drivers": "appium driver install xcuitest"
+  },
+  "dependencies": {
+    "appium": "^2.11.0"
+  }
+}

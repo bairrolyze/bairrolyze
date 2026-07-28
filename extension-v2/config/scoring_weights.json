@@ -1,0 +1,116 @@
+{
+  "profiles": {
+    "default": {
+      "transportation": 0.25,
+      "education": 0.20,
+      "healthcare": 0.15,
+      "shopping": 0.10,
+      "safety": 0.15,
+      "religion": 0.05,
+      "recreation": 0.10
+    },
+    "family": {
+      "transportation": 0.20,
+      "education": 0.30,
+      "healthcare": 0.15,
+      "shopping": 0.10,
+      "safety": 0.15,
+      "religion": 0.05,
+      "recreation": 0.05
+    },
+    "student": {
+      "transportation": 0.30,
+      "education": 0.25,
+      "healthcare": 0.10,
+      "shopping": 0.15,
+      "safety": 0.10,
+      "religion": 0.02,
+      "recreation": 0.08
+    },
+    "professional": {
+      "transportation": 0.30,
+      "education": 0.10,
+      "healthcare": 0.15,
+      "shopping": 0.15,
+      "safety": 0.20,
+      "religion": 0.02,
+      "recreation": 0.08
+    },
+    "retired": {
+      "transportation": 0.20,
+      "education": 0.05,
+      "healthcare": 0.30,
+      "shopping": 0.15,
+      "safety": 0.20,
+      "religion": 0.05,
+      "recreation": 0.05
+    },
+    "investor": {
+      "transportation": 0.25,
+      "education": 0.15,
+      "healthcare": 0.10,
+      "shopping": 0.20,
+      "safety": 0.20,
+      "religion": 0.02,
+      "recreation": 0.08
+    }
+  },
+  "categoryConfig": {
+    "transportation": {
+      "label": "Transportation",
+      "icon": "train",
+      "color": "#2196F3",
+      "amenityTypes": ["subway_entrance", "bus_stop", "train_station", "tram_stop", "ferry_terminal"],
+      "idealCount": 5,
+      "maxDistance": 1000
+    },
+    "education": {
+      "label": "Education",
+      "icon": "school",
+      "color": "#4CAF50",
+      "amenityTypes": ["school", "kindergarten", "university", "college", "library"],
+      "idealCount": 3,
+      "maxDistance": 1500
+    },
+    "healthcare": {
+      "label": "Healthcare",
+      "icon": "local_hospital",
+      "color": "#F44336",
+      "amenityTypes": ["hospital", "clinic", "pharmacy", "dentist", "doctors"],
+      "idealCount": 3,
+      "maxDistance": 1500
+    },
+    "shopping": {
+      "label": "Shopping",
+      "icon": "shopping_cart",
+      "color": "#FF9800",
+      "amenityTypes": ["supermarket", "mall", "convenience", "marketplace"],
+      "idealCount": 3,
+      "maxDistance": 1000
+    },
+    "safety": {
+      "label": "Safety",
+      "icon": "security",
+      "color": "#9C27B0",
+      "amenityTypes": ["police", "fire_station"],
+      "idealCount": 2,
+      "maxDistance": 2000
+    },
+    "religion": {
+      "label": "Religion",
+      "icon": "church",
+      "color": "#795548",
+      "amenityTypes": ["place_of_worship"],
+      "idealCount": 2,
+      "maxDistance": 2000
+    },
+    "recreation": {
+      "label": "Recreation",
+      "icon": "park",
+      "color": "#00BCD4",
+      "amenityTypes": ["park", "gym", "sports_centre", "swimming_pool", "playground"],
+      "idealCount": 3,
+      "maxDistance": 1500
+    }
+  }
+}

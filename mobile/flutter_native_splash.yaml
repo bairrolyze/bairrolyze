@@ -1,0 +1,25 @@
+flutter_native_splash:
+  # Background colour matches the app's dark theme
+  color: "#060B14"
+  color_dark: "#060B14"
+
+  # Centered HomeScope donut logo
+  image: assets/images/splash_logo.png
+  image_dark: assets/images/splash_logo.png
+
+  # Android 12+ adaptive splash
+  android_12:
+    color: "#060B14"
+    color_dark: "#060B14"
+    image: assets/images/splash_logo.png
+    image_dark: assets/images/splash_logo.png
+    # Icon background for the circular icon badge
+    icon_background_color: "#060B14"
+    icon_background_color_dark: "#060B14"
+
+  # Keep splash visible until Flutter signals it's ready
+  fullscreen: true
+
+  ios: true
+  android: true
+  web: false

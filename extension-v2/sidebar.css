@@ -1,0 +1,110 @@
+/* HomeScope – Sidebar layout overrides
+   Loaded after popup.css. Makes everything fill 100vh instead of popup dimensions. */
+
+/* ── Base: full height iframe layout ─────────────────────────────────────── */
+html, body {
+  width: 100%;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Screens container ────────────────────────────────────────────────────── */
+.sb-screens {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Override screen sizing for sidebar ───────────────────────────────────── */
+.screen {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.screen.active { display: flex; }
+
+/* ── Home screen scrolls within the full height ───────────────────────────── */
+.home-screen {
+  flex: 1;
+  overflow-y: auto;
+  max-height: none;
+  padding: 0;
+}
+.home-screen::-webkit-scrollbar { width: 3px; }
+.home-screen::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* ── Loading screen ───────────────────────────────────────────────────────── */
+.loading-screen { min-height: 0; flex: 1; }
+
+/* ── Results screen fills height ──────────────────────────────────────────── */
+#screen-results {
+  display: none;
+  flex-direction: column;
+}
+#screen-results.active { display: flex; }
+
+.results-header { flex-shrink: 0; }
+
+.results-view {
+  display: none;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+.results-view.active { display: flex; flex-direction: column; }
+
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+.scroll-area::-webkit-scrollbar { width: 4px; }
+.scroll-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── NI screen – use flex properly for tabs + content ────────────────────── */
+.ni-screen {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.ni-strip   { flex-shrink: 0; }
+.ni-tabs    { flex-shrink: 0; }
+.ni-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px;
+  min-height: 0;
+}
+.ni-content::-webkit-scrollbar { width: 4px; }
+.ni-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── History / Settings screens ───────────────────────────────────────────── */
+.history-screen,
+.settings-screen {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.history-full-list,
+.settings-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* ── Life Radius canvas fills the sidebar width ───────────────────────────── */
+.lr-canvas-wrap { width: 100%; }

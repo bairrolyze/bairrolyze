@@ -16,8 +16,9 @@ class _Persona {
 class AIStoryWidget extends StatefulWidget {
   // We use AnalysisResult directly but only need score + aiSummary
   final dynamic result; // AnalysisResult
+  final double topPadding;
 
-  const AIStoryWidget({super.key, required this.result});
+  const AIStoryWidget({super.key, required this.result, this.topPadding = 100});
 
   @override
   State<AIStoryWidget> createState() => _AIStoryWidgetState();
@@ -158,7 +159,7 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
     final cautions = sorted.reversed.take(2).toList();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(top: 100, bottom: 32),
+      padding: EdgeInsets.only(top: widget.topPadding + 32, bottom: 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -169,19 +170,41 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'AI Story',
-                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: -0.5),
-                ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.2, end: 0),
-                const SizedBox(height: 6),
+                  'NARRATIVE',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 2.2,
+                    height: 1,
+                  ),
+                ).animate().fadeIn(duration: 400.ms),
+                const SizedBox(height: 10),
                 const Text(
-                  'Your neighbourhood through a human lens. Choose your perspective.',
-                  style: TextStyle(color: Colors.white54, fontSize: 13.5, height: 1.5),
-                ).animate(delay: 100.ms).fadeIn(),
+                  'AI Story',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 38,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -1.0,
+                    height: 1.05,
+                  ),
+                ).animate(delay: 60.ms).fadeIn(duration: 500.ms).slideY(begin: 0.15, end: 0),
+                const SizedBox(height: 16),
+                Text(
+                  'Your neighbourhood through a human lens.\nChoose your perspective.',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.72),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w400,
+                    height: 1.6,
+                  ),
+                ).animate(delay: 120.ms).fadeIn(duration: 500.ms),
               ],
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
           // Persona selector
           SizedBox(

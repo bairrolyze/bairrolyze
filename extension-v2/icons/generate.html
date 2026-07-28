@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<!-- Open this file in Chrome, then right-click each canvas and "Save image as" PNG -->
+<html>
+<head>
+<title>HomeScope – Icon Generator</title>
+<style>
+  body { background:#060B14; display:flex; flex-wrap:wrap; gap:24px; padding:32px; font-family:sans-serif; }
+  div { text-align:center; color:white; font-size:12px; }
+  canvas { display:block; margin-bottom:8px; border-radius:20%; }
+</style>
+</head>
+<body>
+<script>
+const sizes = [16, 32, 48, 128];
+sizes.forEach(size => {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  canvas.title = `icon${size}.png`;
+
+  const ctx = canvas.getContext('2d');
+  const r = size / 2;
+  const pad = size * 0.1;
+
+  // Background
+  const bg = ctx.createRadialGradient(r, r, 0, r, r, r);
+  bg.addColorStop(0, '#1A2845');
+  bg.addColorStop(1, '#060B14');
+  ctx.beginPath();
+  ctx.arc(r, r, r - 0.5, 0, Math.PI * 2);
+  ctx.fillStyle = bg;
+  ctx.fill();
+
+  // House shape
+  const s = size * 0.55;
+  const ox = (size - s) / 2;
+  const oy = (size - s) / 2 + size * 0.04;
+
+  ctx.beginPath();
+  // Roof
+  ctx.moveTo(ox + s * 0.1, oy + s * 0.45);
+  ctx.lineTo(ox + s * 0.5, oy);
+  ctx.lineTo(ox + s * 0.9, oy + s * 0.45);
+  // Right wall
+  ctx.lineTo(ox + s * 0.9, oy + s);
+  // Door cutout
+  ctx.lineTo(ox + s * 0.65, oy + s);
+  ctx.lineTo(ox + s * 0.65, oy + s * 0.65);
+  ctx.lineTo(ox + s * 0.35, oy + s * 0.65);
+  ctx.lineTo(ox + s * 0.35, oy + s);
+  // Left wall
+  ctx.lineTo(ox + s * 0.1, oy + s);
+  ctx.closePath();
+
+  const houseGrad = ctx.createLinearGradient(ox, oy, ox + s, oy + s);
+  houseGrad.addColorStop(0, '#3B82F6');
+  houseGrad.addColorStop(1, '#6C63FF');
+  ctx.fillStyle = houseGrad;
+  ctx.fill();
+
+  // Dot above house (scope indicator)
+  if (size >= 32) {
+    ctx.beginPath();
+    ctx.arc(ox + s * 0.5, oy - size * 0.05, size * 0.05, 0, Math.PI * 2);
+    ctx.fillStyle = '#22C55E';
+    ctx.fill();
+  }
+
+  const wrap = document.createElement('div');
+  wrap.appendChild(canvas);
+  wrap.innerHTML += `<span>icon${size}.png</span>`;
+  document.body.appendChild(wrap);
+
+  // Auto-download
+  canvas.addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.download = `icon${size}.png`;
+    a.href = canvas.toDataURL();
+    a.click();
+  });
+});
+</script>
+<p style="color:rgba(255,255,255,0.4);font-size:13px;width:100%;margin-top:16px">
+  Click each icon to download as PNG → save to the <code>icons/</code> folder.
+</p>
+</body>
+</html>

@@ -71,21 +71,41 @@ out center tags;
 
 class OverpassService:
     def __init__(self):
-        self.client = httpx.AsyncClient(timeout=settings.overpass_timeout + 10.0)
+        self.client = httpx.AsyncClient(
+            timeout=httpx.Timeout(
+                connect=10.0,
+                read=settings.overpass_timeout + 10.0,
+                write=10.0,
+                pool=10.0
+            ),
+            headers={
+                "User-Agent": "HomeScope/1.0",
+                "Accept": "application/json"
+            }
+        )
 
     async def fetch_amenities(
         self, lat: float, lng: float, radius: float = 2000.0
     ) -> List[AmenityModel]:
         query = _build_overpass_query(lat, lng, radius)
 
-        payload = urllib.parse.urlencode({"data": query})
-        response = await self.client.post(
-            settings.overpass_url,
-            content=payload.encode("utf-8"),
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-        )
-        response.raise_for_status()
-        data = response.json()
+        # Send as form data (key=value format)
+        try:
+            response = await self.client.post(
+                settings.overpass_url,
+                data={"data": query},
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+            response.raise_for_status()
+            data = response.json()
+        except httpx.HTTPStatusError as e:
+            # Log the error details
+            print(f"Overpass API error: {e.response.status_code}")
+            print(f"Response body: {e.response.text[:500]}")
+            raise
+        except Exception as e:
+            print(f"Overpass request failed: {str(e)}")
+            raise
 
         amenities: List[AmenityModel] = []
         seen_names: set = set()

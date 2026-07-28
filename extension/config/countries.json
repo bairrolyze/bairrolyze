@@ -1,0 +1,69 @@
+{
+  "countries": [
+    {
+      "code": "PT",
+      "name": "Portugal",
+      "language": "pt",
+      "currency": "EUR",
+      "postalPattern": "^\\d{4}-\\d{3}$",
+      "postalFormat": "NNNN-NNN",
+      "postalExample": "1200-109",
+      "nominatimCountry": "Portugal",
+      "defaultCity": "Lisboa",
+      "center": { "lat": 39.3999, "lng": -8.2245 },
+      "defaultZoom": 7
+    },
+    {
+      "code": "ES",
+      "name": "Spain",
+      "language": "es",
+      "currency": "EUR",
+      "postalPattern": "^\\d{5}$",
+      "postalFormat": "NNNNN",
+      "postalExample": "28001",
+      "nominatimCountry": "Spain",
+      "defaultCity": "Madrid",
+      "center": { "lat": 40.4637, "lng": -3.7492 },
+      "defaultZoom": 7
+    },
+    {
+      "code": "GB",
+      "name": "United Kingdom",
+      "language": "en",
+      "currency": "GBP",
+      "postalPattern": "^[A-Z]{1,2}[0-9][0-9A-Z]?\\s[0-9][A-Z]{2}$",
+      "postalFormat": "SW1A 1AA",
+      "postalExample": "SW1A 1AA",
+      "nominatimCountry": "United Kingdom",
+      "defaultCity": "London",
+      "center": { "lat": 55.3781, "lng": -3.4360 },
+      "defaultZoom": 6
+    },
+    {
+      "code": "FR",
+      "name": "France",
+      "language": "fr",
+      "currency": "EUR",
+      "postalPattern": "^\\d{5}$",
+      "postalFormat": "NNNNN",
+      "postalExample": "75001",
+      "nominatimCountry": "France",
+      "defaultCity": "Paris",
+      "center": { "lat": 46.2276, "lng": 2.2137 },
+      "defaultZoom": 6
+    },
+    {
+      "code": "DE",
+      "name": "Germany",
+      "language": "de",
+      "currency": "EUR",
+      "postalPattern": "^\\d{5}$",
+      "postalFormat": "NNNNN",
+      "postalExample": "10115",
+      "nominatimCountry": "Germany",
+      "defaultCity": "Berlin",
+      "center": { "lat": 51.1657, "lng": 10.4515 },
+      "defaultZoom": 6
+    }
+  ]
+}
