@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HomeScope</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+
+  <!-- ── Screen: Home ──────────────────────────────────────────────────────── -->
+  <div id="screen-home" class="screen active"></div>
+
+  <!-- ── Screen: Loading ───────────────────────────────────────────────────── -->
+  <div id="screen-loading" class="screen">
+    <div class="loading-screen">
+      <div class="loading-spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-dot"></div>
+      </div>
+      <p id="loading-message" class="loading-msg">Locating address…</p>
+      <p class="loading-hint">Analysing 7 livability dimensions</p>
+    </div>
+  </div>
+
+  <!-- ── Screen: Results (Dashboard + Neighbourhood) ───────────────────────── -->
+  <div id="screen-results" class="screen">
+    <div class="results-header">
+      <button id="btn-results-back" class="btn-back">← Back</button>
+      <div id="results-address" class="results-address-label"></div>
+      <div class="results-view-toggle">
+        <button id="btn-view-dash" class="view-btn active">Dashboard</button>
+        <button id="btn-view-ni" class="view-btn">Living Index</button>
+      </div>
+    </div>
+
+    <!-- Dashboard view -->
+    <div id="results-dash" class="results-view active">
+      <div id="dash-content" class="scroll-area"></div>
+    </div>
+
+    <!-- Neighbourhood Intelligence view -->
+    <div id="results-ni" class="results-view">
+      <div id="ni-content" class="scroll-area"></div>
+    </div>
+  </div>
+
+  <!-- ── Screen: History ───────────────────────────────────────────────────── -->
+  <div id="screen-history" class="screen"></div>
+
+  <!-- ── Screen: Settings ──────────────────────────────────────────────────── -->
+  <div id="screen-settings" class="screen"></div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

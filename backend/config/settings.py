@@ -25,9 +25,9 @@ class Settings(BaseSettings):
     nominatim_url: str = "https://nominatim.openstreetmap.org"
     nominatim_user_agent: str = "HomeScope/1.0 (contact@homescope.app)"
 
-    # Overpass (using mirror — overpass-api.de has reliability issues)
-    overpass_url: str = "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
-    overpass_timeout: int = 60
+    # Overpass (using main instance — fallback if kumi.systems is slow)
+    overpass_url: str = "https://overpass-api.de/api/interpreter"
+    overpass_timeout: int = 90
 
     # OpenRouteService
     openroute_url: str = "https://api.openrouteservice.org"

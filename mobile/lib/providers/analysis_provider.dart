@@ -144,6 +144,21 @@ class AnalysisNotifier extends StateNotifier<AnalysisState> {
     return 'Analysis failed. Please try again.';
   }
 
+  Future<void> loadFromHistory(SearchHistoryEntry entry) async {
+    final result = entry.result;
+    if (result != null) {
+      state = state.copyWith(
+        status: AnalysisStatus.done,
+        result: result,
+        address: entry.address,
+        error: null,
+        statusMessage: '',
+      );
+    } else {
+      await analyze(entry.address.displayAddress);
+    }
+  }
+
   void reset() => state = const AnalysisState();
 }
 
@@ -158,12 +173,14 @@ class SearchHistoryEntry {
   final String id;
   final AddressModel address;
   final LocationScore score;
+  final AnalysisResult? result;
   final DateTime timestamp;
 
   const SearchHistoryEntry({
     required this.id,
     required this.address,
     required this.score,
+    this.result,
     required this.timestamp,
   });
 }
@@ -176,6 +193,7 @@ class SearchHistoryNotifier extends StateNotifier<List<SearchHistoryEntry>> {
       id: const Uuid().v4(),
       address: address,
       score: result.score,
+      result: result,
       timestamp: DateTime.now(),
     );
     state = [entry, ...state.take(19)];

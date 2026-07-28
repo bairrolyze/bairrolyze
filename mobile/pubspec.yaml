@@ -33,16 +33,28 @@ dependencies:
   google_fonts: ^6.1.0
   flutter_animate: ^4.5.0
 
+  # URL launching
+  url_launcher: ^6.3.0
+
   # Utils
   intl: ^0.19.0
   uuid: ^4.3.3
   logger: ^2.1.0
   connectivity_plus: ^6.0.1
 
+  # In-app purchases (RevenueCat)
+  purchases_flutter: ^8.0.0
+
+  # Splash screen
+  flutter_native_splash: ^2.4.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
+
+  # App icons
+  flutter_launcher_icons: ^0.14.1
 
 flutter:
   uses-material-design: true

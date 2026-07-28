@@ -1,0 +1,18 @@
+{
+  "server": {
+    "port": 4723,
+    "host": "127.0.0.1"
+  },
+  "capabilities": {
+    "platformName": "iOS",
+    "appium:platformVersion": "18.7",
+    "appium:deviceName": "iPhone 17 Pro",
+    "appium:udid": "FD6472FA-4941-4CF4-A142-0C7EE9D88E4D",
+    "appium:bundleId": "com.homescope.homescope",
+    "appium:automationName": "XCUITest",
+    "appium:noReset": true,
+    "appium:newCommandTimeout": 120,
+    "appium:waitForQuiescence": false,
+    "appium:shouldUseSingletonTestManager": false
+  }
+}

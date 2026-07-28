@@ -118,8 +118,56 @@
     .hero-eyebrow { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 100px; margin-bottom: 28px; border: 1px solid rgba(255,255,255,0.12); }
     .hero-title { font-size: clamp(38px, 5.5vw, 66px); font-weight: 900; line-height: 1.05; letter-spacing: -0.03em; margin-bottom: 24px; }
     .hero-title .highlight { color: var(--accent); }
-    .hero-sub { font-size: 18px; color: rgba(255,255,255,0.7); line-height: 1.75; margin-bottom: 40px; max-width: 520px; }
-    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 56px; }
+    .hero-sub { font-size: 18px; color: rgba(255,255,255,0.7); line-height: 1.75; margin-bottom: 32px; max-width: 520px; }
+
+    /* Web Search Box */
+    .web-search-box { margin-bottom: 24px; max-width: 600px; }
+    .search-input-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: white;
+      border-radius: 12px;
+      padding: 6px 6px 6px 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      transition: all 0.2s;
+    }
+    .search-input-group:focus-within { box-shadow: 0 12px 48px rgba(26,115,232,0.4); transform: translateY(-2px); }
+    .search-input-group svg { color: var(--text-2); flex-shrink: 0; }
+    .search-input-group input {
+      flex: 1;
+      border: none;
+      background: none;
+      font-size: 15px;
+      font-family: inherit;
+      padding: 10px 8px;
+      color: var(--text);
+      outline: none;
+    }
+    .search-input-group input::placeholder { color: var(--text-2); }
+    .search-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .search-btn:hover { background: var(--primary-dark); transform: scale(1.02); }
+    .search-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .search-hint {
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 32px; }
     .hero-divider { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin-bottom: 32px; }
     .hero-stats { display: flex; gap: 40px; }
     .stat-val { font-size: 30px; font-weight: 800; color: white; line-height: 1; }
@@ -201,6 +249,223 @@
     .step-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 12px; }
     .step-desc { font-size: 14px; color: var(--text-2); line-height: 1.7; max-width: 260px; margin: 0 auto; }
 
+    /* ===== MOBILE SHOWCASE ===== */
+    #mobile-showcase {
+      background: linear-gradient(180deg, #060F24 0%, #0a1428 100%);
+      padding: 120px 0 140px 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .showcase-bg-pattern {
+      position: absolute; inset: 0; opacity: 0.03;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.5) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+    .showcase-glow {
+      position: absolute;
+      width: 700px;
+      height: 700px;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.2;
+    }
+    .glow-1 {
+      background: radial-gradient(circle, #1A73E8 0%, transparent 70%);
+      top: -250px;
+      right: -150px;
+    }
+    .glow-2 {
+      background: radial-gradient(circle, #34A853 0%, transparent 70%);
+      bottom: -250px;
+      left: -150px;
+    }
+    .showcase-container {
+      position: relative;
+      z-index: 2;
+    }
+    .showcase-header {
+      text-align: center;
+      margin-bottom: 80px;
+    }
+    .showcase-header .section-label {
+      color: rgba(255,255,255,0.5);
+    }
+    .showcase-header .section-title {
+      color: white;
+    }
+    .showcase-header .section-sub {
+      color: rgba(255,255,255,0.7);
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .showcase-stack {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .showcase-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      margin-bottom: 140px;
+    }
+
+    .showcase-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .showcase-row.reverse {
+      direction: rtl;
+    }
+
+    .showcase-row.reverse > * {
+      direction: ltr;
+    }
+
+    .showcase-visual {
+      position: relative;
+    }
+
+    .showcase-chart {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 24px;
+      padding: 48px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .showcase-chart:hover {
+      transform: scale(1.02) translateY(-8px);
+      box-shadow: 0 40px 90px rgba(0, 102, 255, 0.25);
+      border-color: rgba(26, 115, 232, 0.4);
+    }
+
+    .showcase-content h3 {
+      font-size: 36px;
+      font-weight: 800;
+      color: white;
+      margin-bottom: 20px;
+      line-height: 1.2;
+    }
+
+    .showcase-content p {
+      font-size: 17px;
+      color: rgba(255, 255, 255, 0.75);
+      line-height: 1.7;
+      margin-bottom: 32px;
+    }
+
+    .showcase-features {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .showcase-feature {
+      display: flex;
+      align-items: start;
+      gap: 14px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.3s ease;
+    }
+
+    .showcase-feature:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(26, 115, 232, 0.3);
+      transform: translateX(8px);
+    }
+
+    .showcase-feature-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, rgba(26, 115, 232, 0.2), rgba(26, 115, 232, 0.1));
+      border: 1px solid rgba(26, 115, 232, 0.3);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .showcase-feature-text {
+      flex: 1;
+    }
+
+    .showcase-feature-text strong {
+      color: white;
+      font-weight: 600;
+      font-size: 15px;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .showcase-feature-text span {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .showcase-item {
+      position: relative;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .showcase-item:hover {
+      transform: translateY(-12px);
+    }
+    .showcase-frame {
+      background: linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 32px;
+      padding: 20px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      transition: all 0.4s;
+    }
+    .showcase-item:hover .showcase-frame {
+      border-color: rgba(255,255,255,0.3);
+      box-shadow: 0 30px 90px rgba(0,0,0,0.6);
+    }
+    .showcase-screen {
+      width: 100%;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #fff;
+      aspect-ratio: 9/19.5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .showcase-screen img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .showcase-label {
+      text-align: center;
+      margin-top: 24px;
+    }
+    .showcase-label-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: white;
+      margin-bottom: 8px;
+    }
+    .showcase-label-desc {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.6;
+    }
+
     /* ===== CATEGORIES ===== */
     #features { background: var(--surface); padding: 100px 0; }
     .cats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 18px; margin-top: 56px; }
@@ -253,6 +518,11 @@
       .score-card-wrap { display: none; }
       .story-inner { grid-template-columns: 1fr; }
       .story-card { display: none; }
+      .showcase-row { grid-template-columns: 1fr; gap: 40px; margin-bottom: 100px; }
+      .showcase-row.reverse { direction: ltr; }
+      .showcase-content h3 { font-size: 28px; }
+      .showcase-content p { font-size: 16px; }
+      .showcase-chart { padding: 32px; }
     }
     @media (max-width: 700px) {
       .steps { grid-template-columns: 1fr; gap: 40px; }
@@ -266,6 +536,7 @@
       #hero { padding: 60px 0 80px; }
       .hero-actions { flex-direction: column; }
       .hero-actions .btn { text-align: center; justify-content: center; }
+      #mobile-showcase { padding: 80px 0; }
     }
   </style>
 </head>
@@ -322,6 +593,24 @@
           <p class="hero-sub">
             Finding a home is hard enough. Stop spending hours on Google Maps researching schools, hospitals, and transport one by one. Just paste an address — our AI does the rest.
           </p>
+
+          <!-- Web Address Search -->
+          <div class="web-search-box">
+            <form id="analyze-form">
+              <div class="search-input-group">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                <input type="text" id="address-input" placeholder="Enter any address (e.g., Rua Augusta 150, Lisboa)" required />
+                <button type="submit" class="search-btn" id="analyze-btn">
+                  <span id="btn-text">Analyze</span>
+                  <span id="btn-loading" style="display: none;">...</span>
+                </button>
+              </div>
+            </form>
+            <p class="search-hint">✨ Try it now — instant neighborhood analysis</p>
+          </div>
+
+          <div class="hero-divider" style="margin-top: 32px;"></div>
+          <p style="font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 20px;">Or download the mobile app</p>
           <div class="hero-actions">
             <a href="#cta" class="btn-store">
               <svg width="18" height="22" viewBox="0 0 24 24" fill="white"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
@@ -568,6 +857,741 @@
     </div>
   </section>
 
+  <!-- ═══════ MOBILE SHOWCASE ═══════ -->
+  <section id="mobile-showcase">
+    <div class="showcase-bg-pattern"></div>
+    <div class="showcase-glow glow-1"></div>
+    <div class="showcase-glow glow-2"></div>
+
+    <div class="container showcase-container">
+      <div class="showcase-header">
+        <div class="section-label">Mobile App Features</div>
+        <h2 class="section-title">Experience the power in your pocket</h2>
+        <p class="section-sub">
+          Advanced visualization and analysis tools designed for mobile-first neighborhood discovery
+        </p>
+      </div>
+
+      <div class="showcase-stack">
+
+        <!-- Feature 1: Radial Score View -->
+        <div class="showcase-row">
+          <div class="showcase-visual">
+            <div class="showcase-chart">
+              <svg viewBox="0 0 500 500" style="width: 100%; height: auto;">
+                <!-- Radial Score Circle -->
+                <g transform="translate(250, 250)">
+                  <!-- Outer rings -->
+                  <circle cx="0" cy="0" r="190" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+                  <circle cx="0" cy="0" r="150" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+                  <circle cx="0" cy="0" r="110" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+
+                  <!-- Category segments (360° radial) -->
+                  <path d="M 0,-150 A 150,150 0 0,1 129.9,-75" fill="none" stroke="#1A73E8" stroke-width="20" stroke-linecap="round"/>
+                  <path d="M 129.9,-75 A 150,150 0 0,1 129.9,75" fill="none" stroke="#34A853" stroke-width="20" stroke-linecap="round"/>
+                  <path d="M 129.9,75 A 150,150 0 0,1 0,150" fill="none" stroke="#FBBC04" stroke-width="20" stroke-linecap="round"/>
+                  <path d="M 0,150 A 150,150 0 0,1 -129.9,75" fill="none" stroke="#EA4335" stroke-width="20" stroke-linecap="round"/>
+                  <path d="M -129.9,75 A 150,150 0 0,1 -129.9,-75" fill="none" stroke="#9C27B0" stroke-width="20" stroke-linecap="round"/>
+                  <path d="M -129.9,-75 A 150,150 0 0,1 0,-150" fill="none" stroke="#FF9800" stroke-width="20" stroke-linecap="round"/>
+
+                  <!-- Center score -->
+                  <circle cx="0" cy="0" r="90" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+                  <text x="0" y="20" text-anchor="middle" font-size="80" font-weight="900" fill="white">85</text>
+                  <text x="0" y="50" text-anchor="middle" font-size="20" font-weight="600" fill="rgba(255,255,255,0.6)">/100</text>
+                </g>
+
+                <!-- Category labels around the circle -->
+                <g>
+                  <circle cx="250" cy="50" r="6" fill="#1A73E8"/>
+                  <text x="250" y="30" text-anchor="middle" font-size="14" font-weight="600" fill="white">Transport</text>
+
+                  <circle cx="420" cy="160" r="6" fill="#34A853"/>
+                  <text x="440" y="165" text-anchor="start" font-size="14" font-weight="600" fill="white">Education</text>
+
+                  <circle cx="420" cy="340" r="6" fill="#FBBC04"/>
+                  <text x="440" y="345" text-anchor="start" font-size="14" font-weight="600" fill="white">Shopping</text>
+
+                  <circle cx="250" cy="450" r="6" fill="#EA4335"/>
+                  <text x="250" y="475" text-anchor="middle" font-size="14" font-weight="600" fill="white">Healthcare</text>
+
+                  <circle cx="80" cy="340" r="6" fill="#9C27B0"/>
+                  <text x="60" y="345" text-anchor="end" font-size="14" font-weight="600" fill="white">Safety</text>
+
+                  <circle cx="80" cy="160" r="6" fill="#FF9800"/>
+                  <text x="60" y="165" text-anchor="end" font-size="14" font-weight="600" fill="white">Recreation</text>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <div class="showcase-content">
+            <h3>📊 360° Radial Score View</h3>
+            <p>See your entire neighborhood profile at a glance with our signature radial visualization. Every category is color-coded and weighted around a central score — instantly revealing strengths and weaknesses.</p>
+
+            <div class="showcase-features">
+              <div class="showcase-feature">
+                <div class="showcase-feature-icon">🎯</div>
+                <div class="showcase-feature-text">
+                  <strong>Instant Visual Hierarchy</strong>
+                  <span>Identify which categories score highest without reading a single number</span>
+                </div>
+              </div>
+              <div class="showcase-feature">
+                <div class="showcase-feature-icon">🌈</div>
+                <div class="showcase-feature-text">
+                  <strong>Color-Coded Categories</strong>
+                  <span>Transport, Education, Shopping, Healthcare, Safety, Recreation — each with its own signature color</span>
+                </div>
+              </div>
+              <div class="showcase-feature">
+                <div class="showcase-feature-icon">⚡</div>
+                <div class="showcase-feature-text">
+                  <strong>Interactive & Touch-Friendly</strong>
+                  <span>Tap any segment to drill down into that category's detailed breakdown</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 2: Time Machine -->
+        <div class="showcase-row reverse">
+          <div class="showcase-visual">
+            <div class="showcase-chart">
+              <svg viewBox="0 0 500 550" style="width: 100%; height: auto;">
+                <!-- Background gradient (day to night transition) -->
+                <defs>
+                  <linearGradient id="skyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#FFB347;stop-opacity:0.3" />
+                    <stop offset="25%" style="stop-color:#87CEEB;stop-opacity:0.3" />
+                    <stop offset="50%" style="stop-color:#FF7F50;stop-opacity:0.3" />
+                    <stop offset="75%" style="stop-color:#4A5568;stop-opacity:0.3" />
+                    <stop offset="100%" style="stop-color:#1A202C;stop-opacity:0.3" />
+                  </linearGradient>
+                </defs>
+
+                <!-- Sky background -->
+                <rect x="0" y="0" width="500" height="200" fill="url(#skyGradient)" rx="12"/>
+
+                <!-- Sun/Moon icons across the timeline -->
+                <g transform="translate(0, 80)">
+                  <!-- Morning Sun -->
+                  <circle cx="80" cy="0" r="25" fill="#FFD700" opacity="0.9"/>
+                  <circle cx="80" cy="0" r="20" fill="#FFA500"/>
+
+                  <!-- Afternoon Sun -->
+                  <circle cx="200" cy="-20" r="28" fill="#FFD700" opacity="1"/>
+                  <circle cx="200" cy="-20" r="23" fill="#FF8C00"/>
+
+                  <!-- Evening Sun -->
+                  <circle cx="320" cy="0" r="26" fill="#FF6347" opacity="0.9"/>
+                  <circle cx="320" cy="0" r="21" fill="#FF4500"/>
+
+                  <!-- Night Moon -->
+                  <circle cx="440" cy="10" r="22" fill="#F0F0F0" opacity="0.95"/>
+                  <circle cx="435" cy="8" r="18" fill="#E0E0E0"/>
+                </g>
+
+                <!-- Time Period Labels -->
+                <text x="80" y="180" text-anchor="middle" font-size="14" font-weight="700" fill="white">Morning</text>
+                <text x="200" y="180" text-anchor="middle" font-size="14" font-weight="700" fill="white">Afternoon</text>
+                <text x="320" y="180" text-anchor="middle" font-size="14" font-weight="700" fill="white">Evening</text>
+                <text x="440" y="180" text-anchor="middle" font-size="14" font-weight="700" fill="white">Night</text>
+
+                <!-- Time labels -->
+                <text x="80" y="200" text-anchor="middle" font-size="11" font-weight="500" fill="rgba(255,255,255,0.6)">6:00 AM</text>
+                <text x="200" y="200" text-anchor="middle" font-size="11" font-weight="500" fill="rgba(255,255,255,0.6)">2:00 PM</text>
+                <text x="320" y="200" text-anchor="middle" font-size="11" font-weight="500" fill="rgba(255,255,255,0.6)">7:00 PM</text>
+                <text x="440" y="200" text-anchor="middle" font-size="11" font-weight="500" fill="rgba(255,255,255,0.6)">11:00 PM</text>
+
+                <!-- Time Slider Track -->
+                <rect x="50" y="240" width="400" height="8" rx="4" fill="rgba(255,255,255,0.15)"/>
+                <rect x="50" y="240" width="230" height="8" rx="4" fill="linear-gradient(90deg, #FFB347 0%, #87CEEB 50%, #FF7F50 100%)"/>
+
+                <!-- Slider Handle (positioned at Afternoon) -->
+                <circle cx="280" cy="244" r="18" fill="white" stroke="#1A73E8" stroke-width="4"/>
+                <circle cx="280" cy="244" r="8" fill="#1A73E8"/>
+
+                <!-- Activity Metrics Cards -->
+                <g transform="translate(30, 290)">
+                  <!-- Transport Activity -->
+                  <rect x="0" y="0" width="110" height="70" rx="8" fill="rgba(26,115,232,0.15)" stroke="rgba(26,115,232,0.4)" stroke-width="2"/>
+                  <text x="55" y="20" text-anchor="middle" font-size="11" font-weight="600" fill="rgba(255,255,255,0.5)">TRANSPORT</text>
+                  <text x="55" y="45" text-anchor="middle" font-size="24" font-weight="900" fill="#1A73E8">High</text>
+                  <text x="55" y="62" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.5)">Peak hours</text>
+
+                  <!-- Shopping Activity -->
+                  <rect x="125" y="0" width="110" height="70" rx="8" fill="rgba(251,188,4,0.15)" stroke="rgba(251,188,4,0.4)" stroke-width="2"/>
+                  <text x="180" y="20" text-anchor="middle" font-size="11" font-weight="600" fill="rgba(255,255,255,0.5)">SHOPPING</text>
+                  <text x="180" y="45" text-anchor="middle" font-size="24" font-weight="900" fill="#FBBC04">Open</text>
+                  <text x="180" y="62" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.5)">All stores</text>
+
+                  <!-- Safety Score -->
+                  <rect x="250" y="0" width="110" height="70" rx="8" fill="rgba(52,168,83,0.15)" stroke="rgba(52,168,83,0.4)" stroke-width="2"/>
+                  <text x="305" y="20" text-anchor="middle" font-size="11" font-weight="600" fill="rgba(255,255,255,0.5)">SAFETY</text>
+                  <text x="305" y="45" text-anchor="middle" font-size="24" font-weight="900" fill="#34A853">95</text>
+                  <text x="305" y="62" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.5)">Very safe</text>
+
+                  <!-- Noise Level -->
+                  <rect x="375" y="0" width="110" height="70" rx="8" fill="rgba(255,152,0,0.15)" stroke="rgba(255,152,0,0.4)" stroke-width="2"/>
+                  <text x="430" y="20" text-anchor="middle" font-size="11" font-weight="600" fill="rgba(255,255,255,0.5)">NOISE</text>
+                  <text x="430" y="45" text-anchor="middle" font-size="24" font-weight="900" fill="#FF9800">Med</text>
+                  <text x="430" y="62" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.5)">Moderate</text>
+                </g>
+
+                <!-- Activity Graph -->
+                <g transform="translate(50, 390)">
+                  <text x="0" y="-10" font-size="12" font-weight="600" fill="rgba(255,255,255,0.7)">Activity Level Throughout Day</text>
+
+                  <!-- Graph area -->
+                  <rect x="0" y="0" width="400" height="100" fill="rgba(255,255,255,0.03)" rx="8"/>
+
+                  <!-- Graph line -->
+                  <polyline points="10,80 60,60 110,40 160,30 210,25 260,35 310,50 360,70 390,85"
+                            fill="none"
+                            stroke="#1A73E8"
+                            stroke-width="3"
+                            stroke-linecap="round"/>
+
+                  <!-- Fill under curve -->
+                  <polyline points="10,80 60,60 110,40 160,30 210,25 260,35 310,50 360,70 390,85 390,100 10,100"
+                            fill="rgba(26,115,232,0.2)"/>
+
+                  <!-- Data points -->
+                  <circle cx="60" cy="60" r="5" fill="white" stroke="#1A73E8" stroke-width="2"/>
+                  <circle cx="160" cy="30" r="5" fill="white" stroke="#1A73E8" stroke-width="2"/>
+                  <circle cx="260" cy="35" r="5" fill="white" stroke="#1A73E8" stroke-width="2"/>
+                  <circle cx="360" cy="70" r="5" fill="white" stroke="#1A73E8" stroke-width="2"/>
+
+                  <!-- Current time indicator -->
+                  <line x1="210" y1="0" x2="210" y2="100" stroke="#FBBC04" stroke-width="2" stroke-dasharray="4 4" opacity="0.8"/>
+                  <text x="210" y="115" text-anchor="middle" font-size="10" font-weight="600" fill="#FBBC04">NOW</text>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <div class="showcase-content">
+            <h3>🔮 Time Machine Analysis</h3>
+            <p>See how your neighborhood transforms throughout the day. Slide through morning, afternoon, evening, and night to understand transit frequency, shop hours, safety levels, and activity patterns at different times.</p>
+
+            <div class="showcase-features">
+              <div class="showcase-feature">
+                <div class="showcase-feature-icon">🌅</div>
+                <div class="showcase-feature-text">
+                  <strong>Time-of-Day Scoring</strong>
+                  <span>Transit at 7 AM vs 11 PM? Shop availability midday vs midnight? See real-time changes</span>
+                </div>
+              </div>
+              <div class="showcase-feature">
+                <div class="showcase-feature-icon">🚇</div>
+                <div class="showcase-feature-text">
+                  <strong>Transit Schedule Integration</strong>
+                  <span>Live analysis of bus/metro frequency - know if you'll wait 5 minutes or 45 at different times</span>
+                </div>
+              </div>
+              <div class="showcase-feature">
+                <div class="showcase-feature-icon">🌙</div>
+                <div class="showcase-feature-text">
+                  <strong>Night Safety & Activity</strong>
+                  <span>Understand which areas stay lively vs. quiet after dark, lighting conditions, and foot traffic</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 3: Area DNA -->
+        <div class="showcase-row">
+          <div class="showcase-visual">
+            <div class="showcase-chart">
+              <svg viewBox="0 0 500 500" style="width: 100%; height: auto;">
+                <!-- Radar Chart -->
+                <g transform="translate(250, 250)">
+                  <!-- Grid circles -->
+                  <circle cx="0" cy="0" r="180" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+                  <circle cx="0" cy="0" r="135" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+                  <circle cx="0" cy="0" r="90" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+                  <circle cx="0" cy="0" r="45" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+
+                  <!-- Axis lines -->
+                  <line x1="0" y1="0" x2="0" y2="-180" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+                  <line x1="0" y1="0" x2="155.9" y2="90" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+                  <line x1="0" y1="0" x2="155.9" y2="-90" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+                  <line x1="0" y1="0" x2="-155.9" y2="90" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+                  <line x1="0" y1="0" x2="-155.9" y2="-90" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+                  <line x1="0" y1="0" x2="0" y2="180" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+
+                  <!-- Data polygon -->
+                  <polygon points="0,-165 143.4,47 96.2,142 -96.2,142 -143.4,47 -49.7,-147"
+                           fill="rgba(26,115,232,0.2)"
+                           stroke="#1A73E8"
+                           stroke-width="4"/>
+
+                  <!-- Data points -->
+                  <circle cx="0" cy="-165" r="8" fill="#1A73E8" stroke="white" stroke-width="3"/>
+                  <circle cx="143.4" cy="47" r="8" fill="#34A853" stroke="white" stroke-width="3"/>
+                  <circle cx="96.2" cy="142" r="8" fill="#FBBC04" stroke="white" stroke-width="3"/>
+                  <circle cx="-96.2" cy="142" r="8" fill="#EA4335" stroke="white" stroke-width="3"/>
+                  <circle cx="-143.4" cy="47" r="8" fill="#9C27B0" stroke="white" stroke-width="3"/>
+                  <circle cx="-49.7" cy="-147" r="8" fill="#FF9800" stroke="white" stroke-width="3"/>
+                </g>
+
+                <!-- Labels -->
+                <text x="250" y="40" text-anchor="middle" font-size="15" font-weight="700" fill="white">Transport 92</text>
+                <text x="430" y="320" text-anchor="start" font-size="15" font-weight="700" fill="white">Education 88</text>
+                <text x="370" y="420" text-anchor="start" font-size="15" font-weight="700" fill="white">Shopping 87</text>
+                <text x="130" y="420" text-anchor="end" font-size="15" font-weight="700" fill="white">Health 95</text>
+                <text x="70" y="320" text-anchor="end" font-size="15" font-weight="700" fill="white">Safety 78</text>
+                <text x="180" y="70" text-anchor="end" font-size="15" font-weight="700" fill="white">Recreation 82</text>
+              </svg>
+            </div>
+          </div>
+
+          <div class="showcase-content">
+            <h3>🧬 Area DNA Fingerprint</h3>
+            <p>Every neighborhood has a unique character — a "DNA" that defines what it's like to actually live there. Our radar chart instantly reveals whether an area is transport-rich but school-poor, or healthcare-heavy but lacking recreation.</p>
+
+            <div class="showcase-features">
+              <div class="showcase-feature">
+                <div class="showcase-feature-icon">🔍</div>
+                <div class="showcase-feature-text">
+                  <strong>Instant Pattern Recognition</strong>
+                  <span>Identify neighborhood "shapes" — suburban family hubs vs. urban transit zones vs. balanced mixed-use districts</span>
+                </div>
+              </div>
+              <div class="showcase-feature">
+                <div class="showcase-feature-icon">⚖️</div>
+                <div class="showcase-feature-text">
+                  <strong>Compare Side-by-Side</strong>
+                  <span>Overlay DNA charts from multiple addresses to see which one matches your lifestyle best</span>
+                </div>
+              </div>
+              <div class="showcase-feature">
+                <div class="showcase-feature-icon">🎯</div>
+                <div class="showcase-feature-text">
+                  <strong>Profile-Specific Weighting</strong>
+                  <span>The radar adjusts based on your profile — families see education dominate, students see transit spike</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ SCREENSHOTS ═══════ -->
+  <section id="screenshots" style="background: white; padding: 100px 0;">
+    <div class="container">
+      <div class="section-head">
+        <div class="section-label">See It In Action</div>
+        <h2 class="section-title">Real analysis, real insights</h2>
+        <p class="section-sub">Here's what you'll see when you analyze an address — comprehensive scoring, detailed breakdowns, and AI-powered summaries.</p>
+      </div>
+
+      <!-- Desktop Interface -->
+      <div style="margin-top: 64px; background: #060F24; border-radius: 16px; padding: 48px; box-shadow: 0 12px 48px rgba(0,0,0,0.15);">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="display: inline-block; background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.12);">
+            💻 Desktop Experience
+          </div>
+        </div>
+        <img src="images/hero-main-content.png" alt="HomeScope search interface" style="width: 100%; border-radius: 12px;">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 48px;">
+        <div>
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 12px; color: var(--text);">📍 Instant Address Search</h3>
+          <p style="font-size: 14px; color: var(--text-2); line-height: 1.7;">Type any address and get immediate results — no sign-up, no configuration needed. Works worldwide.</p>
+        </div>
+        <div>
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 12px; color: var(--text);">📊 100+ Amenities Analyzed</h3>
+          <p style="font-size: 14px; color: var(--text-2); line-height: 1.7;">Every school, hospital, transport stop, and park within walking distance — scored and categorized automatically.</p>
+        </div>
+      </div>
+
+      <!-- Mobile Interface -->
+      <div style="margin-top: 80px; text-align: center;">
+        <div style="display: inline-block; background: var(--primary-light); color: var(--primary); font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 100px; margin-bottom: 24px;">
+          📱 Mobile-First Design
+        </div>
+        <div>
+          <img src="images/mobile-hero-clean.png" alt="HomeScope mobile interface" style="max-width: 375px; width: 100%; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
+        </div>
+        <p style="margin-top: 24px; font-size: 14px; color: var(--text-2); max-width: 500px; margin-left: auto; margin-right: auto;">Full functionality on mobile — analyze addresses on the go while house hunting or touring properties</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ CATEGORIES ═══════ -->
+  <section id="features">
+    <div class="container">
+      <div class="section-head">
+        <div class="section-label">What We Measure</div>
+        <h2 class="section-title">Every dimension of neighbourhood life</h2>
+        <p class="section-sub">HomeScope analyses the seven categories that determine how you'll actually live in your new home — not just how the listing photos look.</p>
+      </div>
+
+      <div class="cats-grid">
+        <div class="cat-card">
+          <div class="cat-emoji">🚊</div>
+          <div class="cat-name">Transportation</div>
+          <div class="cat-desc">Bus stops, metro, tram, and train stations scored by proximity and frequency.</div>
+        </div>
+        <div class="cat-card">
+          <div class="cat-emoji">🎓</div>
+          <div class="cat-name">Education</div>
+          <div class="cat-desc">Primary and secondary schools, universities, libraries — walking distance matters.</div>
+        </div>
+        <div class="cat-card">
+          <div class="cat-emoji">🏥</div>
+          <div class="cat-name">Healthcare</div>
+          <div class="cat-desc">Hospitals, clinics, pharmacies, dentists — emergency access and everyday care.</div>
+        </div>
+        <div class="cat-card">
+          <div class="cat-emoji">🛒</div>
+          <div class="cat-name">Shopping</div>
+          <div class="cat-desc">Supermarkets, local markets, bakeries — the essentials of everyday life.</div>
+        </div>
+        <div class="cat-card">
+          <div class="cat-emoji">🛡️</div>
+          <div class="cat-name">Safety</div>
+          <div class="cat-desc">Police stations, fire brigades, and civil protection infrastructure nearby.</div>
+        </div>
+        <div class="cat-card">
+          <div class="cat-emoji">⛪</div>
+          <div class="cat-name">Community</div>
+          <div class="cat-desc">Places of worship, cultural centres, and the social fabric of the area.</div>
+        </div>
+        <div class="cat-card">
+          <div class="cat-emoji">🌳</div>
+          <div class="cat-name">Recreation</div>
+          <div class="cat-desc">Parks, playgrounds, gyms, sports facilities — where you live outside the house.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ PROFILES ═══════ -->
+  <section id="profiles">
+    <div class="container">
+      <div class="section-head">
+        <div class="section-label">Personalised Scoring</div>
+        <h2 class="section-title">Weighted for your life, not someone else's</h2>
+        <p class="section-sub">A family prioritises schools and safety. A student prioritises transit and cost. A retiree needs healthcare within reach. Choose your profile — the scores shift accordingly.</p>
+      </div>
+
+      <div class="profiles-grid">
+        <div class="profile-card">
+          <div class="prof-emoji">👨‍👩‍👧‍👦</div>
+          <div class="prof-name">Family</div>
+          <div class="prof-desc">Schools, healthcare, and safety weighted most heavily.</div>
+        </div>
+        <div class="profile-card">
+          <div class="prof-emoji">🎓</div>
+          <div class="prof-name">Student</div>
+          <div class="prof-desc">Transit, cafés, and universities. Cost and accessibility first.</div>
+        </div>
+        <div class="profile-card">
+          <div class="prof-emoji">💼</div>
+          <div class="prof-name">Professional</div>
+          <div class="prof-desc">Commute links, fitness, and work-life balance.</div>
+        </div>
+        <div class="profile-card">
+          <div class="prof-emoji">🌿</div>
+          <div class="prof-name">Retired</div>
+          <div class="prof-desc">Healthcare, walkability, parks, and community spaces.</div>
+        </div>
+        <div class="profile-card">
+          <div class="prof-emoji">📈</div>
+          <div class="prof-name">Investor</div>
+          <div class="prof-desc">Transport links, amenity density, and overall area strength.</div>
+        </div>
+        <div class="profile-card">
+          <div class="prof-emoji">🏠</div>
+          <div class="prof-name">Default</div>
+          <div class="prof-desc">Balanced across all categories — a great starting point.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ TECH STACK ═══════ -->
+  <section id="tech">
+    <div class="container">
+      <div class="tech-inner">
+        <div class="tech-label">Built with open technologies</div>
+        <div class="tech-pills">
+          <div class="tech-pill">📱 Flutter</div>
+          <div class="tech-pill">⚡ FastAPI</div>
+          <div class="tech-pill">🗺 OpenStreetMap</div>
+          <div class="tech-pill">🤖 OpenAI GPT-4o</div>
+          <div class="tech-pill">🐘 PostgreSQL + PostGIS</div>
+          <div class="tech-pill">⚡ Redis</div>
+          <div class="tech-pill">🐳 Docker</div>
+          <div class="tech-pill">🔍 Nominatim</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ CTA ═══════ -->
+  <section id="cta">
+    <div class="container">
+      <div class="section-label light">Available Now · Free to Download</div>
+      <h2 class="section-title cta-title">Ready to find your perfect neighbourhood?</h2>
+      <div class="cta-actions">
+        <a href="#cta" class="btn-store cta-btn">
+          <svg width="22" height="26" viewBox="0 0 24 24" fill="white"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          <div><div class="s-sub">Download on the</div><div class="s-main">App Store</div></div>
+        </a>
+        <a href="#cta" class="btn-store cta-btn">
+          <svg width="22" height="24" viewBox="0 0 24 24" fill="white"><path d="M3.18 23.76a2 2 0 001.06-.31l10.84-6.19-2.56-2.56L3.18 23.76zm-1.18-21v20.48l.04.04 11.42-11.42L2 2.76zm17.35 8.49l-2.3-1.31-2.89 2.89 2.89 2.88 2.32-1.32a1.52 1.52 0 000-3.14zM4.24.55L14.52 6.5 11.96 9.06.82.86A2 2 0 014.24.55z"/></svg>
+          <div><div class="s-sub">Get it on</div><div class="s-main">Google Play</div></div>
+        </a>
+      </div>
+      <p class="cta-tagline">No sign-up, no hassle — just paste an address and go.</p>
+    </div>
+  </section>
+
+  <!-- ═══════ FOOTER ═══════ -->
+  <footer>
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-copy">© 2026 HomeScope. Built for families, by a family.</div>
+        <div class="footer-links">
+          <a href="#">About</a>
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Contact</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+          <div class="showcase-frame">
+            <div class="showcase-screen">
+              <svg viewBox="0 0 300 650" style="width: 100%; height: 100%;">
+                <!-- Mobile Screen Background -->
+                <rect width="300" height="650" fill="#F8F9FA"/>
+
+                <!-- Header -->
+                <text x="150" y="40" text-anchor="middle" font-size="18" font-weight="700" fill="#1C1B1F">Neighbourhood Score</text>
+
+                <!-- Radial Score Circle -->
+                <g transform="translate(150, 200)">
+                  <!-- Outer rings -->
+                  <circle cx="0" cy="0" r="110" fill="none" stroke="#E8EAED" stroke-width="2" opacity="0.3"/>
+                  <circle cx="0" cy="0" r="90" fill="none" stroke="#E8EAED" stroke-width="2" opacity="0.3"/>
+                  <circle cx="0" cy="0" r="70" fill="none" stroke="#E8EAED" stroke-width="2" opacity="0.3"/>
+
+                  <!-- Category segments -->
+                  <path d="M 0,-90 A 90,90 0 0,1 77.9,-45" fill="none" stroke="#1A73E8" stroke-width="12" stroke-linecap="round"/>
+                  <path d="M 77.9,-45 A 90,90 0 0,1 77.9,45" fill="none" stroke="#34A853" stroke-width="12" stroke-linecap="round"/>
+                  <path d="M 77.9,45 A 90,90 0 0,1 0,90" fill="none" stroke="#FBBC04" stroke-width="12" stroke-linecap="round"/>
+                  <path d="M 0,90 A 90,90 0 0,1 -77.9,45" fill="none" stroke="#EA4335" stroke-width="12" stroke-linecap="round"/>
+                  <path d="M -77.9,45 A 90,90 0 0,1 -77.9,-45" fill="none" stroke="#9C27B0" stroke-width="12" stroke-linecap="round"/>
+                  <path d="M -77.9,-45 A 90,90 0 0,1 0,-90" fill="none" stroke="#FF9800" stroke-width="12" stroke-linecap="round"/>
+
+                  <!-- Center score -->
+                  <circle cx="0" cy="0" r="55" fill="white"/>
+                  <text x="0" y="10" text-anchor="middle" font-size="48" font-weight="900" fill="#1C1B1F">85</text>
+                  <text x="0" y="30" text-anchor="middle" font-size="14" font-weight="600" fill="#5F6368">/100</text>
+                </g>
+
+                <!-- Category labels -->
+                <g transform="translate(150, 420)">
+                  <circle cx="-80" cy="0" r="4" fill="#1A73E8"/>
+                  <text x="-70" y="5" font-size="12" font-weight="600" fill="#5F6368">Transport 92</text>
+
+                  <circle cx="-80" cy="25" r="4" fill="#34A853"/>
+                  <text x="-70" y="30" font-size="12" font-weight="600" fill="#5F6368">Education 88</text>
+
+                  <circle cx="-80" cy="50" r="4" fill="#FBBC04"/>
+                  <text x="-70" y="55" font-size="12" font-weight="600" fill="#5F6368">Shopping 87</text>
+
+                  <circle cx="20" cy="0" r="4" fill="#EA4335"/>
+                  <text x="30" y="5" font-size="12" font-weight="600" fill="#5F6368">Healthcare 95</text>
+
+                  <circle cx="20" cy="25" r="4" fill="#9C27B0"/>
+                  <text x="30" y="30" font-size="12" font-weight="600" fill="#5F6368">Safety 78</text>
+
+                  <circle cx="20" cy="50" r="4" fill="#FF9800"/>
+                  <text x="30" y="55" font-size="12" font-weight="600" fill="#5F6368">Recreation 82</text>
+                </g>
+              </svg>
+            </div>
+          </div>
+          <div class="showcase-label">
+            <div class="showcase-label-title">📊 Radial Score View</div>
+            <div class="showcase-label-desc">360° visualization of all neighborhood categories at a glance</div>
+          </div>
+        </div>
+
+        <!-- Time Machine -->
+        <div class="showcase-item">
+          <div class="showcase-frame">
+            <div class="showcase-screen">
+              <svg viewBox="0 0 300 650" style="width: 100%; height: 100%;">
+                <!-- Background -->
+                <rect width="300" height="650" fill="#F8F9FA"/>
+
+                <!-- Header -->
+                <text x="150" y="40" text-anchor="middle" font-size="18" font-weight="700" fill="#1C1B1F">Future Outlook</text>
+
+                <!-- Timeline -->
+                <g transform="translate(150, 150)">
+                  <!-- Timeline line -->
+                  <line x1="0" y1="0" x2="0" y2="300" stroke="#E8EAED" stroke-width="3"/>
+
+                  <!-- Year nodes -->
+                  <g transform="translate(0, 0)">
+                    <circle cx="0" cy="0" r="20" fill="#1A73E8"/>
+                    <text x="0" y="6" text-anchor="middle" font-size="14" font-weight="800" fill="white">85</text>
+                    <text x="40" y="6" text-anchor="start" font-size="16" font-weight="700" fill="#1C1B1F">Today (2026)</text>
+                  </g>
+
+                  <g transform="translate(0, 100)">
+                    <circle cx="0" cy="0" r="18" fill="#34A853"/>
+                    <text x="0" y="6" text-anchor="middle" font-size="13" font-weight="800" fill="white">87</text>
+                    <text x="40" y="6" text-anchor="start" font-size="15" font-weight="600" fill="#5F6368">1 Year (2027)</text>
+                  </g>
+
+                  <g transform="translate(0, 200)">
+                    <circle cx="0" cy="0" r="16" fill="#FBBC04"/>
+                    <text x="0" y="6" text-anchor="middle" font-size="12" font-weight="800" fill="white">90</text>
+                    <text x="40" y="6" text-anchor="start" font-size="14" font-weight="600" fill="#5F6368">3 Years (2029)</text>
+                  </g>
+
+                  <g transform="translate(0, 300)">
+                    <circle cx="0" cy="0" r="14" fill="#9C27B0"/>
+                    <text x="0" y="5" text-anchor="middle" font-size="11" font-weight="800" fill="white">93</text>
+                    <text x="40" y="6" text-anchor="start" font-size="13" font-weight="600" fill="#5F6368">5 Years (2031)</text>
+                  </g>
+                </g>
+
+                <!-- Confidence indicator -->
+                <rect x="30" y="520" width="240" height="80" rx="12" fill="white" stroke="#E8EAED" stroke-width="1"/>
+                <text x="150" y="545" text-anchor="middle" font-size="13" font-weight="700" fill="#1C1B1F">Projection Confidence</text>
+                <rect x="50" y="560" width="200" height="8" rx="4" fill="#E8EAED"/>
+                <rect x="50" y="560" width="140" height="8" rx="4" fill="#34A853"/>
+                <text x="150" y="585" text-anchor="middle" font-size="11" font-weight="600" fill="#5F6368">Based on development trends</text>
+              </svg>
+            </div>
+          </div>
+          <div class="showcase-label">
+            <div class="showcase-label-title">🔮 Time Machine</div>
+            <div class="showcase-label-desc">Projected neighborhood scores based on urban development trends</div>
+          </div>
+        </div>
+
+        <!-- Area DNA -->
+        <div class="showcase-item">
+          <div class="showcase-frame">
+            <div class="showcase-screen">
+              <svg viewBox="0 0 300 650" style="width: 100%; height: 100%;">
+                <!-- Dark Background -->
+                <rect width="300" height="650" fill="#0F1419"/>
+
+                <!-- Header -->
+                <text x="150" y="40" text-anchor="middle" font-size="18" font-weight="700" fill="white">Area DNA</text>
+                <text x="150" y="65" text-anchor="middle" font-size="12" fill="rgba(255,255,255,0.6)">Neighborhood Fingerprint</text>
+
+                <!-- Radar Chart -->
+                <g transform="translate(150, 280)">
+                  <!-- Grid circles -->
+                  <circle cx="0" cy="0" r="100" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                  <circle cx="0" cy="0" r="75" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                  <circle cx="0" cy="0" r="50" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                  <circle cx="0" cy="0" r="25" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+
+                  <!-- Axis lines -->
+                  <line x1="0" y1="0" x2="0" y2="-100" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+                  <line x1="0" y1="0" x2="86.6" y2="50" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+                  <line x1="0" y1="0" x2="86.6" y2="-50" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+                  <line x1="0" y1="0" x2="-86.6" y2="50" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+                  <line x1="0" y1="0" x2="-86.6" y2="-50" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+                  <line x1="0" y1="0" x2="0" y2="100" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+
+                  <!-- Data polygon -->
+                  <polygon points="0,-92 79.6,26 53.6,79 -53.6,79 -79.6,26 -27.6,-82"
+                           fill="rgba(26,115,232,0.2)"
+                           stroke="#1A73E8"
+                           stroke-width="3"/>
+
+                  <!-- Data points -->
+                  <circle cx="0" cy="-92" r="5" fill="#1A73E8" stroke="white" stroke-width="2"/>
+                  <circle cx="79.6" cy="26" r="5" fill="#34A853" stroke="white" stroke-width="2"/>
+                  <circle cx="53.6" cy="79" r="5" fill="#FBBC04" stroke="white" stroke-width="2"/>
+                  <circle cx="-53.6" cy="79" r="5" fill="#EA4335" stroke="white" stroke-width="2"/>
+                  <circle cx="-79.6" cy="26" r="5" fill="#9C27B0" stroke="white" stroke-width="2"/>
+                  <circle cx="-27.6" cy="-82" r="5" fill="#FF9800" stroke="white" stroke-width="2"/>
+                </g>
+
+                <!-- Labels -->
+                <text x="150" y="145" text-anchor="middle" font-size="11" font-weight="600" fill="white">Transport</text>
+                <text x="250" y="310" text-anchor="start" font-size="11" font-weight="600" fill="white">Education</text>
+                <text x="215" y="420" text-anchor="start" font-size="11" font-weight="600" fill="white">Shopping</text>
+                <text x="50" y="420" text-anchor="end" font-size="11" font-weight="600" fill="white">Health</text>
+                <text x="30" y="310" text-anchor="end" font-size="11" font-weight="600" fill="white">Safety</text>
+                <text x="90" y="165" text-anchor="end" font-size="11" font-weight="600" fill="white">Recreation</text>
+              </svg>
+            </div>
+          </div>
+          <div class="showcase-label">
+            <div class="showcase-label-title">🧬 Area DNA</div>
+            <div class="showcase-label-desc">Unique radar fingerprint showing neighborhood character</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ SCREENSHOTS ═══════ -->
+  <section id="screenshots" style="background: white; padding: 100px 0;">
+    <div class="container">
+      <div class="section-head">
+        <div class="section-label">See It In Action</div>
+        <h2 class="section-title">Real analysis, real insights</h2>
+        <p class="section-sub">Here's what you'll see when you analyze an address — comprehensive scoring, detailed breakdowns, and AI-powered summaries.</p>
+      </div>
+
+      <!-- Desktop Interface -->
+      <div style="margin-top: 64px; background: #060F24; border-radius: 16px; padding: 48px; box-shadow: 0 12px 48px rgba(0,0,0,0.15);">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="display: inline-block; background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.12);">
+            💻 Desktop Experience
+          </div>
+        </div>
+        <img src="images/hero-main-content.png" alt="HomeScope search interface" style="width: 100%; border-radius: 12px;">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 48px;">
+        <div>
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 12px; color: var(--text);">📍 Instant Address Search</h3>
+          <p style="font-size: 14px; color: var(--text-2); line-height: 1.7;">Type any address and get immediate results — no sign-up, no configuration needed. Works worldwide.</p>
+        </div>
+        <div>
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 12px; color: var(--text);">📊 100+ Amenities Analyzed</h3>
+          <p style="font-size: 14px; color: var(--text-2); line-height: 1.7;">Every school, hospital, transport stop, and park within walking distance — scored and categorized automatically.</p>
+        </div>
+      </div>
+
+      <!-- Mobile Interface -->
+      <div style="margin-top: 80px; text-align: center;">
+        <div style="display: inline-block; background: var(--primary-light); color: var(--primary); font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 100px; margin-bottom: 24px;">
+          📱 Mobile-First Design
+        </div>
+        <div>
+          <img src="images/mobile-hero-clean.png" alt="HomeScope mobile interface" style="max-width: 375px; width: 100%; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
+        </div>
+        <p style="margin-top: 24px; font-size: 14px; color: var(--text-2); max-width: 500px; margin-left: auto; margin-right: auto;">Full functionality on mobile — analyze addresses on the go while house hunting or touring properties</p>
+      </div>
+    </div>
+  </section>
+
   <!-- ═══════ CATEGORIES ═══════ -->
   <section id="features">
     <div class="container">
@@ -721,6 +1745,85 @@
       </div>
     </div>
   </footer>
+
+  <script>
+    const API_BASE = window.location.hostname === 'localhost'
+      ? 'http://localhost:8001/api/v1'
+      : '/api/v1';
+
+    document.getElementById('analyze-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const address = document.getElementById('address-input').value.trim();
+      if (!address) return;
+
+      const btn = document.getElementById('analyze-btn');
+      const btnText = document.getElementById('btn-text');
+      const btnLoading = document.getElementById('btn-loading');
+
+      // Show loading state
+      btn.disabled = true;
+      btnText.style.display = 'none';
+      btnLoading.style.display = 'inline';
+
+      try {
+        // Step 1: Analyze the address
+        console.log('Calling analyze API:', `${API_BASE}/analyze`);
+        const analyzeResponse = await fetch(`${API_BASE}/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            address: address,
+            country_code: 'PT',
+            profile: 'default',
+            radius: 2000
+          })
+        });
+
+        console.log('Analyze response status:', analyzeResponse.status);
+
+        if (!analyzeResponse.ok) {
+          const errorData = await analyzeResponse.json().catch(() => ({}));
+          console.error('Analyze API error:', errorData);
+          throw new Error(`Analysis failed: ${errorData.detail || analyzeResponse.statusText}`);
+        }
+
+        const analysisData = await analyzeResponse.json();
+        console.log('Analysis complete, data:', analysisData);
+
+        // Step 2: Create a shareable link
+        console.log('Creating share link...');
+        const shareResponse = await fetch(`${API_BASE}/share`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(analysisData)
+        });
+
+        console.log('Share response status:', shareResponse.status);
+
+        if (!shareResponse.ok) {
+          const errorData = await shareResponse.json().catch(() => ({}));
+          console.error('Share API error:', errorData);
+          throw new Error(`Failed to create share link: ${errorData.detail || shareResponse.statusText}`);
+        }
+
+        const shareData = await shareResponse.json();
+        console.log('Share link created:', shareData);
+
+        // Redirect to the report page
+        window.location.href = `report.html?token=${shareData.share_token}`;
+
+      } catch (error) {
+        console.error('Full error:', error);
+        alert(`Failed to analyze address: ${error.message}\n\nCheck browser console (F12) for details.`);
+      } finally {
+        // Reset button state
+        btn.disabled = false;
+        btnText.style.display = 'inline';
+        btnLoading.style.display = 'none';
+      }
+    });
+  </script>
 
 </body>
 </html>

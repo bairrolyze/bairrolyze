@@ -6,7 +6,8 @@ import '../../models/score_model.dart';
 
 class FutureScoreWidget extends StatefulWidget {
   final LocationScore score;
-  const FutureScoreWidget({super.key, required this.score});
+  final double topPadding;
+  const FutureScoreWidget({super.key, required this.score, this.topPadding = 100});
 
   @override
   State<FutureScoreWidget> createState() => _FutureScoreWidgetState();
@@ -97,7 +98,7 @@ class _FutureScoreWidgetState extends State<FutureScoreWidget>
     final selected = _selectedMilestone != null ? milestones[_selectedMilestone!] : null;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(top: 100, bottom: 32),
+      padding: EdgeInsets.only(top: widget.topPadding + 32, bottom: 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -108,19 +109,41 @@ class _FutureScoreWidgetState extends State<FutureScoreWidget>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Future Score',
-                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: -0.5),
-                ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.2, end: 0),
-                const SizedBox(height: 6),
+                  'FORECAST',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 2.2,
+                    height: 1,
+                  ),
+                ).animate().fadeIn(duration: 400.ms),
+                const SizedBox(height: 10),
                 const Text(
-                  'Not just where it stands — where it\'s heading.',
-                  style: TextStyle(color: Colors.white54, fontSize: 13.5, height: 1.5),
-                ).animate(delay: 100.ms).fadeIn(),
+                  'Future Score',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 38,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -1.0,
+                    height: 1.05,
+                  ),
+                ).animate(delay: 60.ms).fadeIn(duration: 500.ms).slideY(begin: 0.15, end: 0),
+                const SizedBox(height: 16),
+                Text(
+                  'Not just where it stands —\nwhere it\'s heading.',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.72),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w400,
+                    height: 1.6,
+                  ),
+                ).animate(delay: 120.ms).fadeIn(duration: 500.ms),
               ],
             ),
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 32),
 
           // Trajectory chart
           Padding(
@@ -345,7 +368,6 @@ class _TrajectoryPainter extends CustomPainter {
       for (int i = 0; i < totalSegs; i++) {
         final segProgress = ((drawn - i)).clamp(0.0, 1.0);
         if (segProgress <= 0) break;
-        final t = i + segProgress;
         final p1 = pts[i];
         final p2 = pts[min(i + 1, pts.length - 1)];
         final cp1 = Offset(p1.dx + (p2.dx - p1.dx) * 0.4, p1.dy);

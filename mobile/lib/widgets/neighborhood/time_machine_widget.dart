@@ -6,8 +6,9 @@ import '../../models/score_model.dart';
 
 class TimeMachineWidget extends StatefulWidget {
   final LocationScore score;
+  final double topPadding;
 
-  const TimeMachineWidget({super.key, required this.score});
+  const TimeMachineWidget({super.key, required this.score, this.topPadding = 96});
 
   @override
   State<TimeMachineWidget> createState() => _TimeMachineWidgetState();
@@ -139,19 +140,41 @@ class _TimeMachineWidgetState extends State<TimeMachineWidget> {
                   }),
                 // Content
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 96, 24, 20),
+                  padding: EdgeInsets.fromLTRB(24, widget.topPadding + 20, 24, 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Time Machine',
-                        style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: -0.5),
-                      ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.2, end: 0),
-                      const SizedBox(height: 4),
+                        'ACTIVITY',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 2.2,
+                          height: 1,
+                        ),
+                      ).animate().fadeIn(duration: 400.ms),
+                      const SizedBox(height: 10),
                       const Text(
-                        'See how your neighbourhood changes throughout the day.',
-                        style: TextStyle(color: Colors.white60, fontSize: 13.5, height: 1.4),
-                      ).animate(delay: 100.ms).fadeIn(),
+                        'Time Machine',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 38,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -1.0,
+                          height: 1.05,
+                        ),
+                      ).animate(delay: 60.ms).fadeIn(duration: 500.ms).slideY(begin: 0.15, end: 0),
+                      const SizedBox(height: 16),
+                      Text(
+                        'See how your neighbourhood\nchanges throughout the day.',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.72),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          height: 1.6,
+                        ),
+                      ).animate(delay: 120.ms).fadeIn(duration: 500.ms),
                       const Spacer(),
                       // Time display
                       Row(

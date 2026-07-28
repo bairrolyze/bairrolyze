@@ -2,11 +2,14 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../models/address_model.dart';
 import '../../models/score_model.dart';
 
 class DNAWidget extends StatefulWidget {
   final LocationScore score;
-  const DNAWidget({super.key, required this.score});
+  final AddressModel? address;
+  final double topPadding;
+  const DNAWidget({super.key, required this.score, this.address, this.topPadding = 100});
 
   @override
   State<DNAWidget> createState() => _DNAWidgetState();
@@ -58,25 +61,62 @@ class _DNAWidgetState extends State<DNAWidget> with SingleTickerProviderStateMix
     return SingleChildScrollView(
       child: Column(
         children: [
-          const SizedBox(height: 100),
+          SizedBox(height: widget.topPadding + 32),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Section label
                 const Text(
-                  'Neighbourhood DNA',
-                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: -0.5),
-                ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.2, end: 0),
-                const SizedBox(height: 6),
+                  'ANALYTICS',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 2.2,
+                    height: 1,
+                  ),
+                ).animate().fadeIn(duration: 400.ms),
+                const SizedBox(height: 10),
+                // Title
                 const Text(
-                  'Your area\'s unique visual fingerprint — shaped by what makes it different.',
-                  style: TextStyle(color: Colors.white54, fontSize: 13.5, height: 1.5),
-                ).animate(delay: 100.ms).fadeIn(duration: 500.ms),
+                  'Area DNA',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                    height: 1.05,
+                  ),
+                ).animate(delay: 60.ms).fadeIn(duration: 500.ms).slideY(begin: 0.15, end: 0),
+                const SizedBox(height: 8),
+                // Subtitle
+                Text(
+                  'Visual fingerprint of what makes this area unique.',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.60),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    height: 1.4,
+                  ),
+                ).animate(delay: 120.ms).fadeIn(duration: 500.ms),
+                if (_locationMeta(widget.address) != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _locationMeta(widget.address)!,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.45),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.1,
+                    ),
+                  ).animate(delay: 180.ms).fadeIn(duration: 400.ms),
+                ],
               ],
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 16),
 
           // DNA Canvas
           LayoutBuilder(builder: (context, constraints) {
@@ -174,6 +214,16 @@ class _DNAWidgetState extends State<DNAWidget> with SingleTickerProviderStateMix
         ),
       );
     }).toList();
+  }
+
+  String? _locationMeta(AddressModel? address) {
+    if (address == null) return null;
+    final parts = [
+      if (address.district != null && address.district!.isNotEmpty) address.district!,
+      if (address.city != null && address.city!.isNotEmpty) address.city!,
+      if (address.postalCode != null && address.postalCode!.isNotEmpty) address.postalCode!,
+    ];
+    return parts.isEmpty ? null : parts.join(' · ');
   }
 
   void _onTap(Offset pos, List<CategoryScore> cats, double sz) {
@@ -395,7 +445,7 @@ class _DetailCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.near_me_rounded, color: Colors.white38, size: 14),
+                  const Icon(Icons.near_me_rounded, color: Colors.white38, size: 14),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text('Closest: ${cat.closest!.name}',
