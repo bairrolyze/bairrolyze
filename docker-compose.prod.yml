@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   api:
-    image: ghcr.io/rajesharyain/home_scope:latest
+    image: ghcr.io/rajesharyain/home-scope:latest
     ports:
       - "80:8000"
     environment:
