@@ -1,0 +1,51 @@
+version: '3.9'
+
+services:
+  api:
+    image: ghcr.io/rajesharyain/home_scope:latest
+    ports:
+      - "80:8000"
+    environment:
+      - DATABASE_URL=postgresql://homescope:homescope@db:5432/homescope
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENROUTE_API_KEY=${OPENROUTE_API_KEY:-}
+      - DEBUG=${DEBUG:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      - POSTGRES_USER=homescope
+      - POSTGRES_PASSWORD=homescope
+      - POSTGRES_DB=homescope
+    volumes:
+      - ${WEBAPP_STORAGE_HOME}/postgresql/data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U homescope -d homescope"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - ${WEBAPP_STORAGE_HOME}/redis/data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped

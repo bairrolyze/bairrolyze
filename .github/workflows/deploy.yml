@@ -1,0 +1,6 @@
+- name: Build and push container image to registry
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ghcr.io/rajesharyain/home-scope:latest
+          file: ./backend/Dockerfile
