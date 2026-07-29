@@ -1,0 +1,49 @@
+name: Trigger auto deployment for api-home-scope
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ main ]
+    paths:
+    - '**'
+    - '.github/workflows/api-home-scope-AutoDeployTrigger-8c03af32-ec33-4a95-b9e4-d222150f9c78.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.APIHOMESCOPE_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.APIHOMESCOPE_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.APIHOMESCOPE_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}/backend
+          _dockerfilePathKey_: _dockerfilePath_
+          _targetLabelKey_: _targetLabel_
+          registryUrl: ghcr.io
+          registryUsername: ${{ secrets.APIHOMESCOPE_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.APIHOMESCOPE_REGISTRY_PASSWORD }}
+          containerAppName: api-home-scope
+          resourceGroup: homescope-rg
+          imageToBuild: ghcr.io/api-home-scope:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+
