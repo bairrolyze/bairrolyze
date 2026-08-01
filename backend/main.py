@@ -21,10 +21,12 @@ async def lifespan(app: FastAPI):
     from services.overpass_service import overpass_service
     from services.routing_service import routing_service
     from services.cache import cache_service
+    from services.job_store import job_store
     await nominatim_service.close()
     await overpass_service.close()
     await routing_service.close()
     await cache_service.close()
+    await job_store.close()
 
 
 app = FastAPI(

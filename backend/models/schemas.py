@@ -108,3 +108,52 @@ class ErrorResponse(BaseModel):
     error: str
     detail: Optional[str] = None
     code: Optional[str] = None
+
+
+# ── Job-based analyze pipeline (Phase B) ─────────────────────────────────────
+# The 4 real pipeline stages: geocode -> amenities -> score -> ai_summary.
+# Strict sequential dependency chain (each needs the previous stage's
+# output), so there's no stage-level concurrency here — the value is
+# progressive delivery of each stage's result as it completes, via
+# GET /analyze/{id}/status (poll) or GET /analyze/{id}/stream (SSE).
+
+JOB_STAGE_NAMES = ["geocode", "amenities", "score", "ai_summary"]
+
+
+class StageState(BaseModel):
+    """Status of a single pipeline stage.
+
+    status: "pending" | "running" | "done" | "error" | "blocked"
+    ("blocked" = a prior stage in the chain failed, so this stage was
+    never attempted.)
+    """
+
+    status: str = "pending"
+    result: Optional[Any] = None
+    error: Optional[str] = None
+
+
+class JobStages(BaseModel):
+    geocode: StageState = Field(default_factory=StageState)
+    amenities: StageState = Field(default_factory=StageState)
+    score: StageState = Field(default_factory=StageState)
+    ai_summary: StageState = Field(default_factory=StageState)
+
+
+class JobCreatedResponse(BaseModel):
+    """Returned immediately (202 Accepted) by POST /analyze."""
+
+    analysis_id: str
+    status: str = "pending"
+
+
+class JobStatusResponse(BaseModel):
+    """Returned by GET /analyze/{id}/status and used as the SSE payload shape."""
+
+    analysis_id: str
+    status: str  # "pending" | "running" | "done" | "error"
+    partial_failure: bool = False
+    stages: JobStages
+    final: Optional[AnalyzeResponse] = None
+    created_at: str
+    updated_at: str

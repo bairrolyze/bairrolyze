@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     cache_ttl_seconds: int = 86400  # 24h
 
+    # Job store (background analyze pipeline) — jobs are transient, not
+    # permanent cache; keep this separate from cache_ttl_seconds above.
+    job_ttl_seconds: int = 3600  # 1h
+    job_stream_poll_seconds: float = 0.4
+    job_stream_max_seconds: int = 60
+
     # External APIs
     openai_api_key: Optional[str] = None
     openai_model: str = "gpt-4o-mini"
