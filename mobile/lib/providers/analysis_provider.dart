@@ -89,19 +89,50 @@ class AnalysisNotifier extends StateNotifier<AnalysisState> {
         return;
       }
 
-      // Call the single /analyze endpoint which handles the full pipeline
-      state = state.copyWith(
-        status: AnalysisStatus.fetchingAmenities,
-        statusMessage: 'Analyzing neighborhood...',
-      );
-
-      final data = await api.analyzeAddress(
+      // Kick off the background job pipeline (returns immediately with an
+      // analysis_id; the 4 real stages — geocode -> amenities -> score ->
+      // AI summary — run server-side and are streamed back below).
+      final analysisId = await api.createAnalysisJob(
         address: rawAddress,
         countryCode: countryCode,
         profile: profile,
         radius: 2000,
       );
 
+      Map<String, dynamic>? finalPayload;
+      String? firstStageError;
+
+      await for (final event in api.streamAnalysis(analysisId)) {
+        switch (event.event) {
+          case 'stage':
+            final stage = event.data['stage'] as String?;
+            final status = event.data['status'] as String?;
+            if (status == 'running') {
+              state = state.copyWith(
+                status: _stageToStatus(stage),
+                statusMessage: _stageToMessage(stage),
+              );
+            } else if (status == 'error') {
+              firstStageError ??= event.data['error'] as String?;
+            }
+            break;
+          case 'complete':
+            finalPayload = event.data['final'] as Map<String, dynamic>?;
+            break;
+          case 'error':
+            firstStageError ??= event.data['message'] as String? ?? 'job not found or expired';
+            break;
+          case 'timeout':
+            firstStageError ??= 'timeout: analysis is taking too long';
+            break;
+        }
+      }
+
+      if (finalPayload == null) {
+        throw Exception(firstStageError ?? 'Analysis failed');
+      }
+
+      final data = finalPayload;
       final result = AnalysisResult.fromJson(data);
       final geoData = data['address'] as Map<String, dynamic>;
       final address = AddressModel(
@@ -128,6 +159,38 @@ class AnalysisNotifier extends StateNotifier<AnalysisState> {
         error: _friendlyError(e.toString()),
         statusMessage: '',
       );
+    }
+  }
+
+  /// Maps a backend pipeline stage name to the existing (already-real, no
+  /// longer cosmetic) [AnalysisStatus] value driven by SSE "stage" events.
+  AnalysisStatus _stageToStatus(String? stage) {
+    switch (stage) {
+      case 'geocode':
+        return AnalysisStatus.geocoding;
+      case 'amenities':
+        return AnalysisStatus.fetchingAmenities;
+      case 'score':
+        return AnalysisStatus.scoring;
+      case 'ai_summary':
+        return AnalysisStatus.generatingSummary;
+      default:
+        return state.status;
+    }
+  }
+
+  String _stageToMessage(String? stage) {
+    switch (stage) {
+      case 'geocode':
+        return 'Locating address...';
+      case 'amenities':
+        return 'Finding nearby amenities...';
+      case 'score':
+        return 'Calculating location score...';
+      case 'ai_summary':
+        return 'Generating AI summary...';
+      default:
+        return state.statusMessage;
     }
   }
 
