@@ -2,10 +2,12 @@
 
 geocode -> amenities -> score -> ai_summary is called as a background task.
 These tests verify: (1) the happy path persists every stage and resolves
-the job to "done" with a final payload, and (2) a mid-chain failure (e.g.
-amenities raising) records that stage's error, marks downstream stages
-"blocked", and still resolves the job to "done" with partial_failure=True
-instead of leaving it stuck "running" — it must never hang.
+the job to "done" with a final payload, (2) a hard failure (geocode not
+resolving) records that stage's error, marks downstream stages "blocked",
+and still resolves the job to "done" with partial_failure=True instead of
+leaving it stuck "running", and (3) a soft failure (amenities/Overpass
+erroring) degrades to an empty amenity list and lets score/ai_summary run
+anyway, matching the original blocking /analyze endpoint's semantics.
 
 `nominatim_service.geocode`, `overpass_service.fetch_amenities`, and
 `calculate_location_score` are monkeypatched here as black boxes (per the
@@ -113,27 +115,38 @@ class TestPipelinePartialFailure:
         assert job["stages"]["score"]["status"] == "blocked"
         assert job["stages"]["ai_summary"]["status"] == "blocked"
 
-    async def test_amenities_failure_keeps_geocode_result_and_blocks_rest(self, job_store, request_obj, monkeypatch):
+    async def test_amenities_failure_degrades_to_empty_list_and_completes(self, job_store, request_obj, monkeypatch):
+        """Amenities is a soft dependency (matches the pre-job-pipeline
+        /analyze behavior): an Overpass failure degrades to an empty amenity
+        list rather than blocking score/ai_summary. A blocked pipeline here
+        is worse for the user than a partial/degraded result — a 502-style
+        dead end instead of a still-usable (if amenity-less) score.
+        """
         await job_store.create_job("job-3", request_obj.model_dump(mode="json"))
 
         monkeypatch.setattr(pipeline.nominatim_service, "geocode", AsyncMock(return_value=_geo()))
         monkeypatch.setattr(
             pipeline.overpass_service, "fetch_amenities", AsyncMock(side_effect=RuntimeError("overpass down"))
         )
+        monkeypatch.setattr(pipeline, "calculate_location_score", lambda amenities, profile: _score())
+        monkeypatch.setattr(pipeline.settings, "openai_api_key", None)
 
         await pipeline.run_analysis_pipeline("job-3", request_obj)
 
         job = await job_store.get_job("job-3")
         assert job["status"] == "done"
-        assert job["partial_failure"] is True
+        assert job["partial_failure"] is False
         # geocode succeeded and its result is preserved for progressive UI.
         assert job["stages"]["geocode"]["status"] == "done"
         assert job["stages"]["geocode"]["result"]["display_name"] == "Lisboa, Portugal"
-        assert job["stages"]["amenities"]["status"] == "error"
-        assert "overpass down" in job["stages"]["amenities"]["error"]
-        assert job["stages"]["score"]["status"] == "blocked"
-        assert job["stages"]["ai_summary"]["status"] == "blocked"
-        assert job["final"] is None
+        # amenities degrades to an empty list rather than erroring out.
+        assert job["stages"]["amenities"]["status"] == "done"
+        assert job["stages"]["amenities"]["result"] == []
+        # score and ai_summary still run against the degraded (empty) amenities.
+        assert job["stages"]["score"]["status"] == "done"
+        assert job["stages"]["ai_summary"]["status"] == "done"
+        assert job["final"] is not None
+        assert job["final"]["amenities"] == []
 
     async def test_ai_summary_falls_back_instead_of_failing_when_no_api_key(self, job_store, request_obj, monkeypatch):
         await job_store.create_job("job-4", request_obj.model_dump(mode="json"))
