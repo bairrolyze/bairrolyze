@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
-from backend.models.schemas import AmenityModel, AmenityCategory
-from backend.scoring.scoring_engine import (
+from models.schemas import AmenityModel, AmenityCategory
+from scoring.scoring_engine import (
     _distance_score,
     _count_score,
     calculate_location_score,
@@ -94,7 +94,7 @@ class TestCalculateLocationScore:
         assert ed_score.closest.name == "School A"
 
     def test_profile_weights_sum_to_one(self):
-        from backend.config.scoring_config import PROFILE_WEIGHTS
+        from config.scoring_config import PROFILE_WEIGHTS
         for profile, weights in PROFILE_WEIGHTS.items():
             total = sum(weights.values())
             assert abs(total - 1.0) < 0.01, f"Profile {profile} weights sum to {total}"

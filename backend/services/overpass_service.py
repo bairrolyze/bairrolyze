@@ -1,12 +1,25 @@
 import httpx
+import logging
 import math
-import urllib.parse
-from typing import List, Dict, Any
+import time
+from typing import List, Dict, Any, Optional, Tuple
 from uuid import uuid4
 
 from config.settings import settings
 from config.scoring_config import CATEGORY_CONFIG, OSM_TYPE_TO_CATEGORY
 from models.schemas import AmenityModel, AmenityCategory
+from services.cache import cache_service
+
+logger = logging.getLogger(__name__)
+
+AMENITIES_CACHE_TTL_SECONDS = 604800  # 7 days
+
+# Bbox is derived from the requested radius expanded by this factor, since a
+# square bbox has to fully contain the circle we actually care about. Results
+# outside the true radius are dropped by the haversine post-filter below.
+BBOX_EXPAND_FACTOR = 1.2
+
+METERS_PER_DEGREE_LAT = 111320.0  # ~111.32km per degree of latitude
 
 
 def _haversine_meters(lat1: float, lng1: float, lat2: float, lng2: float) -> int:
@@ -52,12 +65,45 @@ def _detect_category(osm_type: str) -> AmenityCategory:
     return AmenityCategory.recreation
 
 
+def _compute_bbox(
+    lat: float, lng: float, radius: float, expand_factor: float = BBOX_EXPAND_FACTOR
+) -> Tuple[float, float, float, float]:
+    """Derive a (south, west, north, east) bounding box that fully contains a
+    circle of `radius` meters around (lat, lng), expanded by `expand_factor`
+    to give the downstream haversine filter a safety margin.
+
+    1 degree of latitude is ~111.32km everywhere. 1 degree of longitude is
+    ~111.32km * cos(latitude), shrinking to 0 at the poles — so we clamp
+    cos(latitude) away from zero to avoid the longitude span blowing up to
+    +/-180 (or dividing by zero outright) for extreme/edge-case latitudes.
+    """
+    adjusted_radius = max(radius, 0.0) * expand_factor
+
+    lat_delta = adjusted_radius / METERS_PER_DEGREE_LAT
+
+    # Clamp the latitude used for the cosine so we never divide by ~0 near
+    # the poles (not a realistic case for Portugal, but keeps the math safe).
+    lat_for_cos = max(-89.9, min(89.9, lat))
+    cos_lat = max(math.cos(math.radians(lat_for_cos)), 1e-6)
+    lng_delta = adjusted_radius / (METERS_PER_DEGREE_LAT * cos_lat)
+
+    south = max(-90.0, lat - lat_delta)
+    north = min(90.0, lat + lat_delta)
+    west = max(-180.0, lng - lng_delta)
+    east = min(180.0, lng + lng_delta)
+
+    return south, west, north, east
+
+
 def _build_overpass_query(lat: float, lng: float, radius: float) -> str:
+    south, west, north, east = _compute_bbox(lat, lng, radius)
+    bbox = f"{south:.6f},{west:.6f},{north:.6f},{east:.6f}"
+
     filters = []
     for cat_config in CATEGORY_CONFIG.values():
         for f in cat_config["osm_filters"]:
-            filters.append(f'node{f}(around:{radius},{lat},{lng});')
-            filters.append(f'way{f}(around:{radius},{lat},{lng});')
+            filters.append(f'node{f}({bbox});')
+            filters.append(f'way{f}({bbox});')
 
     query = f"""
 [out:json][timeout:{settings.overpass_timeout}];
@@ -67,6 +113,10 @@ def _build_overpass_query(lat: float, lng: float, radius: float) -> str:
 out center tags;
 """
     return query.strip()
+
+
+def _amenities_cache_key(lat: float, lng: float, radius: float) -> str:
+    return f"amenities:{round(lat, 3)}:{round(lng, 3)}:{radius}"
 
 
 class OverpassService:
@@ -87,9 +137,17 @@ class OverpassService:
     async def fetch_amenities(
         self, lat: float, lng: float, radius: float = 2000.0
     ) -> List[AmenityModel]:
+        cache_key = _amenities_cache_key(lat, lng, radius)
+        cached = await cache_service.get(cache_key)
+        if cached is not None:
+            logger.info(f"Amenities cache HIT key={cache_key} count={len(cached)}")
+            return [AmenityModel(**item) for item in cached]
+        logger.info(f"Amenities cache MISS key={cache_key}")
+
         query = _build_overpass_query(lat, lng, radius)
 
         # Send as form data (key=value format)
+        start = time.monotonic()
         try:
             response = await self.client.post(
                 settings.overpass_url,
@@ -99,13 +157,20 @@ class OverpassService:
             response.raise_for_status()
             data = response.json()
         except httpx.HTTPStatusError as e:
-            # Log the error details
-            print(f"Overpass API error: {e.response.status_code}")
-            print(f"Response body: {e.response.text[:500]}")
+            duration_ms = (time.monotonic() - start) * 1000
+            logger.warning(
+                f"Overpass API error after {duration_ms:.0f}ms: "
+                f"status={e.response.status_code} body={e.response.text[:500]!r}"
+            )
             raise
         except Exception as e:
-            print(f"Overpass request failed: {str(e)}")
+            duration_ms = (time.monotonic() - start) * 1000
+            logger.warning(f"Overpass request failed after {duration_ms:.0f}ms: {e}")
             raise
+        duration_ms = (time.monotonic() - start) * 1000
+        logger.info(
+            f"Overpass query took {duration_ms:.0f}ms lat={lat} lng={lng} radius={radius}"
+        )
 
         amenities: List[AmenityModel] = []
         seen_names: set = set()
@@ -134,6 +199,14 @@ class OverpassService:
             osm_type = _extract_type(element)
             category = _detect_category(osm_type)
             distance = _haversine_meters(lat, lng, elat, elng)
+
+            # The bbox is a square that over-covers the requested circle, so
+            # drop anything outside the true radius before it ever gets
+            # scored (Overpass has no way to filter this itself with an
+            # indexed bbox query).
+            if distance > radius:
+                continue
+
             walking = _walking_minutes(distance)
 
             amenities.append(
@@ -152,7 +225,15 @@ class OverpassService:
 
         # Sort by distance
         amenities.sort(key=lambda a: a.distance_meters or 99999)
-        return amenities[: settings.max_amenity_results]
+        amenities = amenities[: settings.max_amenity_results]
+
+        await cache_service.set(
+            cache_key,
+            [a.model_dump() for a in amenities],
+            AMENITIES_CACHE_TTL_SECONDS,
+        )
+
+        return amenities
 
     async def close(self):
         await self.client.aclose()

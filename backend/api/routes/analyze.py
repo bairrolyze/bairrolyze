@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
@@ -7,6 +8,8 @@ from services.overpass_service import overpass_service
 from scoring.scoring_engine import calculate_location_score
 from ai.summary_generator import summary_generator
 from config.settings import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -25,13 +28,22 @@ async def analyze_address(request: AnalyzeRequest):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Geocoding failed: {e}")
 
-    # 2. Fetch amenities
+    # 2. Fetch amenities. This is a soft dependency: if Overpass times out or
+    # errors, degrade to an empty amenity list (and a correspondingly low
+    # score) rather than failing the whole request — a 502 here is worse for
+    # the user than a partial/degraded result. Genuine hard failures (e.g.
+    # the address not resolving above) still fail the request.
     try:
         amenities = await overpass_service.fetch_amenities(
             lat=geo.lat, lng=geo.lng, radius=request.radius
         )
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Amenity fetch failed: {e}")
+        logger.warning(
+            f"Amenity fetch failed for address={request.address!r} "
+            f"lat={geo.lat} lng={geo.lng} radius={request.radius}: {e}. "
+            f"Degrading gracefully with an empty amenity list."
+        )
+        amenities = []
 
     # 3. Score
     try:
