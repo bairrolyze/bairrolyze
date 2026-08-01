@@ -27,7 +27,11 @@ class Settings(BaseSettings):
 
     # Overpass (using main instance — fallback if kumi.systems is slow)
     overpass_url: str = "https://overpass-api.de/api/interpreter"
-    overpass_timeout: int = 90
+    # Bbox queries (see overpass_service._build_overpass_query) are indexed
+    # and fast, so a long worst-case timeout is no longer needed — a slow
+    # response now almost certainly means the upstream is genuinely down,
+    # and /api/v1/analyze degrades gracefully rather than hanging on it.
+    overpass_timeout: int = 15
 
     # OpenRouteService
     openroute_url: str = "https://api.openrouteservice.org"
