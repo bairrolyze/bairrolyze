@@ -271,7 +271,7 @@ class _Header extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Unlock the full\nHomeScope',
+            'Unlock the full\nBairrolyze',
             style: TextStyle(
               fontSize: 30, fontWeight: FontWeight.w800,
               color: p.textPrimary, letterSpacing: -1.0, height: 1.18,

@@ -24,7 +24,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
     _PageData(
       gradient: [Color(0xFF3B82F6), Color(0xFF7C3AED)],
       emoji: '🏠',
-      title: 'Welcome to HomeScope',
+      title: 'Welcome to Bairrolyze',
       subtitle: 'Your intelligent neighbourhood guide for smarter property decisions.',
       features: [
         (Icons.bolt_rounded,            'Analyse any address in seconds'),
@@ -76,7 +76,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
       gradient: [Color(0xFF7C3AED), Color(0xFF4F46E5)],
       emoji: '⭐',
       title: 'Unlock Pro Features',
-      subtitle: 'Go Pro or Premium to access the full HomeScope toolkit.',
+      subtitle: 'Go Pro or Premium to access the full Bairrolyze toolkit.',
       tabLabel: 'You tab → Upgrade',
       features: [
         (Icons.compare_arrows_rounded,  'Compare up to 10 properties (Pro)'),

@@ -341,7 +341,7 @@ class SettingsScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '5-screen intro to HomeScope',
+                                  '5-screen intro to Bairrolyze',
                                   style: TextStyle(
                                     color: p.textTertiary,
                                     fontSize: 11.5,
@@ -364,7 +364,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             Center(
               child: Text(
-                'HomeScope v2.0 · OSM · OpenAI',
+                'Bairrolyze v2.0 · OSM · OpenAI',
                 style: TextStyle(
                   color: p.textTertiary,
                   fontSize: 12,

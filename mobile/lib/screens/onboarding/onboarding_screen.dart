@@ -173,7 +173,7 @@ class _WelcomePage extends StatelessWidget {
           ),
           const SizedBox(height: 22),
           Text(
-            'HomeScope',
+            'Bairrolyze',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: p.textPrimary,
@@ -200,7 +200,7 @@ class _WelcomePage extends StatelessWidget {
               ),
           const SizedBox(height: 14),
           Text(
-            'HomeScope scores every address around\nwhat matters to you.',
+            'Bairrolyze scores every address around\nwhat matters to you.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: p.textSecondary,

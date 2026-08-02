@@ -53,7 +53,7 @@ const kDocArticles = <DocArticle>[
     category: 'Getting Started',
     sections: [
       DocSection(
-        body: 'HomeScope analyses any address in Portugal and scores it across 7 key dimensions of liveability — so you can make confident property decisions backed by data.',
+        body: 'Bairrolyze analyses any address in Portugal and scores it across 7 key dimensions of liveability — so you can make confident property decisions backed by data.',
       ),
       DocSection(heading: 'Step 1 — Open the Search tab'),
       DocSection(
@@ -68,7 +68,7 @@ const kDocArticles = <DocArticle>[
       ),
       DocSection(heading: 'Step 3 — Tap Get Insights'),
       DocSection(
-        body: 'Tap the blue Get Insights button. HomeScope analyses the location across 7 dimensions and opens your Neighbourhood Report in seconds.',
+        body: 'Tap the blue Get Insights button. Bairrolyze analyses the location across 7 dimensions and opens your Neighbourhood Report in seconds.',
       ),
       DocSection(heading: 'Step 4 — Read your report'),
       DocSection(
@@ -258,13 +258,13 @@ const kDocArticles = <DocArticle>[
   DocArticle(
     id: 'settings-profile',
     title: 'Settings & Profile',
-    subtitle: 'Customise HomeScope to match your priorities',
+    subtitle: 'Customise Bairrolyze to match your priorities',
     icon: Icons.tune_rounded,
     color: _red,
     category: 'Settings',
     sections: [
       DocSection(
-        body: 'The You tab lets you personalise HomeScope so the analysis reflects what matters most to you.',
+        body: 'The You tab lets you personalise Bairrolyze so the analysis reflects what matters most to you.',
       ),
       DocSection(heading: 'Profile'),
       DocSection(
@@ -286,7 +286,7 @@ const kDocArticles = <DocArticle>[
       ),
       DocSection(heading: 'Search Radius'),
       DocSection(
-        body: 'Set how wide an area HomeScope scans when analysing amenities. Drag the slider between 500m and 5km. A larger radius suits rural areas; a smaller one suits dense cities.',
+        body: 'Set how wide an area Bairrolyze scans when analysing amenities. Drag the slider between 500m and 5km. A larger radius suits rural areas; a smaller one suits dense cities.',
       ),
       DocSection(heading: 'Appearance'),
       DocSection(
@@ -302,13 +302,13 @@ const kDocArticles = <DocArticle>[
   DocArticle(
     id: 'go-pro',
     title: 'Go Pro',
-    subtitle: 'Unlock the full HomeScope toolkit',
+    subtitle: 'Unlock the full Bairrolyze toolkit',
     icon: Icons.workspace_premium_rounded,
     color: _purple,
     category: 'Settings',
     sections: [
       DocSection(
-        body: 'HomeScope has three tiers. Here\'s what each unlocks:',
+        body: 'Bairrolyze has three tiers. Here\'s what each unlocks:',
       ),
       DocSection(heading: 'Free'),
       DocSection(

@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String appName = 'HomeScope';
+  static const String appName = 'Bairrolyze';
   static const String appTagline = 'Know your neighborhood before you move.';
 
  // API - override with env vars in production

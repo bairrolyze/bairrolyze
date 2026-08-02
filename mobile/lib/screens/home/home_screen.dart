@@ -538,7 +538,7 @@ class _Hero extends StatelessWidget {
 
           // App name
           Text(
-            'HomeScope',
+            'Bairrolyze',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: p.textPrimary,
