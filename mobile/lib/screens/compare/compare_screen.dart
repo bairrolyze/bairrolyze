@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../config/app_theme.dart';
 import '../../providers/compare_provider.dart';
 import '../../providers/pro_provider.dart';
 import '../paywall/paywall_screen.dart';
-
-const Color _kBg = Color(0xFF060B14);
-const Color _kSurface = Color(0xFF0D1625);
-const Color _kSurface2 = Color(0xFF131F33);
-const Color _kAccent = Color(0xFF3B82F6);
-const Color _kBorder = Color(0xFF1A2845);
 
 const _catColors = <String, Color>{
   'transportation': Color(0xFF29B6F6),
@@ -21,7 +16,7 @@ const _catColors = <String, Color>{
 };
 
 Color _colorForCategory(String id) =>
-    _catColors[id] ?? _kAccent;
+    _catColors[id] ?? AppColors.accent;
 
 class CompareScreen extends ConsumerWidget {
   const CompareScreen({super.key});
@@ -40,13 +35,14 @@ class CompareScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final compare = ref.watch(compareProvider);
     final pro = ref.watch(proProvider);
+    final p = AppPalette.of(context);
 
     final bool showPaywall = !pro.isPro && compare.items.length > 2;
     final List<SavedProperty> visibleItems =
         pro.isPro ? compare.items : compare.items.take(2).toList();
 
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: p.bg,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -89,20 +85,21 @@ class _Header extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final p = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         children: [
           IconButton(
             onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close, color: Colors.white, size: 22),
+            icon: Icon(Icons.close, color: p.textPrimary, size: 22),
           ),
-          const Expanded(
+          Expanded(
             child: Text(
               'Compare Properties',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white,
+                color: p.textPrimary,
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
               ),
@@ -114,7 +111,7 @@ class _Header extends ConsumerWidget {
               child: Text(
                 'Clear all',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: p.textSecondary,
                   fontSize: 13,
                 ),
               ),
@@ -132,21 +129,22 @@ class _Header extends ConsumerWidget {
 class _PaywallBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _kSurface2,
+        color: p.surface2,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: p.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             'Unlock Pro to compare more than 2 properties',
             style: TextStyle(
-              color: Colors.white,
+              color: p.textPrimary,
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
@@ -198,6 +196,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -207,13 +206,13 @@ class _EmptyState extends StatelessWidget {
             Icon(
               icon,
               size: 48,
-              color: Colors.white.withValues(alpha: 0.25),
+              color: p.textTertiary,
             ),
             const SizedBox(height: 16),
             Text(
               title,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: p.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -223,7 +222,7 @@ class _EmptyState extends StatelessWidget {
               subtitle,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: p.textTertiary,
                 fontSize: 13,
                 height: 1.5,
               ),
@@ -243,6 +242,7 @@ class _CompareTable extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final p = AppPalette.of(context);
     // Collect categories from the first property, sorted by score desc.
     final firstCategories = items.first.score.categories;
     final sortedCatKeys = firstCategories.keys.toList()
@@ -284,7 +284,7 @@ class _CompareTable extends ConsumerWidget {
               Divider(
                 height: 1,
                 thickness: 1,
-                color: Colors.white.withValues(alpha: 0.05),
+                color: p.border,
               ),
 
               // ── Category rows ────────────────────────────────────────────
@@ -300,7 +300,7 @@ class _CompareTable extends ConsumerWidget {
               Divider(
                 height: 1,
                 thickness: 1,
-                color: Colors.white.withValues(alpha: 0.05),
+                color: p.border,
               ),
 
               // ── Best-overall winner row ──────────────────────────────────
@@ -340,6 +340,7 @@ class _PropertyHeaderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
@@ -383,7 +384,7 @@ class _PropertyHeaderRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
+                        color: p.textSecondary,
                         fontSize: 12,
                         height: 1.4,
                       ),
@@ -395,7 +396,7 @@ class _PropertyHeaderRow extends StatelessWidget {
                       child: Icon(
                         Icons.close,
                         size: 16,
-                        color: Colors.white.withValues(alpha: 0.35),
+                        color: p.textTertiary,
                       ),
                     ),
                   ],
@@ -424,9 +425,10 @@ class _CategoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     // Get label from first property that has this category.
     final label = items
-            .map((p) => p.score.categories[catKey]?.label)
+            .map((prop) => prop.score.categories[catKey]?.label)
             .firstWhere((l) => l != null, orElse: () => catKey) ??
         catKey;
 
@@ -446,8 +448,8 @@ class _CategoryRow extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 18),
                   child: Text(
                     label,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: p.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
@@ -467,8 +469,8 @@ class _CategoryRow extends StatelessWidget {
                         Text(
                           scoreVal.round().toString(),
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: p.textPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
@@ -483,7 +485,7 @@ class _CategoryRow extends StatelessWidget {
                                 Container(
                                   height: 4,
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.06),
+                                    color: p.surface2,
                                     borderRadius: BorderRadius.circular(2),
                                   ),
                                 ),
@@ -513,7 +515,7 @@ class _CategoryRow extends StatelessWidget {
         Divider(
           height: 1,
           thickness: 1,
-          color: Colors.white.withValues(alpha: 0.05),
+          color: p.border,
         ),
       ],
     );
@@ -535,8 +537,9 @@ class _WinnerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Container(
-      color: _kSurface,
+      color: p.surface,
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -548,7 +551,7 @@ class _WinnerRow extends StatelessWidget {
               child: Text(
                 'Best overall',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: p.textSecondary,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),

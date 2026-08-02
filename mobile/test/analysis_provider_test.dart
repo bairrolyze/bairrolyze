@@ -73,15 +73,24 @@ Map<String, dynamic> _finalPayload({String id = 'job-1'}) => {
     };
 
 List<SseEvent> _happyPathEvents() => [
-      const SseEvent('stage', {'stage': 'geocode', 'status': 'running'}),
-      const SseEvent('stage', {'stage': 'geocode', 'status': 'done'}),
-      const SseEvent('stage', {'stage': 'amenities', 'status': 'running'}),
-      const SseEvent('stage', {'stage': 'amenities', 'status': 'done'}),
-      const SseEvent('stage', {'stage': 'score', 'status': 'running'}),
-      const SseEvent('stage', {'stage': 'score', 'status': 'done'}),
-      const SseEvent('stage', {'stage': 'ai_summary', 'status': 'running'}),
-      const SseEvent('stage', {'stage': 'ai_summary', 'status': 'done'}),
-      SseEvent('complete', {'status': 'done', 'partial_failure': false, 'final': _finalPayload()}),
+      const SseEvent('stage', {'stage': 'address_found', 'status': 'running', 'progress': 0}),
+      const SseEvent('stage', {'stage': 'address_found', 'status': 'done', 'progress': 10}),
+      const SseEvent('stage', {'stage': 'map_ready', 'status': 'running', 'progress': 10}),
+      const SseEvent('stage', {'stage': 'map_ready', 'status': 'done', 'progress': 25}),
+      const SseEvent('stage', {'stage': 'amenities_ready', 'status': 'running', 'progress': 25}),
+      const SseEvent('stage', {'stage': 'amenities_ready', 'status': 'done', 'progress': 50}),
+      const SseEvent('stage', {'stage': 'crime_ready', 'status': 'running', 'progress': 50}),
+      const SseEvent('stage', {'stage': 'crime_ready', 'status': 'done', 'progress': 62}),
+      const SseEvent('stage', {'stage': 'score_ready', 'status': 'running', 'progress': 62}),
+      const SseEvent('stage', {'stage': 'score_ready', 'status': 'done', 'progress': 78}),
+      const SseEvent('stage', {'stage': 'summary_ready', 'status': 'running', 'progress': 78}),
+      const SseEvent('stage', {'stage': 'summary_ready', 'status': 'done', 'progress': 90}),
+      SseEvent('complete', {
+        'status': 'done',
+        'progress': 100,
+        'partial_failure': false,
+        'final': _finalPayload(),
+      }),
     ];
 
 void main() {
@@ -110,12 +119,15 @@ void main() {
       expect(finalState.result, isNotNull);
       expect(finalState.result!.score.overall, 75.0);
       expect(finalState.address?.displayAddress, 'Rua Augusta, Lisboa');
+      expect(finalState.progress, 100);
 
       // Real backend stage events drove the enum through every in-progress
       // state, in order, not a cosmetic client-side guess.
       expect(seenStatuses, containsAllInOrder([
-        AnalysisStatus.geocoding,
+        AnalysisStatus.addressFound,
+        AnalysisStatus.mapReady,
         AnalysisStatus.fetchingAmenities,
+        AnalysisStatus.checkingCrime,
         AnalysisStatus.scoring,
         AnalysisStatus.generatingSummary,
         AnalysisStatus.done,
@@ -144,11 +156,13 @@ void main() {
 
     test('a mid-pipeline stage failure resolves to a friendly error, not a hang', () async {
       final events = [
-        const SseEvent('stage', {'stage': 'geocode', 'status': 'running'}),
-        const SseEvent('stage', {'stage': 'geocode', 'status': 'done'}),
-        const SseEvent('stage', {'stage': 'amenities', 'status': 'running'}),
+        const SseEvent('stage', {'stage': 'address_found', 'status': 'running', 'progress': 0}),
+        const SseEvent('stage', {'stage': 'address_found', 'status': 'done', 'progress': 10}),
+        const SseEvent('stage', {'stage': 'map_ready', 'status': 'running', 'progress': 10}),
+        const SseEvent('stage', {'stage': 'map_ready', 'status': 'done', 'progress': 25}),
+        const SseEvent('stage', {'stage': 'amenities_ready', 'status': 'running', 'progress': 25}),
         const SseEvent('stage', {
-          'stage': 'amenities',
+          'stage': 'amenities_ready',
           'status': 'error',
           'error': 'amenity_fetch_failed: overpass down',
         }),
@@ -171,9 +185,9 @@ void main() {
 
     test('address-not-found stage error maps through the existing friendly-error copy', () async {
       final events = [
-        const SseEvent('stage', {'stage': 'geocode', 'status': 'running'}),
+        const SseEvent('stage', {'stage': 'address_found', 'status': 'running', 'progress': 0}),
         const SseEvent('stage', {
-          'stage': 'geocode',
+          'stage': 'address_found',
           'status': 'error',
           'error': 'not_found: Address not found: nowhere',
         }),

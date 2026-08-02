@@ -27,6 +27,63 @@ class AddressModel {
     this.id,
   });
 
+  List<String> get _segments => displayAddress
+      .split(',')
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
+
+  static String? _extractPostcode(String s) {
+    final pt = RegExp(r'\b\d{4}-\d{3}\b').firstMatch(s); // PT (e.g. 2800-123)
+    if (pt != null) return pt.group(0);
+    final uk = RegExp(r'\b[A-Z]{1,2}\d[A-Z\d]?\b').firstMatch(s); // UK (SW3, E14)
+    return uk?.group(0);
+  }
+
+  /// Short, clean primary label — the specific place only, never the full
+  /// display string. A street address keeps its number + street
+  /// ("26, Avenida da República"); an area keeps "Area, City"
+  /// ("Chelsea, London").
+  String get shortPrimary {
+    final segs = _segments;
+    if (segs.isEmpty) {
+      return city?.trim().isNotEmpty == true ? city!.trim() : 'Location';
+    }
+    final first = segs.first;
+    // House-number first segment → pair it with the street (2nd segment).
+    if (RegExp(r'^\d+[A-Za-z]?$').hasMatch(first) && segs.length >= 2) {
+      return '$first, ${segs[1]}';
+    }
+    final c = city?.trim();
+    if (c != null && c.isNotEmpty && c.toLowerCase() != first.toLowerCase()) {
+      return '$first, $c';
+    }
+    return first;
+  }
+
+  /// Short secondary label — the human-readable context not already in the
+  /// primary: "City, Country" ("Amadora, Portugal"), else "Postcode, Country"
+  /// ("SW3, United Kingdom"), else "Region, Country".
+  String get shortSecondary {
+    final ctry = country.trim();
+    final primaryLower = shortPrimary.toLowerCase();
+
+    String withCountry(String s) => ctry.isEmpty ? s : '$s, $ctry';
+    bool notInPrimary(String s) => !primaryLower.contains(s.toLowerCase());
+
+    final c = city?.trim();
+    if (c != null && c.isNotEmpty && notInPrimary(c)) return withCountry(c);
+
+    final pc = _extractPostcode(displayAddress) ??
+        (postalCode?.trim().isNotEmpty == true ? postalCode!.trim() : null);
+    if (pc != null && pc.isNotEmpty && notInPrimary(pc)) return withCountry(pc);
+
+    final reg = district?.trim();
+    if (reg != null && reg.isNotEmpty && notInPrimary(reg)) return withCountry(reg);
+
+    return ctry.isEmpty ? displayAddress : ctry;
+  }
+
   AddressModel copyWith({
     String? displayAddress,
     String? street,

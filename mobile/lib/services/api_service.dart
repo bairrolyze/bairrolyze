@@ -11,7 +11,8 @@ final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
 ///
 /// Mirrors the events emitted by `backend/services/sse.py`:
 ///   - "job_status": job-level status changed (pending/running/done/error)
-///   - "stage": a single stage's status changed (geocode/amenities/score/ai_summary)
+///   - "stage": a single stage's status changed (address_found/map_ready/
+///     amenities_ready/score_ready/summary_ready)
 ///   - "complete": terminal event, includes the final result payload if the
 ///     job succeeded
 ///   - "error": job not found/expired

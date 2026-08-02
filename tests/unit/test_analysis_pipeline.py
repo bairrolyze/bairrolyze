@@ -1,13 +1,15 @@
 """Unit tests for the background stage pipeline (services/analysis_pipeline.py).
 
-geocode -> amenities -> score -> ai_summary is called as a background task.
-These tests verify: (1) the happy path persists every stage and resolves
-the job to "done" with a final payload, (2) a hard failure (geocode not
-resolving) records that stage's error, marks downstream stages "blocked",
-and still resolves the job to "done" with partial_failure=True instead of
-leaving it stuck "running", and (3) a soft failure (amenities/Overpass
-erroring) degrades to an empty amenity list and lets score/ai_summary run
-anyway, matching the original blocking /analyze endpoint's semantics.
+address_found -> map_ready -> amenities_ready -> score_ready -> summary_ready
+is called as a background task (address_found/map_ready both come from one
+geocode() call, split for UI granularity). These tests verify: (1) the happy
+path persists every stage and resolves the job to "done" with a final
+payload, (2) a hard failure (geocode not resolving) records that stage's
+error, marks downstream stages "blocked", and still resolves the job to
+"done" with partial_failure=True instead of leaving it stuck "running", and
+(3) a soft failure (amenities/Overpass erroring) degrades to an empty
+amenity list and lets score/summary run anyway, matching the original
+blocking /analyze endpoint's semantics.
 
 `nominatim_service.geocode`, `overpass_service.fetch_amenities`, and
 `calculate_location_score` are monkeypatched here as black boxes (per the
@@ -85,13 +87,22 @@ class TestPipelineHappyPath:
         job = await job_store.get_job("job-1")
         assert job["status"] == "done"
         assert job["partial_failure"] is False
-        assert job["stages"]["geocode"]["status"] == "done"
-        assert job["stages"]["amenities"]["status"] == "done"
-        assert job["stages"]["score"]["status"] == "done"
-        assert job["stages"]["ai_summary"]["status"] == "done"
+        assert job["progress"] == 100
+        assert job["completed_at"] is not None
+        assert job["stages"]["address_found"]["status"] == "done"
+        assert job["stages"]["map_ready"]["status"] == "done"
+        assert job["stages"]["map_ready"]["result"]["bbox"] is not None
+        assert job["stages"]["amenities_ready"]["status"] == "done"
+        assert job["stages"]["crime_ready"]["status"] == "done"
+        assert job["stages"]["score_ready"]["status"] == "done"
+        assert job["stages"]["summary_ready"]["status"] == "done"
         assert job["final"] is not None
         assert job["final"]["id"] == "job-1"
         assert job["final"]["score"]["overall"] == 75.0
+        # PT address → no open crime API, so the crime stage resolves to the
+        # OSM fallback (not a real fetch).
+        assert job["final"]["crime"]["source"] == "osm"
+        assert job["final"]["crime"]["available"] is False
 
 
 @pytest.mark.asyncio
@@ -108,12 +119,14 @@ class TestPipelinePartialFailure:
         job = await job_store.get_job("job-2")
         assert job["status"] == "done"  # never left stuck "running"
         assert job["partial_failure"] is True
-        assert job["stages"]["geocode"]["status"] == "error"
-        assert "not_found" in job["stages"]["geocode"]["error"]
+        assert job["stages"]["address_found"]["status"] == "error"
+        assert "not_found" in job["stages"]["address_found"]["error"]
         assert job["final"] is None
-        # amenities/score are blocked, not silently left "pending" forever.
-        assert job["stages"]["score"]["status"] == "blocked"
-        assert job["stages"]["ai_summary"]["status"] == "blocked"
+        # everything downstream is blocked, not silently left "pending" forever.
+        assert job["stages"]["map_ready"]["status"] == "blocked"
+        assert job["stages"]["crime_ready"]["status"] == "blocked"
+        assert job["stages"]["score_ready"]["status"] == "blocked"
+        assert job["stages"]["summary_ready"]["status"] == "blocked"
 
     async def test_amenities_failure_degrades_to_empty_list_and_completes(self, job_store, request_obj, monkeypatch):
         """Amenities is a soft dependency (matches the pre-job-pipeline
@@ -137,14 +150,15 @@ class TestPipelinePartialFailure:
         assert job["status"] == "done"
         assert job["partial_failure"] is False
         # geocode succeeded and its result is preserved for progressive UI.
-        assert job["stages"]["geocode"]["status"] == "done"
-        assert job["stages"]["geocode"]["result"]["display_name"] == "Lisboa, Portugal"
+        assert job["stages"]["address_found"]["status"] == "done"
+        assert job["stages"]["address_found"]["result"]["display_name"] == "Lisboa, Portugal"
+        assert job["stages"]["map_ready"]["status"] == "done"
         # amenities degrades to an empty list rather than erroring out.
-        assert job["stages"]["amenities"]["status"] == "done"
-        assert job["stages"]["amenities"]["result"] == []
-        # score and ai_summary still run against the degraded (empty) amenities.
-        assert job["stages"]["score"]["status"] == "done"
-        assert job["stages"]["ai_summary"]["status"] == "done"
+        assert job["stages"]["amenities_ready"]["status"] == "done"
+        assert job["stages"]["amenities_ready"]["result"] == []
+        # score and summary still run against the degraded (empty) amenities.
+        assert job["stages"]["score_ready"]["status"] == "done"
+        assert job["stages"]["summary_ready"]["status"] == "done"
         assert job["final"] is not None
         assert job["final"]["amenities"] == []
 
@@ -161,6 +175,6 @@ class TestPipelinePartialFailure:
         job = await job_store.get_job("job-4")
         assert job["status"] == "done"
         assert job["partial_failure"] is False
-        assert job["stages"]["ai_summary"]["status"] == "done"
-        assert isinstance(job["stages"]["ai_summary"]["result"], str)
-        assert len(job["stages"]["ai_summary"]["result"]) > 0
+        assert job["stages"]["summary_ready"]["status"] == "done"
+        assert isinstance(job["stages"]["summary_ready"]["result"], str)
+        assert len(job["stages"]["summary_ready"]["result"]) > 0

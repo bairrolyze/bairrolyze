@@ -10,14 +10,6 @@ import '../../providers/theme_provider.dart';
 import '../docs/docs_screen.dart';
 import '../tutorial/tutorial_screen.dart';
 
-// ── Design tokens ──────────────────────────────────────────────────────────────
-const _kBg       = Color(0xFF060B14);
-const _kSurface  = Color(0xFF0D1625);
-const _kSurface2 = Color(0xFF131F33);
-const _kBorder   = Color(0xFF1A2845);
-const _kAccent   = Color(0xFF3B82F6);
-const _kAccent2  = Color(0xFF6C63FF);
-
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -28,21 +20,20 @@ class SettingsScreen extends ConsumerWidget {
     final countriesAsync  = ref.watch(countriesProvider);
     final selectedCountry = ref.watch(selectedCountryProvider);
     final top             = MediaQuery.of(context).padding.top;
+    final p                = AppPalette.of(context);
 
-    return Theme(
-      data: AppTheme.dark(),
-      child: Container(
-        color: _kBg,
-        child: ListView(
+    return Container(
+      color: p.bg,
+      child: ListView(
           padding: EdgeInsets.fromLTRB(0, top + 20, 0, 60),
           children: [
             // ── Title ───────────────────────────────────────────────────
-            const Padding(
-              padding: EdgeInsets.fromLTRB(24, 4, 24, 24),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
               child: Text(
                 'You',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: p.textPrimary,
                   fontSize: 30,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.8,
@@ -56,8 +47,8 @@ class SettingsScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _ProfileGrid(
                 selected: prefs.profile,
-                onSelect: (p) =>
-                    ref.read(preferencesProvider.notifier).setProfile(p),
+                onSelect: (profile) =>
+                    ref.read(preferencesProvider.notifier).setProfile(profile),
               ),
             ),
 
@@ -71,11 +62,11 @@ class SettingsScreen extends ConsumerWidget {
                     child: DropdownButton<CountryConfig>(
                       value: selectedCountry,
                       isExpanded: true,
-                      dropdownColor: _kSurface2,
+                      dropdownColor: p.surface2,
                       icon: Icon(Icons.expand_more_rounded,
-                          color: Colors.white.withOpacity(0.4), size: 18),
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 14),
+                          color: p.textTertiary, size: 18),
+                      style: TextStyle(
+                          color: p.textPrimary, fontSize: 14),
                       items: countries
                           .map((c) => DropdownMenuItem(
                                 value: c,
@@ -86,7 +77,8 @@ class SettingsScreen extends ConsumerWidget {
                                             const TextStyle(fontSize: 16)),
                                     const SizedBox(width: 10),
                                     Text(c.name,
-                                        style: const TextStyle(
+                                        style: TextStyle(
+                                            color: p.textPrimary,
                                             fontSize: 14,
                                             fontWeight: FontWeight.w500)),
                                   ],
@@ -104,7 +96,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              loading: () => const LinearProgressIndicator(color: _kAccent),
+              loading: () => const LinearProgressIndicator(color: AppColors.accent),
               error: (_, __) => const SizedBox(),
             ),
 
@@ -121,8 +113,8 @@ class SettingsScreen extends ConsumerWidget {
                       children: [
                         Text(
                           '${(prefs.searchRadius / 1000).toStringAsFixed(1)} km radius',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: p.textPrimary,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -130,7 +122,7 @@ class SettingsScreen extends ConsumerWidget {
                         Text(
                           '${(prefs.searchRadius).round()}m',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.4),
+                            color: p.textTertiary,
                             fontSize: 12,
                           ),
                         ),
@@ -138,10 +130,10 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     SliderTheme(
                       data: SliderThemeData(
-                        activeTrackColor: _kAccent,
-                        thumbColor: _kAccent,
-                        overlayColor: _kAccent.withOpacity(0.12),
-                        inactiveTrackColor: _kBorder,
+                        activeTrackColor: AppColors.accent,
+                        thumbColor: AppColors.accent,
+                        overlayColor: AppColors.accent.withValues(alpha: 0.12),
+                        inactiveTrackColor: p.border,
                         trackHeight: 3,
                         thumbShape: const RoundSliderThumbShape(
                             enabledThumbRadius: 7),
@@ -161,11 +153,11 @@ class SettingsScreen extends ConsumerWidget {
                       children: [
                         Text('500m',
                             style: TextStyle(
-                                color: Colors.white.withOpacity(0.35),
+                                color: p.textTertiary,
                                 fontSize: 11)),
                         Text('5km',
                             style: TextStyle(
-                                color: Colors.white.withOpacity(0.35),
+                                color: p.textTertiary,
                                 fontSize: 11)),
                       ],
                     ),
@@ -223,30 +215,30 @@ class SettingsScreen extends ConsumerWidget {
                       width: 34,
                       height: 34,
                       decoration: BoxDecoration(
-                        color: _kAccent2.withOpacity(0.12),
+                        color: AppColors.accent2.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.auto_awesome_rounded,
-                          color: _kAccent2, size: 17),
+                          color: AppColors.accent2, size: 17),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'AI Neighbourhood Summary',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: p.textPrimary,
                               fontSize: 13.5,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
                             'Powered by OpenAI',
                             style: TextStyle(
-                              color: Colors.white38,
+                              color: p.textTertiary,
                               fontSize: 11.5,
                             ),
                           ),
@@ -255,7 +247,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     Switch(
                       value: prefs.showAiSummary,
-                      activeColor: _kAccent2,
+                      activeThumbColor: AppColors.accent2,
                       onChanged: (v) => ref
                           .read(preferencesProvider.notifier)
                           .setShowAiSummary(v),
@@ -282,30 +274,30 @@ class SettingsScreen extends ConsumerWidget {
                             width: 34,
                             height: 34,
                             decoration: BoxDecoration(
-                              color: _kAccent.withOpacity(0.12),
+                              color: AppColors.accent.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(Icons.library_books_rounded,
-                                color: _kAccent, size: 17),
+                                color: AppColors.accent, size: 17),
                           ),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'Guides & Help',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: p.textPrimary,
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                SizedBox(height: 2),
+                                const SizedBox(height: 2),
                                 Text(
                                   '8 in-depth guides for every feature',
                                   style: TextStyle(
-                                    color: Colors.white38,
+                                    color: p.textTertiary,
                                     fontSize: 11.5,
                                   ),
                                 ),
@@ -313,11 +305,11 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                           ),
                           Icon(Icons.chevron_right_rounded,
-                              color: Colors.white.withOpacity(0.25), size: 20),
+                              color: p.textTertiary, size: 20),
                         ],
                       ),
                     ),
-                    Divider(height: 24, color: Colors.white.withOpacity(0.06)),
+                    Divider(height: 24, color: p.border),
                     // Quick tour
                     GestureDetector(
                       behavior: HitTestBehavior.opaque,
@@ -328,30 +320,30 @@ class SettingsScreen extends ConsumerWidget {
                             width: 34,
                             height: 34,
                             decoration: BoxDecoration(
-                              color: _kAccent2.withOpacity(0.12),
+                              color: AppColors.accent2.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(Icons.play_circle_outline_rounded,
-                                color: _kAccent2, size: 17),
+                                color: AppColors.accent2, size: 17),
                           ),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'Quick Tour',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: p.textPrimary,
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                SizedBox(height: 2),
+                                const SizedBox(height: 2),
                                 Text(
                                   '5-screen intro to HomeScope',
                                   style: TextStyle(
-                                    color: Colors.white38,
+                                    color: p.textTertiary,
                                     fontSize: 11.5,
                                   ),
                                 ),
@@ -359,7 +351,7 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                           ),
                           Icon(Icons.chevron_right_rounded,
-                              color: Colors.white.withOpacity(0.25), size: 20),
+                              color: p.textTertiary, size: 20),
                         ],
                       ),
                     ),
@@ -374,14 +366,13 @@ class SettingsScreen extends ConsumerWidget {
               child: Text(
                 'HomeScope v2.0 · OSM · OpenAI',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.2),
+                  color: p.textTertiary,
                   fontSize: 12,
                 ),
               ),
             ),
           ],
         ),
-      ),
     );
   }
 
@@ -415,6 +406,7 @@ class _ProfileGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pal = AppPalette.of(context);
     return GridView.count(
       crossAxisCount: 3,
       crossAxisSpacing: 8,
@@ -422,31 +414,31 @@ class _ProfileGrid extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       childAspectRatio: 1.55,
-      children: _profiles.map((p) {
-        final active = selected == p.$1;
+      children: _profiles.map((profile) {
+        final active = selected == profile.$1;
         return GestureDetector(
-          onTap: () => onSelect(p.$1),
+          onTap: () => onSelect(profile.$1),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             decoration: BoxDecoration(
               color: active
-                  ? _kAccent.withOpacity(0.14)
-                  : _kSurface2,
+                  ? AppColors.accent.withValues(alpha: 0.14)
+                  : pal.surface2,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: active ? _kAccent : Colors.white.withOpacity(0.07),
+                color: active ? AppColors.accent : pal.border,
                 width: active ? 1.5 : 1,
               ),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(p.$2, style: const TextStyle(fontSize: 20)),
+                Text(profile.$2, style: const TextStyle(fontSize: 20)),
                 const SizedBox(height: 4),
                 Text(
-                  p.$3,
+                  profile.$3,
                   style: TextStyle(
-                    color: active ? _kAccent : Colors.white.withOpacity(0.6),
+                    color: active ? AppColors.accent : pal.textSecondary,
                     fontSize: 11.5,
                     fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                   ),
@@ -476,6 +468,7 @@ class _ThemeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pal = AppPalette.of(context);
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -483,10 +476,10 @@ class _ThemeChip extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
-            color: active ? _kAccent.withOpacity(0.14) : Colors.transparent,
+            color: active ? AppColors.accent.withValues(alpha: 0.14) : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: active ? _kAccent : Colors.white.withOpacity(0.08),
+              color: active ? AppColors.accent : pal.border,
               width: 1.5,
             ),
           ),
@@ -496,13 +489,13 @@ class _ThemeChip extends StatelessWidget {
               Icon(icon,
                   size: 16,
                   color:
-                      active ? _kAccent : Colors.white.withOpacity(0.4)),
+                      active ? AppColors.accent : pal.textTertiary),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
                   color:
-                      active ? _kAccent : Colors.white.withOpacity(0.4),
+                      active ? AppColors.accent : pal.textTertiary,
                   fontSize: 11,
                   fontWeight:
                       active ? FontWeight.w700 : FontWeight.w500,
@@ -524,12 +517,13 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pal = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 10),
       child: Text(
         title,
         style: TextStyle(
-          color: Colors.white.withOpacity(0.32),
+          color: pal.textTertiary,
           fontSize: 10.5,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.8,
@@ -547,12 +541,13 @@ class _DarkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pal = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: pal.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: pal.border),
       ),
       child: child,
     );

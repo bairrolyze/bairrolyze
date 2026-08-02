@@ -54,7 +54,12 @@ async def stream_job_events(
             last_job_status = job["status"]
             yield _format_event(
                 "job_status",
-                {"analysis_id": analysis_id, "status": job["status"], "partial_failure": job.get("partial_failure", False)},
+                {
+                    "analysis_id": analysis_id,
+                    "status": job["status"],
+                    "progress": job.get("progress", 0),
+                    "partial_failure": job.get("partial_failure", False),
+                },
             )
 
         for stage_name in STAGE_NAMES:
@@ -66,8 +71,14 @@ async def stream_job_events(
                     "stage",
                     {
                         "analysis_id": analysis_id,
+                        # `type` mirrors `stage` (e.g. "address_found",
+                        # "amenities_ready") — both carry the same value;
+                        # `type` matches the event-name-as-payload-field
+                        # shape client integrations commonly expect.
+                        "type": stage_name,
                         "stage": stage_name,
                         "status": stage_status,
+                        "progress": job.get("progress", 0),
                         "result": stage.get("result"),
                         "error": stage.get("error"),
                     },
@@ -78,7 +89,9 @@ async def stream_job_events(
                 "complete",
                 {
                     "analysis_id": analysis_id,
+                    "type": "completed",
                     "status": job["status"],
+                    "progress": job.get("progress", 0),
                     "partial_failure": job.get("partial_failure", False),
                     "final": job.get("final"),
                 },

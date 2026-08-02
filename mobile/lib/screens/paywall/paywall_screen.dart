@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
+import '../../config/app_theme.dart';
 import '../../providers/pro_provider.dart';
 import '../../services/purchase_service.dart';
 
-const _kBg      = Color(0xFF060B14);
-const _kSurface = Color(0xFF0D1625);
-const _kSurface2 = Color(0xFF131F33);
-const _kAccent  = Color(0xFF3B82F6);
-const _kBorder  = Color(0xFF1A2845);
+// Premium/gradient branding colors — intentionally theme-independent.
 const _kPurple  = Color(0xFF7C3AED);
 const _kIndigo  = Color(0xFF4F46E5);
 
@@ -30,7 +27,6 @@ class PaywallScreen extends ConsumerStatefulWidget {
 
 class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   Offerings? _offerings;
-  bool _loadingOfferings = false;
   bool _purchasing = false;
   String? _error;
 
@@ -57,9 +53,8 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
 
   Future<void> _loadOfferings() async {
     if (PurchaseService.isMock) return;
-    setState(() => _loadingOfferings = true);
     final offerings = await PurchaseService.getOfferings();
-    if (mounted) setState(() { _offerings = offerings; _loadingOfferings = false; });
+    if (mounted) setState(() => _offerings = offerings);
   }
 
   Future<void> _purchase(ProTier tier) async {
@@ -130,8 +125,9 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: p.bg,
       body: SafeArea(
         child: Stack(
           children: [
@@ -159,7 +155,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                         _error!,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                          color: Color(0xFFEF4444),
+                          color: AppColors.error,
                           fontSize: 13,
                         ),
                       ),
@@ -167,7 +163,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                   _GradientButton(
                     label: 'Start Pro — $_proPrice/mo',
                     gradient: const LinearGradient(
-                      colors: [_kAccent, _kPurple],
+                      colors: [AppColors.accent, _kPurple],
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
                     ),
@@ -190,7 +186,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                     child: TextButton(
                       onPressed: _purchasing ? null : _restore,
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.white.withValues(alpha: 0.45),
+                        foregroundColor: p.textTertiary,
                       ),
                       child: const Text('Restore purchases',
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
@@ -202,7 +198,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                       'Cancel anytime. Billed monthly.',
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.28),
+                        color: p.textTertiary,
                       ),
                     ),
                   ),
@@ -216,7 +212,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                 color: Colors.black.withValues(alpha: 0.4),
                 child: const Center(
                   child: CircularProgressIndicator(
-                    color: _kAccent,
+                    color: AppColors.accent,
                     strokeWidth: 2,
                   ),
                 ),
@@ -232,33 +228,38 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
 
 class _TopBar extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => Align(
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return Align(
         alignment: Alignment.centerRight,
         child: GestureDetector(
           onTap: () => Navigator.of(context).pop(),
           child: Container(
             width: 36, height: 36,
             decoration: BoxDecoration(
-              color: _kSurface2,
+              color: p.surface2,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _kBorder),
+              border: Border.all(color: p.border),
             ),
             child: Icon(Icons.close_rounded,
-                color: Colors.white.withValues(alpha: 0.55), size: 18),
+                color: p.textSecondary, size: 18),
           ),
         ),
       );
+  }
 }
 
 class _Header extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [_kAccent, _kPurple]),
+              gradient: const LinearGradient(colors: [AppColors.accent, _kPurple]),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text('Go Pro',
@@ -269,21 +270,22 @@ class _Header extends StatelessWidget {
                     letterSpacing: 0.3)),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Unlock the full\nHomeScope',
             style: TextStyle(
               fontSize: 30, fontWeight: FontWeight.w800,
-              color: Colors.white, letterSpacing: -1.0, height: 1.18,
+              color: p.textPrimary, letterSpacing: -1.0, height: 1.18,
             ),
           ),
           const SizedBox(height: 10),
           Text(
             'Make confident decisions with every insight at your fingertips.',
             style: TextStyle(
-                fontSize: 14, color: Colors.white.withValues(alpha: 0.52), height: 1.55),
+                fontSize: 14, color: p.textSecondary, height: 1.55),
           ),
         ],
       );
+  }
 }
 
 class _FreeCard extends StatelessWidget {
@@ -307,12 +309,14 @@ class _ProCard extends StatelessWidget {
   const _ProCard({required this.price});
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return Container(
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: p.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _kAccent.withValues(alpha: 0.65), width: 1.5),
-          boxShadow: [BoxShadow(color: _kAccent.withValues(alpha: 0.14), blurRadius: 24, offset: const Offset(0, 4))],
+          border: Border.all(color: AppColors.accent.withValues(alpha: 0.65), width: 1.5),
+          boxShadow: [BoxShadow(color: AppColors.accent.withValues(alpha: 0.14), blurRadius: 24, offset: const Offset(0, 4))],
         ),
         padding: const EdgeInsets.all(18),
         child: Column(
@@ -325,7 +329,7 @@ class _ProCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [_kAccent, _kIndigo]),
+                    gradient: const LinearGradient(colors: [AppColors.accent, _kIndigo]),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text('MOST POPULAR',
@@ -343,6 +347,7 @@ class _ProCard extends StatelessWidget {
           ],
         ),
       );
+  }
 }
 
 class _PremiumCard extends StatelessWidget {
@@ -350,9 +355,11 @@ class _PremiumCard extends StatelessWidget {
   const _PremiumCard({required this.price});
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return Container(
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: p.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: _kPurple.withValues(alpha: 0.55), width: 1.5),
           boxShadow: [BoxShadow(color: _kPurple.withValues(alpha: 0.12), blurRadius: 24, offset: const Offset(0, 4))],
@@ -372,6 +379,7 @@ class _PremiumCard extends StatelessWidget {
           ],
         ),
       );
+  }
 }
 
 class _TierCard extends StatelessWidget {
@@ -380,11 +388,13 @@ class _TierCard extends StatelessWidget {
   const _TierCard({required this.name, required this.price, required this.features});
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return Container(
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: p.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: p.border),
         ),
         padding: const EdgeInsets.all(18),
         child: Column(
@@ -396,6 +406,7 @@ class _TierCard extends StatelessWidget {
           ],
         ),
       );
+  }
 }
 
 class _TierHeader extends StatelessWidget {
@@ -403,25 +414,30 @@ class _TierHeader extends StatelessWidget {
   const _TierHeader({required this.name, required this.price});
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(name,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.3)),
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: p.textPrimary, letterSpacing: -0.3)),
           const SizedBox(height: 2),
           Text(price,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white.withValues(alpha: 0.48))),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: p.textSecondary)),
         ],
       );
+  }
 }
 
 class _FeatureRow extends StatelessWidget {
   final String label;
   final Color color;
-  const _FeatureRow({required this.label, this.color = _kAccent});
+  const _FeatureRow({required this.label, this.color = AppColors.accent});
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Row(
           children: [
@@ -429,11 +445,12 @@ class _FeatureRow extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(label,
-                  style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.80), height: 1.4)),
+                  style: TextStyle(fontSize: 13, color: p.textSecondary, height: 1.4)),
             ),
           ],
         ),
       );
+  }
 }
 
 class _GradientButton extends StatelessWidget {
@@ -450,17 +467,19 @@ class _GradientButton extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return GestureDetector(
         onTap: loading ? null : onTap,
         child: Container(
           height: 52,
           decoration: BoxDecoration(
             gradient: loading ? null : gradient,
-            color: loading ? _kSurface2 : null,
+            color: loading ? p.surface2 : null,
             borderRadius: BorderRadius.circular(14),
             boxShadow: loading
                 ? null
-                : [BoxShadow(color: _kAccent.withValues(alpha: 0.28), blurRadius: 18, offset: const Offset(0, 6))],
+                : [BoxShadow(color: AppColors.accent.withValues(alpha: 0.28), blurRadius: 18, offset: const Offset(0, 6))],
           ),
           alignment: Alignment.center,
           child: Text(
@@ -468,10 +487,11 @@ class _GradientButton extends StatelessWidget {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: loading ? Colors.white.withValues(alpha: 0.35) : Colors.white,
+              color: loading ? p.textTertiary : Colors.white,
               letterSpacing: -0.2,
             ),
           ),
         ),
       );
+  }
 }

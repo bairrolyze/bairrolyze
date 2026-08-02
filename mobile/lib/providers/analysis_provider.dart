@@ -7,7 +7,17 @@ import '../models/amenity_model.dart';
 import '../services/api_service.dart';
 import '../services/cache_service.dart';
 
-enum AnalysisStatus { idle, geocoding, fetchingAmenities, scoring, generatingSummary, done, error }
+enum AnalysisStatus {
+  idle,
+  addressFound,
+  mapReady,
+  fetchingAmenities,
+  checkingCrime,
+  scoring,
+  generatingSummary,
+  done,
+  error,
+}
 
 class AnalysisState {
   final AnalysisStatus status;
@@ -15,6 +25,7 @@ class AnalysisState {
   final AnalysisResult? result;
   final String? error;
   final String statusMessage;
+  final int progress; // 0-100, real backend value from job.progress
 
   const AnalysisState({
     this.status = AnalysisStatus.idle,
@@ -22,6 +33,7 @@ class AnalysisState {
     this.result,
     this.error,
     this.statusMessage = '',
+    this.progress = 0,
   });
 
   AnalysisState copyWith({
@@ -30,6 +42,7 @@ class AnalysisState {
     AnalysisResult? result,
     String? error,
     String? statusMessage,
+    int? progress,
   }) =>
       AnalysisState(
         status: status ?? this.status,
@@ -37,11 +50,14 @@ class AnalysisState {
         result: result ?? this.result,
         error: error ?? this.error,
         statusMessage: statusMessage ?? this.statusMessage,
+        progress: progress ?? this.progress,
       );
 
   bool get isLoading => [
-        AnalysisStatus.geocoding,
+        AnalysisStatus.addressFound,
+        AnalysisStatus.mapReady,
         AnalysisStatus.fetchingAmenities,
+        AnalysisStatus.checkingCrime,
         AnalysisStatus.scoring,
         AnalysisStatus.generatingSummary,
       ].contains(status);
@@ -64,9 +80,10 @@ class AnalysisNotifier extends StateNotifier<AnalysisState> {
     String profile = 'default',
   }) async {
     state = state.copyWith(
-      status: AnalysisStatus.geocoding,
+      status: AnalysisStatus.addressFound,
       statusMessage: 'Locating address...',
       error: null,
+      progress: 0,
     );
 
     try {
@@ -107,17 +124,25 @@ class AnalysisNotifier extends StateNotifier<AnalysisState> {
           case 'stage':
             final stage = event.data['stage'] as String?;
             final status = event.data['status'] as String?;
+            final progress = (event.data['progress'] as num?)?.toInt();
             if (status == 'running') {
               state = state.copyWith(
                 status: _stageToStatus(stage),
                 statusMessage: _stageToMessage(stage),
+                progress: progress,
               );
+            } else if (status == 'done' && progress != null) {
+              // Bump progress on completion too, so the bar advances even
+              // if the UI missed the "running" tick for a very fast stage.
+              state = state.copyWith(progress: progress);
             } else if (status == 'error') {
               firstStageError ??= event.data['error'] as String?;
             }
             break;
           case 'complete':
             finalPayload = event.data['final'] as Map<String, dynamic>?;
+            final progress = (event.data['progress'] as num?)?.toInt();
+            if (progress != null) state = state.copyWith(progress: progress);
             break;
           case 'error':
             firstStageError ??= event.data['message'] as String? ?? 'job not found or expired';
@@ -166,13 +191,17 @@ class AnalysisNotifier extends StateNotifier<AnalysisState> {
   /// longer cosmetic) [AnalysisStatus] value driven by SSE "stage" events.
   AnalysisStatus _stageToStatus(String? stage) {
     switch (stage) {
-      case 'geocode':
-        return AnalysisStatus.geocoding;
-      case 'amenities':
+      case 'address_found':
+        return AnalysisStatus.addressFound;
+      case 'map_ready':
+        return AnalysisStatus.mapReady;
+      case 'amenities_ready':
         return AnalysisStatus.fetchingAmenities;
-      case 'score':
+      case 'crime_ready':
+        return AnalysisStatus.checkingCrime;
+      case 'score_ready':
         return AnalysisStatus.scoring;
-      case 'ai_summary':
+      case 'summary_ready':
         return AnalysisStatus.generatingSummary;
       default:
         return state.status;
@@ -181,13 +210,17 @@ class AnalysisNotifier extends StateNotifier<AnalysisState> {
 
   String _stageToMessage(String? stage) {
     switch (stage) {
-      case 'geocode':
+      case 'address_found':
         return 'Locating address...';
-      case 'amenities':
+      case 'map_ready':
+        return 'Preparing the map...';
+      case 'amenities_ready':
         return 'Finding nearby amenities...';
-      case 'score':
+      case 'crime_ready':
+        return 'Checking crime statistics...';
+      case 'score_ready':
         return 'Calculating location score...';
-      case 'ai_summary':
+      case 'summary_ready':
         return 'Generating AI summary...';
       default:
         return state.statusMessage;

@@ -17,8 +17,9 @@ router = APIRouter()
 @router.post("/analyze", response_model=JobCreatedResponse, status_code=202)
 async def analyze_address(request: AnalyzeRequest, background_tasks: BackgroundTasks):
     """
-    Kicks off the 4-stage analyze pipeline (geocode -> amenities -> score ->
-    AI summary) as a background task and returns immediately with a job id.
+    Kicks off the 5-stage analyze pipeline (address_found -> map_ready ->
+    amenities_ready -> score_ready -> summary_ready) as a background task
+    and returns immediately with a job id.
 
     The pipeline stages have a strict sequential data dependency (amenities
     needs geocode's lat/lng, etc.), so this doesn't block the request on any

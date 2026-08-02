@@ -6,18 +6,12 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../config/app_theme.dart';
 import '../../models/address_model.dart';
 import '../../models/amenity_model.dart';
 import '../../models/carris_models.dart';
 import '../../models/score_model.dart';
 import '../../services/carris_service.dart';
-
-// ── Tokens ────────────────────────────────────────────────────────────────────
-const _kBg      = Color(0xFF060B14);
-const _kSurface = Color(0xFF0D1625);
-const _kSurface2= Color(0xFF131F33);
-const _kBorder  = Color(0xFF1A2845);
-const _kAccent2 = Color(0xFF6C63FF);
 
 // ── Entry point ───────────────────────────────────────────────────────────────
 
@@ -241,53 +235,6 @@ String _percentile(double score) {
   return 'Average';
 }
 
-String _whyText(String catId, double score, int count, int? closestM) {
-  final tier = _scoreLabel(score).toLowerCase();
-  final distStr = closestM != null ? _dist(closestM) : 'nearby';
-  switch (catId) {
-    case 'transportation':
-      return score >= 80
-          ? 'This property has $tier transportation access with $count transit options available, the nearest being just $distStr away. Car-free living is very practical here.'
-          : score >= 60
-          ? 'Transportation access is $tier with $count options within range. Most daily destinations are reachable without a car.'
-          : 'Transportation options are limited with $count facilities in range. A private vehicle may be needed for some journeys.';
-    case 'education':
-      return score >= 80
-          ? 'Education access is $tier with $count learning facilities nearby. The closest is just $distStr away, making school runs and campus visits easy.'
-          : score >= 60
-          ? 'Education provision is $tier with $count facilities within reach. Families and students will find reasonable access to schools and institutions.'
-          : 'Educational facilities are limited with $count options in the area. Consider this if schooling proximity is a priority.';
-    case 'healthcare':
-      return score >= 80
-          ? 'Healthcare access is $tier with $count facilities available, starting from $distStr. Emergency and routine care are both well covered.'
-          : score >= 60
-          ? 'Healthcare provision is $tier with $count facilities within range. Routine care is accessible without long travel.'
-          : 'Healthcare options are limited with $count facilities nearby. Urgent or specialist care may require longer journeys.';
-    case 'shopping':
-      return score >= 80
-          ? 'Shopping convenience is $tier with $count retail options available. Daily essentials are within easy walking distance — no car needed.'
-          : score >= 60
-          ? 'Shopping access is $tier with $count stores and markets in range. Most everyday needs can be met locally.'
-          : 'Shopping options are limited with $count facilities nearby. A larger supermarket or shopping centre may require travel.';
-    case 'safety':
-      return score >= 80
-          ? 'Safety infrastructure is $tier with $count emergency services in the vicinity. Response times should be fast given the proximity of services.'
-          : score >= 60
-          ? 'Safety provision is $tier with $count emergency services within range.'
-          : 'Emergency services coverage is limited with $count facilities in the area.';
-    case 'recreation':
-      return score >= 80
-          ? 'Recreation access is $tier with $count green spaces and leisure facilities nearby. The closest is just $distStr away — an active, outdoor lifestyle is well supported.'
-          : score >= 60
-          ? 'Recreation options are $tier with $count facilities in range. Parks and leisure areas are reasonably accessible.'
-          : 'Recreation facilities are limited with $count options nearby. Green space access may require more deliberate travel.';
-    default:
-      return score >= 80
-          ? 'This category scores $tier with $count places of interest, the nearest at $distStr.'
-          : 'This category shows $tier availability with $count options within the search area.';
-  }
-}
-
 String _recommendation(String catId, double score) {
   switch (catId) {
     case 'transportation':
@@ -369,7 +316,6 @@ class CategoryDetailSheet extends StatefulWidget {
 class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
   late final Color _color;
   late final List<_SubType> _subtypes;
-  late final List<int> _distBands; // count per band: 0-200, 200-500, 500-1k, 1-2k, >2k
   late final List<double> _curve;  // relative score per distance band
   bool _showAllNearby = false;
 
@@ -378,7 +324,6 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
     super.initState();
     _color = _catColor[widget.cat.id] ?? const Color(0xFF3B82F6);
     _subtypes = _computeSubtypes();
-    _distBands = _computeDistBands();
     _curve = _computeCurve();
   }
 
@@ -403,17 +348,6 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
       ..sort((a, b) => b.score.compareTo(a.score)));
   }
 
-  List<int> _computeDistBands() {
-    final bands = [200, 500, 1000, 2000, 99999];
-    final prev = [0, 200, 500, 1000, 2000];
-    return List.generate(bands.length, (i) => widget.amenities
-        .where((a) {
-          final d = a.distanceMeters ?? 99999;
-          return d > prev[i] && d <= bands[i];
-        })
-        .length);
-  }
-
   List<double> _computeCurve() {
     final thresholds = [200.0, 500.0, 1000.0, 2000.0, 5000.0];
     final total = widget.amenities.length;
@@ -427,14 +361,15 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).padding.bottom;
+    final p = AppPalette.of(context);
     return DraggableScrollableSheet(
       initialChildSize: 0.92,
       minChildSize: 0.5,
       maxChildSize: 0.96,
       builder: (ctx, ctrl) => Container(
-        decoration: const BoxDecoration(
-          color: _kBg,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        decoration: BoxDecoration(
+          color: p.bg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
         ),
         child: CustomScrollView(
           controller: ctrl,
@@ -467,7 +402,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
       child: Container(
         width: 40, height: 4,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.18),
+          color: Colors.white.withValues(alpha: 0.18),
           borderRadius: BorderRadius.circular(2),
         ),
       ),
@@ -480,11 +415,12 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
     final score = widget.cat.score;
     final color = _color;
     final label = _scoreLabel(score);
+    final p = AppPalette.of(context);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: _kBorder)),
+        border: Border(bottom: BorderSide(color: p.border)),
       ),
       child: Row(
         children: [
@@ -500,7 +436,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                 children: [
                   CustomPaint(
                     size: const Size(80, 80),
-                    painter: _RingPainter(progress: 1, color: _kBorder, stroke: 5),
+                    painter: _RingPainter(progress: 1, color: p.border, stroke: 5),
                   ),
                   CustomPaint(
                     size: const Size(80, 80),
@@ -517,7 +453,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                         ),
                       ),
                       Text('/ 100', style: TextStyle(
-                        color: Colors.white.withOpacity(0.3), fontSize: 9.5,
+                        color: p.textTertiary, fontSize: 9.5,
                       )),
                     ],
                   ),
@@ -539,8 +475,8 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                     const SizedBox(width: 8),
                     Text(
                       widget.cat.label,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: p.textPrimary,
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
@@ -554,7 +490,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                       decoration: BoxDecoration(
-                        color: _scoreColor(score).withOpacity(0.15),
+                        color: _scoreColor(score).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(7),
                       ),
                       child: Text(
@@ -569,9 +505,9 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(7),
-                        border: Border.all(color: color.withOpacity(0.25)),
+                        border: Border.all(color: color.withValues(alpha: 0.25)),
                       ),
                       child: Text(
                         _percentile(score),
@@ -587,7 +523,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                 Text(
                   '${widget.cat.count} places found within 2km',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.38),
+                    color: p.textTertiary,
                     fontSize: 12,
                   ),
                 ),
@@ -605,6 +541,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
     const xLabels = ['0–200m', '–500m', '–1km', '–2km', '–5km'];
     const leftPad = 32.0;
     final color = _color;
+    final p = AppPalette.of(context);
 
     return _Section(
       title: 'SCORE OVERVIEW',
@@ -620,6 +557,8 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                   values: _curve,
                   color: color,
                   leftPad: leftPad,
+                  bgColor: p.bg,
+                  labelColor: p.textTertiary,
                 ),
               ),
             ),
@@ -633,7 +572,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                     l,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.30),
+                      color: p.textTertiary,
                       fontSize: 8.5,
                     ),
                   ),
@@ -647,63 +586,6 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
   }
 
   // ── Transit radar (transportation only) ──────────────────────────────────────
-
-  // ── Subtype count cards (replaces sparkline) ─────────────────────────────────
-
-  Widget _buildSubtypeCounts() {
-    if (_subtypes.isEmpty) return const SizedBox.shrink();
-    final isTransport = widget.cat.id == 'transportation';
-
-    return _Section(
-      title: 'AT A GLANCE',
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: _subtypes.map((st) {
-          final stColor = isTransport
-              ? (_kTransportColors[st.type] ?? _color)
-              : _color;
-          final icon  = _subTypeIcon[st.type] ?? _catIcon[widget.cat.id] ?? Icons.place_rounded;
-          final label = (_subTypeLabel[st.type] ?? _prettify(st.type))
-              .split(' ').first; // first word keeps chips compact
-
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: _kSurface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: stColor.withOpacity(0.30)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: stColor, size: 20),
-                const SizedBox(height: 6),
-                Text(
-                  '${st.count}',
-                  style: TextStyle(
-                    color: stColor,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    height: 1,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.42),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    ).animate(delay: 80.ms).fadeIn(duration: 300.ms);
-  }
 
   Widget _buildTransportDNA() {
     if (widget.amenities.isEmpty) return const SizedBox.shrink();
@@ -725,6 +607,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
     final color = _color;
     final top = _subtypes.take(6).toList();
     final maxScore = top.map((s) => s.score).reduce(max);
+    final p = AppPalette.of(context);
 
     return _Section(
       title: 'BREAKDOWN',
@@ -740,7 +623,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                 Container(
                   width: 32, height: 32,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(9),
                   ),
                   child: Icon(icon, color: color, size: 15),
@@ -753,8 +636,8 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(label, style: const TextStyle(
-                            color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w500,
+                          Text(label, style: TextStyle(
+                            color: p.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w500,
                           )),
                           Text(
                             s.score.round().toString(),
@@ -774,7 +657,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                           child: LinearProgressIndicator(
                             value: v,
                             minHeight: 5,
-                            backgroundColor: _kBorder,
+                            backgroundColor: p.border,
                             valueColor: AlwaysStoppedAnimation(color),
                           ),
                         ),
@@ -800,6 +683,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
     if (top.isEmpty) return const SizedBox.shrink();
     final color = _color;
     final icon = _catIcon[widget.cat.id] ?? Icons.place_rounded;
+    final p = AppPalette.of(context);
 
     return _Section(
       title: isTransport ? 'NEARBY STOPS' : 'NEARBY PLACES',
@@ -816,15 +700,15 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
           : null,
       child: Container(
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: p.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: p.border),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
             for (int i = 0; i < top.length; i++) ...[
-              if (i > 0) Divider(height: 1, color: Colors.white.withOpacity(0.05)),
+              if (i > 0) Divider(height: 1, color: Colors.white.withValues(alpha: 0.05)),
               if (isTransport)
                 _TransportStopCard(amenity: top[i], typeColor: color)
               else
@@ -868,9 +752,9 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
               PolylineLayer(polylines: [
                 ...markers.map((a) => Polyline(
                   points: [LatLng(lat, lng), LatLng(a.lat, a.lng)],
-                  color: color.withOpacity(0.45),
+                  color: color.withValues(alpha: 0.45),
                   strokeWidth: 1.5,
-                  isDotted: true,
+            
                 )),
               ]),
               CircleLayer(circles: [
@@ -878,8 +762,8 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                   point: LatLng(lat, lng),
                   radius: 500,
                   useRadiusInMeter: true,
-                  color: color.withOpacity(0.08),
-                  borderColor: color.withOpacity(0.35),
+                  color: color.withValues(alpha: 0.08),
+                  borderColor: color.withValues(alpha: 0.35),
                   borderStrokeWidth: 1.5,
                 ),
               ]),
@@ -905,10 +789,10 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
-                      border: Border.all(color: _kBg, width: 2),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 6)],
+                      border: Border.all(color: AppColors.bg, width: 2),
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 6)],
                     ),
-                    child: const Icon(Icons.home_rounded, color: Color(0xFF060B14), size: 16),
+                    child: const Icon(Icons.home_rounded, color: AppColors.bg, size: 16),
                   ),
                 ),
               ]),
@@ -925,6 +809,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
     final score = widget.cat.score;
     final label = _scoreLabel(score).toLowerCase();
     final color = _color;
+    final p = AppPalette.of(context);
 
     // Build accurate bullet points: count is total within search radius (2km),
     // closestM is distance to the single nearest — not a containing radius.
@@ -947,13 +832,13 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: p.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: p.border),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [_kSurface, color.withOpacity(0.06)],
+            colors: [p.surface, color.withValues(alpha: 0.06)],
           ),
         ),
         child: Column(
@@ -986,7 +871,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                   ),
                   Expanded(
                     child: Text(b, style: TextStyle(
-                      color: Colors.white.withOpacity(0.78),
+                      color: p.textSecondary,
                       fontSize: 13, height: 1.4,
                     )),
                   ),
@@ -1034,6 +919,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
   Widget _buildLifestyle() {
     final tags = _lifestyleTags[widget.cat.id] ?? [];
     if (tags.isEmpty) return const SizedBox.shrink();
+    final p = AppPalette.of(context);
 
     return _Section(
       title: 'LIFESTYLE INSIGHTS',
@@ -1043,12 +929,12 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
         children: tags.map((t) => Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: _kSurface,
+            color: p.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _kBorder),
+            border: Border.all(color: p.border),
           ),
           child: Text(t, style: TextStyle(
-            color: Colors.white.withOpacity(0.82),
+            color: p.textSecondary,
             fontSize: 12.5,
           )),
         )).toList(),
@@ -1060,18 +946,19 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
 
   Widget _buildRecommendation() {
     final text = _recommendation(widget.cat.id, widget.cat.score);
+    final p = AppPalette.of(context);
     return _Section(
       title: 'AI RECOMMENDATION',
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: p.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: p.border),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [_kSurface, _kAccent2.withOpacity(0.07)],
+            colors: [p.surface, AppColors.accent2.withValues(alpha: 0.07)],
           ),
         ),
         child: Row(
@@ -1080,15 +967,15 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _kAccent2.withOpacity(0.12),
+                color: AppColors.accent2.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.auto_awesome_rounded, color: _kAccent2, size: 16),
+              child: const Icon(Icons.auto_awesome_rounded, color: AppColors.accent2, size: 16),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(text, style: TextStyle(
-                color: Colors.white.withOpacity(0.75),
+                color: p.textSecondary,
                 fontSize: 13.5, height: 1.65,
               )),
             ),
@@ -1170,6 +1057,7 @@ class _TransportStopCardState extends State<_TransportStopCard> {
     final stColor = _kTransportColors[a.type] ?? widget.typeColor;
     final icon = _subTypeIcon[a.type] ?? Icons.train_rounded;
     final routes = _routes;
+    final p = AppPalette.of(context);
 
     final hasShelter = a.tags?['shelter'] == 'yes';
     final isAccessible = a.tags?['wheelchair'] == 'yes' ||
@@ -1187,7 +1075,7 @@ class _TransportStopCardState extends State<_TransportStopCard> {
               Container(
                 width: 36, height: 36,
                 decoration: BoxDecoration(
-                  color: stColor.withOpacity(0.12),
+                  color: stColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: stColor, size: 16),
@@ -1201,20 +1089,20 @@ class _TransportStopCardState extends State<_TransportStopCard> {
                       a.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                          color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.w500),
                     ),
                     if (_carrisStop != null)
                       Text(
                         'Carris · stop ${_carrisStop!.id}',
                         style: TextStyle(
-                            color: Colors.white.withOpacity(0.30), fontSize: 10),
+                            color: p.textTertiary, fontSize: 10),
                       )
                     else
                       Text(
                         _prettify(a.type),
                         style: TextStyle(
-                            color: Colors.white.withOpacity(0.30), fontSize: 10),
+                            color: p.textTertiary, fontSize: 10),
                       ),
                   ],
                 ),
@@ -1226,7 +1114,7 @@ class _TransportStopCardState extends State<_TransportStopCard> {
                   Text(
                     _dist(a.distanceMeters),
                     style: TextStyle(
-                        color: Colors.white.withOpacity(0.55),
+                        color: p.textSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w600),
                   ),
@@ -1234,7 +1122,7 @@ class _TransportStopCardState extends State<_TransportStopCard> {
                     Text(
                       '${a.walkingMinutes} min',
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.28), fontSize: 11),
+                          color: p.textTertiary, fontSize: 11),
                     ),
                 ],
               ),
@@ -1278,7 +1166,7 @@ class _TransportStopCardState extends State<_TransportStopCard> {
 
   Widget _routeChip(String lineId, Color fallback) {
     final line = _lineColors[lineId];
-    final bg = line != null ? Color(line.colorInt) : fallback.withOpacity(0.80);
+    final bg = line != null ? Color(line.colorInt) : fallback.withValues(alpha: 0.80);
     final fg = line != null ? Color(line.textColorInt) : Colors.white;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -1295,11 +1183,12 @@ class _TransportStopCardState extends State<_TransportStopCard> {
   }
 
   Widget _arrivalsRow() {
+    final p = AppPalette.of(context);
     return Row(
       children: [
         Text('Next  ',
             style: TextStyle(
-                color: Colors.white.withOpacity(0.30), fontSize: 10.5)),
+                color: p.textTertiary, fontSize: 10.5)),
         ..._arrivals.take(3).map((a) {
           final mins = a.minutesUntil;
           final line = _lineColors[a.lineId];
@@ -1319,7 +1208,7 @@ class _TransportStopCardState extends State<_TransportStopCard> {
               const SizedBox(width: 4),
               Text(label,
                   style: TextStyle(
-                      color: Colors.white.withOpacity(0.72),
+                      color: p.textSecondary,
                       fontSize: 11,
                       fontWeight: FontWeight.w600)),
             ]),
@@ -1330,14 +1219,15 @@ class _TransportStopCardState extends State<_TransportStopCard> {
   }
 
   Widget _facilityBadge(String label, IconData icon) {
+    final p = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.only(right: 10),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 11, color: Colors.white.withOpacity(0.32)),
+        Icon(icon, size: 11, color: p.textTertiary),
         const SizedBox(width: 3),
         Text(label,
             style: TextStyle(
-                color: Colors.white.withOpacity(0.32), fontSize: 10)),
+                color: p.textTertiary, fontSize: 10)),
       ]),
     );
   }
@@ -1353,6 +1243,7 @@ class _NearbyTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
@@ -1360,7 +1251,7 @@ class _NearbyTile extends StatelessWidget {
           Container(
             width: 36, height: 36,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 16),
@@ -1374,15 +1265,15 @@ class _NearbyTile extends StatelessWidget {
                   amenity.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500,
+                  style: TextStyle(
+                    color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   _prettify(amenity.type),
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.38), fontSize: 11,
+                    color: p.textTertiary, fontSize: 11,
                   ),
                 ),
               ],
@@ -1395,14 +1286,14 @@ class _NearbyTile extends StatelessWidget {
               Text(
                 _dist(amenity.distanceMeters),
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.55), fontSize: 12, fontWeight: FontWeight.w600,
+                  color: p.textSecondary, fontSize: 12, fontWeight: FontWeight.w600,
                 ),
               ),
               if (amenity.walkingMinutes != null)
                 Text(
                   '${amenity.walkingMinutes} min',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.3), fontSize: 11,
+                    color: p.textTertiary, fontSize: 11,
                   ),
                 ),
             ],
@@ -1423,6 +1314,7 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       child: Column(
@@ -1434,7 +1326,7 @@ class _Section extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.32),
+                  color: p.textTertiary,
                   fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 1.8,
                 ),
               ),
@@ -1465,23 +1357,24 @@ class _StatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.all(11),
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: p.surface,
         borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: p.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(stat.icon, color: color.withOpacity(0.7), size: 15),
+          Icon(stat.icon, color: color.withValues(alpha: 0.7), size: 15),
           const Spacer(),
           Text(
             stat.value,
-            style: const TextStyle(
-              color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700,
+            style: TextStyle(
+              color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.w700,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -1490,7 +1383,7 @@ class _StatTile extends StatelessWidget {
           Text(
             stat.label,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.32), fontSize: 10,
+              color: p.textTertiary, fontSize: 10,
             ),
           ),
         ],
@@ -1505,11 +1398,15 @@ class _SparklinePainter extends CustomPainter {
   final List<double> values;
   final Color color;
   final double leftPad;
+  final Color bgColor;
+  final Color labelColor;
 
   const _SparklinePainter({
     required this.values,
     required this.color,
     this.leftPad = 0,
+    required this.bgColor,
+    required this.labelColor,
   });
 
   @override
@@ -1535,14 +1432,14 @@ class _SparklinePainter extends CustomPainter {
         Offset(leftPad, y),
         Offset(size.width, y),
         Paint()
-          ..color = Colors.white.withOpacity(isBaseline ? 0.20 : 0.055)
+          ..color = Colors.white.withValues(alpha: isBaseline ? 0.20 : 0.055)
           ..strokeWidth = isBaseline ? 1.2 : 0.8,
       );
 
       tp.text = TextSpan(
         text: '$yv',
         style: TextStyle(
-          color: Colors.white.withOpacity(0.28),
+          color: labelColor,
           fontSize: 8.5,
           fontWeight: FontWeight.w500,
         ),
@@ -1559,7 +1456,7 @@ class _SparklinePainter extends CustomPainter {
       Offset(leftPad, scoreY(100)),
       Offset(leftPad, scoreY(0)),
       Paint()
-        ..color = Colors.white.withOpacity(0.20)
+        ..color = Colors.white.withValues(alpha: 0.20)
         ..strokeWidth = 1.2,
     );
 
@@ -1586,7 +1483,7 @@ class _SparklinePainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [color.withOpacity(0.28), color.withOpacity(0.02)],
+          colors: [color.withValues(alpha: 0.28), color.withValues(alpha: 0.02)],
         ).createShader(Rect.fromLTWH(leftPad, topPad, chartW, chartH)),
     );
 
@@ -1608,22 +1505,25 @@ class _SparklinePainter extends CustomPainter {
 
     // Dots + score labels
     for (int i = 0; i < pts.length; i++) {
-      final p = pts[i];
-      canvas.drawCircle(p, 4.5, Paint()..color = color);
-      canvas.drawCircle(p, 3.0, Paint()..color = _kBg);
+      final pt = pts[i];
+      canvas.drawCircle(pt, 4.5, Paint()..color = color);
+      canvas.drawCircle(pt, 3.0, Paint()..color = bgColor);
 
       tp.text = TextSpan(
         text: values[i].round().toString(),
         style: TextStyle(color: color, fontSize: 8.5, fontWeight: FontWeight.w700),
       );
       tp.layout();
-      tp.paint(canvas, Offset(p.dx - tp.width / 2, p.dy - 16));
+      tp.paint(canvas, Offset(pt.dx - tp.width / 2, pt.dy - 16));
     }
   }
 
   @override
   bool shouldRepaint(_SparklinePainter old) =>
-      old.values != values || old.leftPad != leftPad;
+      old.values != values ||
+      old.leftPad != leftPad ||
+      old.bgColor != bgColor ||
+      old.labelColor != labelColor;
 }
 
 // ── Ring painter ──────────────────────────────────────────────────────────────
@@ -1753,13 +1653,14 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
     final stColor = _kTransportColors[a.type] ?? color;
     final icon = _subTypeIcon[a.type] ?? Icons.train_rounded;
     final routes = _routes;
+    final p = AppPalette.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: p.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: p.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1771,9 +1672,9 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
               Container(
                 width: 44, height: 44,
                 decoration: BoxDecoration(
-                  color: stColor.withOpacity(0.12),
+                  color: stColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: stColor.withOpacity(0.25)),
+                  border: Border.all(color: stColor.withValues(alpha: 0.25)),
                 ),
                 child: Icon(icon, color: stColor, size: 20),
               ),
@@ -1786,8 +1687,8 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
                       _carrisStop?.name ?? a.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: p.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         height: 1.25,
@@ -1798,12 +1699,12 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
                       const SizedBox(height: 2),
                       Row(children: [
                         Icon(Icons.bookmark_outline_rounded, size: 11,
-                            color: Colors.white.withOpacity(0.30)),
+                            color: p.textTertiary),
                         const SizedBox(width: 4),
                         Text(
                           'Stop ${_carrisStop!.id}',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.35),
+                            color: p.textTertiary,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -1819,7 +1720,7 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
                   width: 16, height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 1.5,
-                    valueColor: AlwaysStoppedAnimation(color.withOpacity(0.45)),
+                    valueColor: AlwaysStoppedAnimation(color.withValues(alpha: 0.45)),
                   ),
                 ),
             ],
@@ -1831,9 +1732,9 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.04),
+              color: Colors.white.withValues(alpha: 0.04),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _kBorder, width: 0.8),
+              border: Border.all(color: p.border, width: 0.8),
             ),
             child: Row(children: [
               _metaPill(Icons.near_me_rounded, _dist(a.distanceMeters), stColor),
@@ -1841,12 +1742,12 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
                 Container(
                   width: 1, height: 16,
                   margin: const EdgeInsets.symmetric(horizontal: 12),
-                  color: _kBorder,
+                  color: p.border,
                 ),
                 _metaPill(
                   Icons.directions_walk_rounded,
                   '${a.walkingMinutes} min walk',
-                  Colors.white.withOpacity(0.48),
+                  p.textSecondary,
                 ),
               ],
             ]),
@@ -1858,7 +1759,7 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
             Text(
               'ROUTES SERVED',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.28),
+                color: p.textTertiary,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.4,
@@ -1879,7 +1780,7 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
                     borderRadius: BorderRadius.circular(7),
                     boxShadow: [
                       BoxShadow(
-                          color: bg.withOpacity(0.35),
+                          color: bg.withValues(alpha: 0.35),
                           blurRadius: 6,
                           offset: const Offset(0, 2)),
                     ],
@@ -1924,11 +1825,12 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
 
   Widget _radarHero() {
     if (widget.subtypes.isEmpty) return const SizedBox.shrink();
+    final p = AppPalette.of(context);
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF060C19),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: p.border),
       ),
       padding: const EdgeInsets.all(12),
       child: Center(
@@ -1958,6 +1860,7 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
   Widget _legendRow() {
     final visible = widget.subtypes.take(6).toList();
     if (visible.isEmpty) return const SizedBox.shrink();
+    final p = AppPalette.of(context);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -1975,13 +1878,13 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
                   decoration: BoxDecoration(
                     color: color,
                     shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: color.withOpacity(0.55), blurRadius: 4)],
+                    boxShadow: [BoxShadow(color: color.withValues(alpha: 0.55), blurRadius: 4)],
                   ),
                 ),
                 const SizedBox(width: 5),
                 Text(label,
                     style: TextStyle(
-                        color: Colors.white.withOpacity(0.42),
+                        color: p.textTertiary,
                         fontSize: 11,
                         fontWeight: FontWeight.w500)),
               ]),
@@ -1991,17 +1894,17 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
             Container(
               width: 7, height: 7,
               decoration: BoxDecoration(
-                color: const Color(0xFF6C63FF),
+                color: AppColors.accent2,
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(color: const Color(0xFF6C63FF).withOpacity(0.55), blurRadius: 4)
+                  BoxShadow(color: AppColors.accent2.withValues(alpha: 0.55), blurRadius: 4)
                 ],
               ),
             ),
             const SizedBox(width: 5),
             Text('You',
                 style: TextStyle(
-                    color: Colors.white.withOpacity(0.42),
+                    color: p.textTertiary,
                     fontSize: 11,
                     fontWeight: FontWeight.w500)),
           ]),
@@ -2015,11 +1918,12 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
   Widget _arrivalsCard() {
     final color = widget.color;
     final count = _arrivals.length.clamp(0, 4);
+    final p = AppPalette.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: _kSurface2,
+        color: p.surface2,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: p.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2029,12 +1933,12 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
             child: Row(children: [
               Icon(Icons.schedule_rounded, size: 13,
-                  color: Colors.white.withOpacity(0.32)),
+                  color: p.textTertiary),
               const SizedBox(width: 6),
               Text(
                 'UPCOMING ARRIVALS',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.32),
+                  color: p.textTertiary,
                   fontSize: 10.5,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.4,
@@ -2092,8 +1996,8 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
                       arr.headsign,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: p.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -2105,9 +2009,9 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: timeColor.withOpacity(0.11),
+                      color: timeColor.withValues(alpha: 0.11),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: timeColor.withOpacity(0.28), width: 0.8),
+                      border: Border.all(color: timeColor.withValues(alpha: 0.28), width: 0.8),
                     ),
                     child: Text(
                       timeLabel,
@@ -2124,7 +2028,7 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
                 Divider(
                   height: 1, thickness: 0.5,
                   indent: 16, endIndent: 16,
-                  color: _kBorder,
+                  color: p.border,
                 ),
             ]);
           }),
@@ -2158,7 +2062,7 @@ class _TransportDNARadarPainter extends CustomPainter {
     for (int r = 1; r <= 4; r++) {
       canvas.drawCircle(c, maxR * r / 4,
           Paint()
-            ..color = Colors.white.withOpacity(r == 4 ? 0.10 : 0.04)
+            ..color = Colors.white.withValues(alpha: r == 4 ? 0.10 : 0.04)
             ..style = PaintingStyle.stroke
             ..strokeWidth = r == 4 ? 1.0 : 0.7);
     }
@@ -2167,7 +2071,7 @@ class _TransportDNARadarPainter extends CustomPainter {
       for (int i = 0; i < n; i++) {
         final a = (2 * pi / n) * i - pi / 2;
         canvas.drawLine(c, Offset(c.dx + maxR * cos(a), c.dy + maxR * sin(a)),
-            Paint()..color = Colors.white.withOpacity(0.04)..strokeWidth = 0.8);
+            Paint()..color = Colors.white.withValues(alpha: 0.04)..strokeWidth = 0.8);
       }
     }
 
@@ -2189,16 +2093,16 @@ class _TransportDNARadarPainter extends CustomPainter {
 
       canvas.drawLine(c, tip,
           Paint()
-            ..color = color.withOpacity(0.38 * a01)
+            ..color = color.withValues(alpha: 0.38 * a01)
             ..strokeWidth = 1.5
             ..strokeCap = StrokeCap.round);
 
-      canvas.drawCircle(tip, 20, Paint()..color = color.withOpacity(0.07 * a01));
-      canvas.drawCircle(tip, 14, Paint()..color = color.withOpacity(0.14 * a01));
-      canvas.drawCircle(tip, 11, Paint()..color = color.withOpacity(0.90 * a01));
+      canvas.drawCircle(tip, 20, Paint()..color = color.withValues(alpha: 0.07 * a01));
+      canvas.drawCircle(tip, 14, Paint()..color = color.withValues(alpha: 0.14 * a01));
+      canvas.drawCircle(tip, 11, Paint()..color = color.withValues(alpha: 0.90 * a01));
       canvas.drawCircle(tip, 11,
           Paint()
-            ..color = Colors.white.withOpacity(0.16)
+            ..color = Colors.white.withValues(alpha: 0.16)
             ..style = PaintingStyle.stroke
             ..strokeWidth = 1.0);
 
@@ -2214,7 +2118,7 @@ class _TransportDNARadarPainter extends CustomPainter {
           ..text = TextSpan(
               text: '×${st.count}',
               style: TextStyle(
-                  color: color.withOpacity(0.80 * alpha),
+                  color: color.withValues(alpha: 0.80 * alpha),
                   fontSize: 10,
                   fontWeight: FontWeight.w700))
           ..layout();
@@ -2228,16 +2132,16 @@ class _TransportDNARadarPainter extends CustomPainter {
 
   void _drawHomeIcon(Canvas canvas, Offset c, double alpha) {
     canvas.drawCircle(c, 28,
-        Paint()..color = const Color(0xFF6C63FF).withOpacity(0.05 * alpha));
+        Paint()..color = const Color(0xFF6C63FF).withValues(alpha: 0.05 * alpha));
     canvas.drawCircle(c, 20,
-        Paint()..color = const Color(0xFF6C63FF).withOpacity(0.12 * alpha));
+        Paint()..color = const Color(0xFF6C63FF).withValues(alpha: 0.12 * alpha));
     canvas.drawCircle(c, 20,
         Paint()
-          ..color = const Color(0xFF6C63FF).withOpacity(0.65 * alpha)
+          ..color = const Color(0xFF6C63FF).withValues(alpha: 0.65 * alpha)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.5);
     canvas.drawCircle(c, 12,
-        Paint()..color = const Color(0xFF6C63FF).withOpacity(alpha));
+        Paint()..color = const Color(0xFF6C63FF).withValues(alpha: alpha));
 
     final tp = TextPainter(textDirection: TextDirection.ltr)
       ..text = const TextSpan(text: '🏠', style: TextStyle(fontSize: 13))

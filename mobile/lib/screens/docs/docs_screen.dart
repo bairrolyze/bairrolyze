@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../config/app_theme.dart';
 import 'doc_article_screen.dart';
 import 'docs_content.dart';
-
-const _kBg      = Color(0xFF060B14);
-const _kSurface = Color(0xFF0D1625);
-const _kBorder  = Color(0xFF1A2845);
-const _kAccent  = Color(0xFF3B82F6);
 
 class DocsScreen extends StatelessWidget {
   const DocsScreen({super.key});
@@ -19,6 +15,7 @@ class DocsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final top    = MediaQuery.of(context).padding.top;
     final bottom = MediaQuery.of(context).padding.bottom;
+    final p      = AppPalette.of(context);
 
     // Group articles by category
     final categories = <String, List<DocArticle>>{};
@@ -27,7 +24,7 @@ class DocsScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: p.bg,
       body: CustomScrollView(
         slivers: [
           // ── Header ──────────────────────────────────────────────────────
@@ -41,19 +38,19 @@ class DocsScreen extends StatelessWidget {
                     child: Container(
                       width: 36, height: 36,
                       decoration: BoxDecoration(
-                        color: _kSurface,
+                        color: p.surface,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: _kBorder),
+                        border: Border.all(color: p.border),
                       ),
                       child: Icon(Icons.arrow_back_ios_new_rounded,
-                          size: 16, color: Colors.white.withValues(alpha: 0.6)),
+                          size: 16, color: p.textSecondary),
                     ),
                   ),
                   const SizedBox(width: 14),
-                  const Text(
+                  Text(
                     'Guides & Help',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: p.textPrimary,
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.5,
@@ -73,41 +70,41 @@ class DocsScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      _kAccent.withValues(alpha: 0.18),
+                      AppColors.accent.withValues(alpha: 0.18),
                       const Color(0xFF7C3AED).withValues(alpha: 0.10),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: _kAccent.withValues(alpha: 0.22)),
+                  border: Border.all(color: AppColors.accent.withValues(alpha: 0.22)),
                 ),
                 child: Row(
                   children: [
                     Container(
                       width: 40, height: 40,
                       decoration: BoxDecoration(
-                        color: _kAccent.withValues(alpha: 0.15),
+                        color: AppColors.accent.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.menu_book_rounded,
-                          color: _kAccent, size: 20),
+                          color: AppColors.accent, size: 20),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Everything you need to know',
+                          Text('Everything you need to know',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: p.textPrimary,
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w600,
                               )),
                           const SizedBox(height: 2),
                           Text('${kDocArticles.length} guides covering every feature',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.45),
+                                color: p.textTertiary,
                                 fontSize: 12,
                               )),
                         ],
@@ -127,7 +124,7 @@ class DocsScreen extends StatelessWidget {
                 child: Text(
                   entry.key.toUpperCase(),
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.35),
+                    color: p.textTertiary,
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.6,
@@ -163,6 +160,7 @@ class _ArticleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => DocArticleScreen(article: article)),
@@ -170,9 +168,9 @@ class _ArticleRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: p.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: p.border),
         ),
         child: Row(
           children: [
@@ -190,8 +188,8 @@ class _ArticleRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(article.title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: p.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       )),
@@ -200,7 +198,7 @@ class _ArticleRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.40),
+                        color: p.textTertiary,
                         fontSize: 12,
                       )),
                 ],
@@ -208,7 +206,7 @@ class _ArticleRow extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Icon(Icons.chevron_right_rounded,
-                color: Colors.white.withValues(alpha: 0.22), size: 20),
+                color: p.textTertiary, size: 20),
           ],
         ),
       ),

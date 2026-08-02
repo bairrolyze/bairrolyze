@@ -61,3 +61,4 @@ redis_data/
 # Logs
 *.log
 logs/
+.gstack/

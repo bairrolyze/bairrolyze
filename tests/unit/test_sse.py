@@ -69,7 +69,7 @@ class TestStreamJobEvents:
     async def test_emits_complete_event_and_closes_when_job_done(self, job_store, monkeypatch):
         monkeypatch.setattr(sse_module, "job_store", job_store)
         await job_store.create_job("job-2", {"address": "x"})
-        await job_store.update_stage("job-2", "geocode", "done", result={"lat": 1})
+        await job_store.update_stage("job-2", "address_found", "done", result={"lat": 1})
         await job_store.set_job_status("job-2", "done", partial_failure=False, final={"id": "job-2"})
 
         chunks = [c async for c in sse_module.stream_job_events("job-2", poll_interval_seconds=0.01, max_stream_seconds=5)]
@@ -77,10 +77,13 @@ class TestStreamJobEvents:
 
         assert events[-1]["event"] == "complete"
         assert events[-1]["data"]["status"] == "done"
+        assert events[-1]["data"]["type"] == "completed"
+        assert events[-1]["data"]["progress"] == 100
         assert events[-1]["data"]["final"] == {"id": "job-2"}
-        # Stage change for geocode should have been emitted before completing.
-        stage_events = [e for e in events if e["event"] == "stage" and e["data"]["stage"] == "geocode"]
+        # Stage change for address_found should have been emitted before completing.
+        stage_events = [e for e in events if e["event"] == "stage" and e["data"]["stage"] == "address_found"]
         assert any(e["data"]["status"] == "done" for e in stage_events)
+        assert any(e["data"]["type"] == "address_found" for e in stage_events)
 
     async def test_only_emits_events_on_status_change_not_every_poll(self, job_store, monkeypatch):
         monkeypatch.setattr(sse_module, "job_store", job_store)

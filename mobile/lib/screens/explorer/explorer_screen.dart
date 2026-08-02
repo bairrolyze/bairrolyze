@@ -1,16 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../config/app_theme.dart';
 import '../../providers/shell_provider.dart';
 import '../../providers/country_provider.dart';
-
-// ── Design tokens ──────────────────────────────────────────────────────────────
-const _kBg       = Color(0xFF060B14);
-const _kSurface  = Color(0xFF0D1625);
-const _kSurface2 = Color(0xFF131F33);
-const _kAccent   = Color(0xFF3B82F6);
-const _kBorder   = Color(0xFF1A2845);
-const _kAccent2  = Color(0xFF7C3AED);
 
 // ── Tag colors ─────────────────────────────────────────────────────────────────
 const _kTagTransport  = Color(0xFF29B6F6);
@@ -179,9 +172,10 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
     final countryName = country?.name ?? 'Portugal';
     final top = MediaQuery.of(context).padding.top;
     final filtered = _filtered;
+    final p = AppPalette.of(context);
 
     return Container(
-      color: _kBg,
+      color: p.bg,
       child: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -201,10 +195,10 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         'Explore',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: p.textPrimary,
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.6,
@@ -215,7 +209,7 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
                       Text(
                         countryName,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.40),
+                          color: p.textTertiary,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                           letterSpacing: 0.2,
@@ -227,7 +221,7 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
                   Text(
                     'Discover the neighbourhoods that match your life.',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.40),
+                      color: p.textTertiary,
                       fontSize: 14,
                       height: 1.45,
                     ),
@@ -260,23 +254,23 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
                           horizontal: 16, vertical: 0),
                       decoration: BoxDecoration(
                         color: active
-                            ? _kAccent.withValues(alpha: 0.12)
-                            : _kSurface2,
+                            ? AppColors.accent.withValues(alpha: 0.12)
+                            : p.surface2,
                         borderRadius: BorderRadius.circular(22),
                         border: active
                             ? Border.all(
-                                color: _kAccent.withValues(alpha: 0.70),
+                                color: AppColors.accent.withValues(alpha: 0.70),
                                 width: 1.5,
                               )
                             : Border.all(
-                                color: _kBorder,
+                                color: p.border,
                                 width: 1,
                               ),
                         gradient: active
                             ? LinearGradient(
                                 colors: [
-                                  _kAccent.withValues(alpha: 0.10),
-                                  _kAccent2.withValues(alpha: 0.10),
+                                  AppColors.accent.withValues(alpha: 0.10),
+                                  const Color(0xFF7C3AED).withValues(alpha: 0.10),
                                 ],
                               )
                             : null,
@@ -286,8 +280,8 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
                           _filters[i],
                           style: TextStyle(
                             color: active
-                                ? _kAccent
-                                : Colors.white.withValues(alpha: 0.45),
+                                ? AppColors.accent
+                                : p.textTertiary,
                             fontSize: 12.5,
                             fontWeight: active
                                 ? FontWeight.w700
@@ -312,7 +306,7 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
               child: Text(
                 'FEATURED',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.28),
+                  color: p.textTertiary,
                   fontSize: 10.5,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.6,
@@ -375,7 +369,7 @@ class _NeighborhoodCard extends StatelessWidget {
       case 'Culture':
         return _kTagCulture;
       default:
-        return _kAccent;
+        return AppColors.accent;
     }
   }
 
@@ -383,13 +377,14 @@ class _NeighborhoodCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final n = neighborhood;
     final scoreColor = _scoreColor(n.score);
+    final p = AppPalette.of(context);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: p.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _kBorder, width: 1),
+        border: Border.all(color: p.border, width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -431,8 +426,8 @@ class _NeighborhoodCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         n.name,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: p.textPrimary,
                           fontSize: 15.5,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.3,
@@ -443,7 +438,7 @@ class _NeighborhoodCard extends StatelessWidget {
                       Text(
                         n.city,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.40),
+                          color: p.textTertiary,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
@@ -456,15 +451,15 @@ class _NeighborhoodCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _kAccent.withValues(alpha: 0.10),
+                    color: AppColors.accent.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(20),
                     border:
-                        Border.all(color: _kAccent.withValues(alpha: 0.28)),
+                        Border.all(color: AppColors.accent.withValues(alpha: 0.28)),
                   ),
                   child: Text(
                     n.highlight,
                     style: TextStyle(
-                      color: _kAccent.withValues(alpha: 0.90),
+                      color: AppColors.accent.withValues(alpha: 0.90),
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.1,
@@ -482,7 +477,7 @@ class _NeighborhoodCard extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.42),
+                color: p.textTertiary,
                 fontSize: 13,
                 height: 1.5,
               ),
@@ -560,7 +555,7 @@ class _NeighborhoodCard extends StatelessWidget {
                         horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [_kAccent, Color(0xFF2563EB)],
+                        colors: [AppColors.accent, Color(0xFF2563EB)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -614,12 +609,13 @@ class _StatPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: _kSurface2,
+        color: p.surface2,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: p.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -635,8 +631,8 @@ class _StatPill extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             '$value',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: p.textPrimary,
               fontSize: 11.5,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.2,
@@ -646,7 +642,7 @@ class _StatPill extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.38),
+              color: p.textTertiary,
               fontSize: 10.5,
               fontWeight: FontWeight.w500,
             ),

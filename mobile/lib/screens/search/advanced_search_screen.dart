@@ -121,7 +121,7 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
                 // Country selector
                 countriesAsync.when(
                   data: (countries) => DropdownButtonFormField<CountryConfig>(
-                    value: selectedCountry,
+                    initialValue: selectedCountry,
                     decoration: const InputDecoration(
                       labelText: 'Country',
                       prefixIcon: Icon(Icons.flag_rounded),

@@ -1,15 +1,8 @@
 import 'dart:math' show pow;
 import 'package:flutter/material.dart';
 
+import '../../config/app_theme.dart';
 import '../../models/score_model.dart';
-
-// ─── Design tokens ───────────────────────────────────────────────────────────
-const _kBg       = Color(0xFF060B14);
-const _kSurface  = Color(0xFF0D1625);
-// ignore: unused_element
-const _kSurface2 = Color(0xFF131F33);
-const _kAccent   = Color(0xFF3B82F6);
-const _kBorder   = Color(0xFF1A2845);
 
 // ─── Category meta ───────────────────────────────────────────────────────────
 const _catColors = {
@@ -153,9 +146,10 @@ class _NeighborhoodTimelineWidgetState
   @override
   Widget build(BuildContext context) {
     final gainPts = (_yearlyScores.last - _yearlyScores.first).round();
+    final p = AppPalette.of(context);
 
     return Container(
-      color: _kBg,
+      color: p.bg,
       padding: EdgeInsets.only(top: widget.topPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,12 +189,13 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
       child: Text(
         text,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.28),
+          color: p.textTertiary,
           fontSize: 10.5,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.6,
@@ -225,13 +220,14 @@ class _ScoreJourneyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: p.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: p.border),
         ),
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -240,8 +236,8 @@ class _ScoreJourneyCard extends StatelessWidget {
             // Header text
             Text(
               'How this neighbourhood evolved',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: p.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 height: 1.2,
@@ -251,7 +247,7 @@ class _ScoreJourneyCard extends StatelessWidget {
             Text(
               'Simulated 8-year development trajectory',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: p.textSecondary,
                 fontSize: 12,
               ),
             ),
@@ -264,7 +260,7 @@ class _ScoreJourneyCard extends StatelessWidget {
               child: CustomPaint(
                 painter: _ScoreJourneyPainter(
                   scores: yearlyScores,
-                  color: _kAccent,
+                  color: AppColors.accent,
                 ),
                 child: const SizedBox.expand(),
               ),
@@ -446,13 +442,14 @@ class _CategoryEvolutionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: p.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: p.border),
         ),
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -464,7 +461,7 @@ class _CategoryEvolutionCard extends StatelessWidget {
                 _LegendDot(color: Colors.white.withValues(alpha: 0.3),
                     label: '2018'),
                 const SizedBox(width: 14),
-                _LegendDot(color: _kAccent, label: '2026'),
+                _LegendDot(color: AppColors.accent, label: '2026'),
               ],
             ),
             const SizedBox(height: 14),
@@ -477,7 +474,7 @@ class _CategoryEvolutionCard extends StatelessWidget {
                   (cat.score * 0.72 + cat.score * 0.05).clamp(0.0, 100.0);
               final delta = (score2026 - score2018).round();
               final color =
-                  _catColors[entry.key] ?? _kAccent;
+                  _catColors[entry.key] ?? AppColors.accent;
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 14),
@@ -505,6 +502,7 @@ class _LegendDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Row(
       children: [
         Container(
@@ -515,7 +513,7 @@ class _LegendDot extends StatelessWidget {
         const SizedBox(width: 4),
         Text(label,
             style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45), fontSize: 10)),
+                color: p.textSecondary, fontSize: 10)),
       ],
     );
   }
@@ -538,6 +536,7 @@ class _EvolutionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -546,8 +545,8 @@ class _EvolutionRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
-                    color: Colors.white70,
+                style: TextStyle(
+                    color: p.textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500),
               ),
@@ -639,13 +638,14 @@ class _MilestonesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: p.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: p.border),
         ),
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
         child: Column(
@@ -653,7 +653,7 @@ class _MilestonesCard extends StatelessWidget {
             final event = milestones[i];
             final isLast = i == milestones.length - 1;
             final color =
-                _catColors[event.categoryId] ?? _kAccent;
+                _catColors[event.categoryId] ?? AppColors.accent;
             final icon =
                 _catIcons[event.categoryId] ?? Icons.place_rounded;
 
@@ -687,6 +687,7 @@ class _MilestoneItem extends StatelessWidget {
   Widget build(BuildContext context) {
     const dotSize = 28.0;
     const lineWidth = 2.0;
+    final p = AppPalette.of(context);
 
     return IntrinsicHeight(
       child: Row(
@@ -714,7 +715,7 @@ class _MilestoneItem extends StatelessWidget {
                     child: Center(
                       child: Container(
                         width: lineWidth,
-                        color: _kBorder,
+                        color: p.border,
                       ),
                     ),
                   ),
@@ -734,7 +735,7 @@ class _MilestoneItem extends StatelessWidget {
                   Text(
                     event.year.toString(),
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.38),
+                      color: p.textTertiary,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
@@ -743,8 +744,8 @@ class _MilestoneItem extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     event.title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: p.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       height: 1.3,
@@ -754,7 +755,7 @@ class _MilestoneItem extends StatelessWidget {
                   Text(
                     event.subtitle,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: p.textSecondary,
                       fontSize: 12,
                       height: 1.4,
                     ),

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../providers/pro_provider.dart';
+import 'package:flutter/services.dart';
 
 /// Thin wrapper around RevenueCat.
 ///
@@ -65,14 +66,34 @@ class PurchaseService {
 
   // ── Purchase ──────────────────────────────────────────────────────────────
 
-  static Future<CustomerInfo?> purchase(Package package) async {
-    try {
-      return await Purchases.purchasePackage(package);
-    } on PurchasesErrorCode catch (e) {
-      if (e == PurchasesErrorCode.purchaseCancelledError) return null;
-      rethrow;
+  // static Future<CustomerInfo?> purchase(Package package) async {
+  //   try {
+  //     final result = await Purchases.purchasePackage(package);
+  //     return result.customerInfo;
+  //   } on PurchasesErrorCode catch (e) {
+  //     if (e == PurchasesErrorCode.purchaseCancelledError) return null;
+  //     rethrow;
+  //   }
+  // }
+
+ static Future<CustomerInfo?> purchase(Package package) async {
+  if (isMock) return null;
+
+  try {
+    final result = await Purchases.purchase(
+      PurchaseParams.package(package)
+    );
+    return result.customerInfo;
+  } on PlatformException catch (e) {
+    final errorCode = PurchasesErrorHelper.getErrorCode(e);
+
+    if (errorCode == PurchasesErrorCode.purchaseCancelledError) {
+      return null;
     }
+
+    rethrow;
   }
+}
 
   static Future<CustomerInfo?> restorePurchases() async {
     if (isMock) return null;

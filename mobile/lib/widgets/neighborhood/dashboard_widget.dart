@@ -1,19 +1,11 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../config/app_theme.dart';
 import '../../models/address_model.dart';
 import '../../models/amenity_model.dart';
 import '../../models/score_model.dart';
 import 'category_detail_sheet.dart';
-
-// ── Design tokens ──────────────────────────────────────────────────────────────
-const _kBg      = Color(0xFF060B14);
-const _kSurface = Color(0xFF0D1625);
-const _kSurface2= Color(0xFF131F33);
-const _kBorder  = Color(0xFF1A2845);
-const _kAccent2 = Color(0xFF6C63FF);
 
 // ── Category metadata ─────────────────────────────────────────────────────────
 const _catMeta = {
@@ -92,6 +84,7 @@ class DashboardWidget extends StatelessWidget {
     final overall = result.score.overall;
     final color   = _scoreColor(overall);
     final cats    = result.score.categories.values.toList();
+    final p       = AppPalette.of(context);
 
     final nearest = ([...result.amenities]
           ..sort((a, b) =>
@@ -100,7 +93,7 @@ class DashboardWidget extends StatelessWidget {
         .toList();
 
     return Container(
-      color: _kBg,
+      color: p.bg,
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(0, topPadding + 20, 0, 48),
         child: Column(
@@ -156,9 +149,9 @@ class DashboardWidget extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Container(
                 decoration: BoxDecoration(
-                  color: _kSurface,
+                  color: p.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: _kBorder),
+                  border: Border.all(color: p.border),
                 ),
                 child: Column(
                   children: [
@@ -166,7 +159,7 @@ class DashboardWidget extends StatelessWidget {
                       if (i > 0)
                         Divider(
                           height: 1,
-                          color: Colors.white.withOpacity(0.045),
+                          color: Colors.white.withValues(alpha: 0.045),
                         ),
                       _NearestRow(amenity: nearest[i]),
                     ],
@@ -212,15 +205,16 @@ class _ScoreHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: p.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: p.border),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.08),
+            color: color.withValues(alpha: 0.08),
             blurRadius: 32,
             offset: const Offset(0, 8),
           ),
@@ -228,53 +222,18 @@ class _ScoreHero extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Animated score ring
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: overall / 100),
-            duration: const Duration(milliseconds: 1100),
-            curve: Curves.easeOutCubic,
-            builder: (_, progress, __) => SizedBox(
-              width: 88,
-              height: 88,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CustomPaint(
-                    size: const Size(88, 88),
-                    painter: _RingPainter(
-                        progress: 1, color: _kBorder, strokeWidth: 5.5),
-                  ),
-                  CustomPaint(
-                    size: const Size(88, 88),
-                    painter: _RingPainter(
-                        progress: progress, color: color, strokeWidth: 5.5),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        (overall * progress).round().toString(),
-                        style: TextStyle(
-                          color: color,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -1,
-                          height: 1,
-                        ),
-                      ),
-                      Text(
-                        'of 100',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.28),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+          // Status icon — the score number itself is shown once, in the
+          // persistent top header (NeighborhoodScreen._ScoreHeader), which
+          // stays visible across every tab. This card only adds label
+          // context (Excellent/Good/Fair/Poor, dimension count, profile).
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.12),
             ),
+            child: Icon(_labelIcon(label), color: color, size: 26),
           ),
 
           const SizedBox(width: 18),
@@ -288,7 +247,7 @@ class _ScoreHero extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.14),
+                    color: color.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -305,7 +264,7 @@ class _ScoreHero extends StatelessWidget {
                 Text(
                   '$catCount dimensions scored',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.42),
+                    color: p.textTertiary,
                     fontSize: 12.5,
                   ),
                 ),
@@ -315,15 +274,15 @@ class _ScoreHero extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                        color: Colors.white.withOpacity(0.08)),
+                        color: Colors.white.withValues(alpha: 0.08)),
                   ),
                   child: Text(
                     profile.toUpperCase(),
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.4),
+                      color: p.textTertiary,
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.9,
@@ -355,12 +314,13 @@ class _CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final score = cat.score;
+    final p = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: p.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: p.border),
       ),
       child: Row(
         children: [
@@ -369,7 +329,7 @@ class _CategoryCard extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(13),
             ),
             child: Icon(icon, color: color, size: 19),
@@ -384,8 +344,8 @@ class _CategoryCard extends StatelessWidget {
                   children: [
                     Text(
                       cat.label,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: p.textPrimary,
                         fontSize: 13.5,
                         fontWeight: FontWeight.w600,
                       ),
@@ -411,7 +371,7 @@ class _CategoryCard extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: v,
                       minHeight: 4,
-                      backgroundColor: _kBorder,
+                      backgroundColor: p.border,
                       valueColor: AlwaysStoppedAnimation(color),
                     ),
                   ),
@@ -422,7 +382,7 @@ class _CategoryCard extends StatelessWidget {
                     children: [
                       Icon(Icons.location_on_rounded,
                           size: 11,
-                          color: Colors.white.withOpacity(0.28)),
+                          color: p.textTertiary),
                       const SizedBox(width: 3),
                       Expanded(
                         child: Text(
@@ -430,7 +390,7 @@ class _CategoryCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.38),
+                            color: p.textTertiary,
                             fontSize: 11.5,
                           ),
                         ),
@@ -439,7 +399,7 @@ class _CategoryCard extends StatelessWidget {
                       Text(
                         _dist(cat.closest!.distanceMeters),
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.28),
+                          color: p.textTertiary,
                           fontSize: 11,
                         ),
                       ),
@@ -448,7 +408,7 @@ class _CategoryCard extends StatelessWidget {
                         Text(
                           '· ${cat.closest!.walkingMinutes}min',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.22),
+                            color: p.textTertiary,
                             fontSize: 11,
                           ),
                         ),
@@ -475,6 +435,7 @@ class _NearestRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _amenityColors[amenity.category] ?? const Color(0xFF3B82F6);
     final icon  = _amenityIcons[amenity.category] ?? Icons.place_rounded;
+    final p = AppPalette.of(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -484,7 +445,7 @@ class _NearestRow extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(9),
             ),
             child: Icon(icon, color: color, size: 15),
@@ -495,8 +456,8 @@ class _NearestRow extends StatelessWidget {
               amenity.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: p.textPrimary,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -506,7 +467,7 @@ class _NearestRow extends StatelessWidget {
           Text(
             _dist(amenity.distanceMeters),
             style: TextStyle(
-              color: Colors.white.withOpacity(0.38),
+              color: p.textTertiary,
               fontSize: 12,
             ),
           ),
@@ -515,13 +476,13 @@ class _NearestRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: _kSurface2,
+                color: p.surface2,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 '${amenity.walkingMinutes}min',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.32),
+                  color: p.textTertiary,
                   fontSize: 10.5,
                 ),
               ),
@@ -541,16 +502,17 @@ class _AiSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: p.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: p.border),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [_kSurface, _kAccent2.withOpacity(0.07)],
+          colors: [p.surface, AppColors.accent2.withValues(alpha: 0.07)],
         ),
       ),
       child: Row(
@@ -559,18 +521,18 @@ class _AiSummaryCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: _kAccent2.withOpacity(0.12),
+              color: AppColors.accent2.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.auto_awesome_rounded,
-                color: _kAccent2, size: 16),
+                color: AppColors.accent2, size: 16),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               text,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.72),
+                color: p.textSecondary,
                 fontSize: 13.5,
                 height: 1.65,
               ),
@@ -590,12 +552,13 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
       child: Text(
         text,
         style: TextStyle(
-          color: Colors.white.withOpacity(0.32),
+          color: p.textTertiary,
           fontSize: 10.5,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.8,
@@ -605,33 +568,15 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ── Ring painter ──────────────────────────────────────────────────────────────
-
-class _RingPainter extends CustomPainter {
-  final double progress;
-  final Color color;
-  final double strokeWidth;
-  const _RingPainter(
-      {required this.progress,
-      required this.color,
-      required this.strokeWidth});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    final inset = strokeWidth / 2;
-    final rect =
-        Rect.fromLTWH(inset, inset, size.width - inset * 2, size.height - inset * 2);
-
-    canvas.drawArc(rect, -pi / 2, 2 * pi * progress, false, paint);
+IconData _labelIcon(String label) {
+  switch (label) {
+    case 'Excellent':
+      return Icons.auto_awesome_rounded;
+    case 'Good':
+      return Icons.thumb_up_rounded;
+    case 'Fair':
+      return Icons.remove_circle_outline_rounded;
+    default:
+      return Icons.warning_rounded;
   }
-
-  @override
-  bool shouldRepaint(_RingPainter old) =>
-      old.progress != progress || old.color != color;
 }

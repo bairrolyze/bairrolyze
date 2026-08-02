@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     nominatim_url: str = "https://nominatim.openstreetmap.org"
     nominatim_user_agent: str = "HomeScope/1.0 (contact@homescope.app)"
 
+    # UK Police API (data.police.uk) — free, no key, UK-only crime data.
+    crime_api_url: str = "https://data.police.uk"
+
     # Overpass (using main instance — fallback if kumi.systems is slow)
     overpass_url: str = "https://overpass-api.de/api/interpreter"
     # Bbox queries (see overpass_service._build_overpass_query) are indexed
@@ -49,6 +52,8 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "ignore"  # .env carries deploy-only vars (postgres_*, admin_api_key)
+        # that this app's own config doesn't consume directly.
 
 
 settings = Settings()

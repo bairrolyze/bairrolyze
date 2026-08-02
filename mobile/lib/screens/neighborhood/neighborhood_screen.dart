@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../config/app_theme.dart';
 import '../../models/address_model.dart';
 import '../../models/score_model.dart';
 import '../../providers/analysis_provider.dart';
@@ -19,14 +20,6 @@ import '../../widgets/map/map_tab_body.dart';
 import '../alerts/alerts_screen.dart';
 import '../compare/compare_screen.dart';
 import '../paywall/paywall_screen.dart';
-
-// ── Design tokens ──────────────────────────────────────────────────────────────
-const _kBg       = Color(0xFF060B14);
-const _kSurface  = Color(0xFF0D1625);
-const _kSurface2 = Color(0xFF131F33);
-const _kBorder   = Color(0xFF1A2845);
-const _kAccent   = Color(0xFF3B82F6);
-const _kAccent2  = Color(0xFF6C63FF);
 
 class NeighborhoodScreen extends ConsumerStatefulWidget {
   const NeighborhoodScreen({super.key});
@@ -117,12 +110,13 @@ class _ActionBar extends ConsumerWidget {
     final pro      = ref.watch(proProvider);
     final isSaved  = compare.contains(CompareNotifier.idFor(address!));
     final isFollowing = alerts.isFollowing(address!);
+    final p = AppPalette.of(context);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 7, 14, 7),
       decoration: BoxDecoration(
-        color: _kSurface,
-        border: Border(bottom: BorderSide(color: _kBorder)),
+        color: p.surface,
+        border: Border(bottom: BorderSide(color: p.border)),
       ),
       child: Row(
         children: [
@@ -133,7 +127,7 @@ class _ActionBar extends ConsumerWidget {
                 : Icons.add_chart_rounded,
             label: isSaved ? 'Comparing' : 'Compare',
             active: isSaved,
-            color: _kAccent,
+            color: AppColors.accent,
             onTap: () {
               if (isSaved) {
                 CompareScreen.show(context);
@@ -164,7 +158,7 @@ class _ActionBar extends ConsumerWidget {
               icon: Icons.open_in_new_rounded,
               label: 'View Compare',
               active: false,
-              color: _kAccent2,
+              color: AppColors.accent2,
               onTap: () => CompareScreen.show(context),
             ),
             const SizedBox(width: 8),
@@ -206,21 +200,21 @@ class _ActionBar extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: _kSurface2,
+                color: p.surface2,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: _kBorder),
+                border: Border.all(color: p.border),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.notifications_outlined,
                       size: 14,
-                      color: Colors.white.withValues(alpha: 0.45)),
+                      color: p.textSecondary),
                   const SizedBox(width: 5),
                   Text(
                     'Alerts',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: p.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
@@ -252,16 +246,17 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: active ? color.withValues(alpha: 0.12) : _kSurface2,
+          color: active ? color.withValues(alpha: 0.12) : p.surface2,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: active ? color.withValues(alpha: 0.5) : _kBorder,
+            color: active ? color.withValues(alpha: 0.5) : p.border,
           ),
         ),
         child: Row(
@@ -269,12 +264,12 @@ class _ActionChip extends StatelessWidget {
           children: [
             Icon(icon,
                 size: 13,
-                color: active ? color : Colors.white.withValues(alpha: 0.45)),
+                color: active ? color : p.textSecondary),
             const SizedBox(width: 5),
             Text(
               label,
               style: TextStyle(
-                color: active ? color : Colors.white.withValues(alpha: 0.45),
+                color: active ? color : p.textSecondary,
                 fontSize: 12,
                 fontWeight: active ? FontWeight.w600 : FontWeight.w500,
               ),
@@ -294,6 +289,7 @@ class _TimelineTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -306,22 +302,22 @@ class _TimelineTab extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(18, 4, 18, 16),
             child: Row(
               children: [
-                const Expanded(child: Divider(color: _kBorder)),
+                Expanded(child: Divider(color: p.border)),
                 const SizedBox(width: 12),
                 Icon(Icons.access_time_rounded,
-                    size: 12, color: Colors.white.withValues(alpha: 0.28)),
+                    size: 12, color: p.textTertiary),
                 const SizedBox(width: 6),
                 Text(
                   'DAILY ACTIVITY RADAR',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.28),
+                    color: p.textTertiary,
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.6,
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(child: Divider(color: _kBorder)),
+                Expanded(child: Divider(color: p.border)),
               ],
             ),
           ),
@@ -347,8 +343,9 @@ class _EmptyExplore extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Container(
-      color: _kBg,
+      color: p.bg,
       child: SafeArea(
         child: Center(
           child: Padding(
@@ -360,18 +357,18 @@ class _EmptyExplore extends StatelessWidget {
                   width: 72,
                   height: 72,
                   decoration: BoxDecoration(
-                    color: _kSurface,
+                    color: p.surface,
                     shape: BoxShape.circle,
-                    border: Border.all(color: _kBorder),
+                    border: Border.all(color: p.border),
                   ),
                   child: const Icon(Icons.explore_rounded,
-                      color: _kAccent, size: 32),
+                      color: AppColors.accent, size: 32),
                 ),
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   'No analysis yet',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: p.textPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.4,
@@ -382,7 +379,7 @@ class _EmptyExplore extends StatelessWidget {
                   'Search an address in the Search tab\nto explore its full neighbourhood profile.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.42),
+                    color: p.textTertiary,
                     fontSize: 14,
                     height: 1.55,
                   ),
@@ -422,18 +419,21 @@ class _ScoreHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _scoreColor();
+    final p = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
       decoration: BoxDecoration(
-        color: _kSurface,
-        border: Border(bottom: BorderSide(color: _kBorder)),
+        color: p.surface,
+        border: Border(bottom: BorderSide(color: p.border)),
       ),
       child: Row(
         children: [
-          // Score ring
+          // The persistent top header is the single, primary score display
+          // (visible across every tab); DashboardWidget's Summary-tab hero
+          // no longer repeats the ring/number, only the label context.
           Container(
-            width: 50,
-            height: 50,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: color, width: 2.5),
@@ -444,7 +444,7 @@ class _ScoreHeader extends StatelessWidget {
                 score.overall.round().toString(),
                 style: TextStyle(
                   color: color,
-                  fontSize: 17,
+                  fontSize: 15,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.5,
                 ),
@@ -480,7 +480,7 @@ class _ScoreHeader extends StatelessWidget {
                     Text(
                       '${score.categories.length} categories',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.32),
+                        color: p.textTertiary,
                         fontSize: 11,
                       ),
                     ),
@@ -492,13 +492,13 @@ class _ScoreHeader extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.streetview_rounded,
-                                size: 12, color: _kAccent2),
+                            const Icon(Icons.streetview_rounded,
+                                size: 12, color: AppColors.accent2),
                             const SizedBox(width: 3),
                             const Text(
                               'Street View',
                               style: TextStyle(
-                                color: _kAccent2,
+                                color: AppColors.accent2,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -510,11 +510,11 @@ class _ScoreHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  address?.displayAddress ?? '—',
+                  address?.shortPrimary ?? '—',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.65),
+                    color: p.textSecondary,
                     fontSize: 12,
                   ),
                 ),
@@ -550,11 +550,12 @@ class _TabStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        color: _kSurface,
-        border: Border(bottom: BorderSide(color: _kBorder)),
+        color: p.surface,
+        border: Border(bottom: BorderSide(color: p.border)),
       ),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
@@ -573,13 +574,13 @@ class _TabStrip extends StatelessWidget {
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
               decoration: BoxDecoration(
                 color: active
-                    ? _kAccent.withValues(alpha: 0.14)
-                    : _kSurface2,
+                    ? AppColors.accent.withValues(alpha: 0.14)
+                    : p.surface2,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: active
-                      ? _kAccent
-                      : Colors.white.withValues(alpha: 0.07),
+                      ? AppColors.accent
+                      : p.border,
                   width: 1.5,
                 ),
               ),
@@ -592,8 +593,8 @@ class _TabStrip extends StatelessWidget {
                     tab.$2,
                     style: TextStyle(
                       color: active
-                          ? _kAccent
-                          : Colors.white.withValues(alpha: 0.45),
+                          ? AppColors.accent
+                          : p.textSecondary,
                       fontSize: 12,
                       fontWeight:
                           active ? FontWeight.w700 : FontWeight.w500,

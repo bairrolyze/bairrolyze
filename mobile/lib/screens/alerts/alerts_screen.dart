@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../config/app_theme.dart';
 import '../../providers/alerts_provider.dart';
 import '../../providers/pro_provider.dart';
 import '../paywall/paywall_screen.dart';
-
-const _kBg = Color(0xFF060B14);
-const _kSurface = Color(0xFF0D1625);
-const _kSurface2 = Color(0xFF131F33);
-const _kAccent = Color(0xFF3B82F6);
-const _kBorder = Color(0xFF1A2845);
 
 class AlertsScreen extends ConsumerWidget {
   const AlertsScreen({super.key});
@@ -24,9 +19,10 @@ class AlertsScreen extends ConsumerWidget {
     final pro = ref.watch(proProvider);
     final alerts = ref.watch(alertsProvider);
     final alertsNotifier = ref.read(alertsProvider.notifier);
+    final p = AppPalette.of(context);
 
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: p.bg,
       body: SafeArea(
         child: Column(
           children: [
@@ -63,20 +59,21 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 22),
+            icon: Icon(Icons.close_rounded, color: p.textSecondary, size: 22),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          const Expanded(
+          Expanded(
             child: Text(
               'Neighbourhood Alerts',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white,
+                color: p.textPrimary,
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
                 letterSpacing: -0.3,
@@ -87,7 +84,7 @@ class _Header extends StatelessWidget {
             TextButton(
               onPressed: onMarkAllRead,
               style: TextButton.styleFrom(
-                foregroundColor: _kAccent,
+                foregroundColor: AppColors.accent,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -112,6 +109,7 @@ class _Header extends StatelessWidget {
 class _PaywallSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return CustomScrollView(
       slivers: [
         SliverFillRemaining(
@@ -123,7 +121,7 @@ class _PaywallSection extends StatelessWidget {
               children: [
                 ShaderMask(
                   shaderCallback: (bounds) => const LinearGradient(
-                    colors: [_kAccent, Color(0xFF8B5CF6)],
+                    colors: [AppColors.accent, Color(0xFF8B5CF6)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ).createShader(bounds),
@@ -134,11 +132,11 @@ class _PaywallSection extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   'Stay ahead of the market',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: p.textPrimary,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     letterSpacing: -0.5,
@@ -149,7 +147,7 @@ class _PaywallSection extends StatelessWidget {
                   'Get notified when neighbourhood scores change, new amenities open, or safety levels shift. Never miss a change that matters.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.42),
+                    color: p.textTertiary,
                     fontSize: 14,
                     height: 1.6,
                   ),
@@ -157,14 +155,14 @@ class _PaywallSection extends StatelessWidget {
                 const SizedBox(height: 32),
                 _FeatureCard(
                   icon: Icons.bar_chart_rounded,
-                  iconColor: _kAccent,
+                  iconColor: AppColors.accent,
                   title: 'Score Updates',
                   body: 'Weekly summary of how your saved neighbourhoods are performing.',
                 ),
                 const SizedBox(height: 10),
                 _FeatureCard(
                   icon: Icons.add_location_rounded,
-                  iconColor: const Color(0xFF22C55E),
+                  iconColor: AppColors.success,
                   title: 'New Amenities',
                   body:
                       'Be first to know when a school, transport link or park opens nearby.',
@@ -186,7 +184,7 @@ class _PaywallSection extends StatelessWidget {
                 Text(
                   'From €7.99/month after trial',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.35),
+                    color: p.textTertiary,
                     fontSize: 12,
                   ),
                 ),
@@ -215,12 +213,13 @@ class _FeatureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: p.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: p.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,8 +232,8 @@ class _FeatureCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: p.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -243,7 +242,7 @@ class _FeatureCard extends StatelessWidget {
                 Text(
                   body,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: p.textSecondary,
                     fontSize: 13,
                     height: 1.45,
                   ),
@@ -271,7 +270,7 @@ class _GradientButton extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [_kAccent, Color(0xFF8B5CF6)],
+            colors: [AppColors.accent, Color(0xFF8B5CF6)],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
@@ -308,6 +307,7 @@ class _GradientButton extends StatelessWidget {
 class _EmptySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Stack(
       children: [
         Center(
@@ -317,13 +317,13 @@ class _EmptySection extends StatelessWidget {
               Icon(
                 Icons.notifications_none_rounded,
                 size: 48,
-                color: Colors.white.withValues(alpha: 0.25),
+                color: p.textTertiary,
               ),
               const SizedBox(height: 14),
-              const Text(
+              Text(
                 'No alerts set up',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: p.textPrimary,
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
                 ),
@@ -335,7 +335,7 @@ class _EmptySection extends StatelessWidget {
                   'Analyze a neighbourhood and tap \'Follow\' to start receiving alerts.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: p.textTertiary,
                     fontSize: 14,
                     height: 1.55,
                   ),
@@ -373,6 +373,7 @@ class _AlertsContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final p = AppPalette.of(context);
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -388,7 +389,7 @@ class _AlertsContent extends ConsumerWidget {
               child: Text(
                 'RECENT ALERTS',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: p.textTertiary,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.1,
@@ -427,6 +428,7 @@ class _FollowingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -435,7 +437,7 @@ class _FollowingSection extends StatelessWidget {
           child: Text(
             'FOLLOWING (${entries.length})',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.35),
+              color: p.textTertiary,
               fontSize: 11,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.1,
@@ -469,6 +471,7 @@ class _FollowingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     final score = entry.scoreAtSave;
     final typeLabels = entry.types.map((t) => _typeLabel(t)).toList();
 
@@ -477,9 +480,9 @@ class _FollowingCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 4),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _kSurface,
+        color: p.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: p.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -493,8 +496,8 @@ class _FollowingCard extends StatelessWidget {
                   entry.address.displayAddress,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: p.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
@@ -518,7 +521,7 @@ class _FollowingCard extends StatelessWidget {
               child: Text(
                 'Unfollow',
                 style: TextStyle(
-                  color: const Color(0xFFEF4444).withValues(alpha: 0.75),
+                  color: AppColors.error.withValues(alpha: 0.75),
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -551,10 +554,11 @@ class _ScoreBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     final color = score >= 75
-        ? const Color(0xFF22C55E)
+        ? AppColors.success
         : score >= 50
-            ? _kAccent
+            ? AppColors.accent
             : const Color(0xFFFFA726);
 
     return SizedBox(
@@ -566,7 +570,7 @@ class _ScoreBadge extends StatelessWidget {
           CircularProgressIndicator(
             value: score / 100,
             strokeWidth: 3,
-            backgroundColor: Colors.white.withValues(alpha: 0.1),
+            backgroundColor: p.border,
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
           Text(
@@ -590,17 +594,18 @@ class _TypePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: _kSurface2,
+        color: p.surface2,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: p.border),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.6),
+          color: p.textSecondary,
           fontSize: 10,
           fontWeight: FontWeight.w500,
         ),
@@ -620,12 +625,13 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     final typeColor = _colorForType(notification.type);
     final bgColor = notification.isRead
-        ? _kSurface
+        ? p.surface
         : Color.alphaBlend(
-            _kAccent.withValues(alpha: 0.07),
-            _kSurface,
+            AppColors.accent.withValues(alpha: 0.07),
+            p.surface,
           );
 
     return Container(
@@ -636,8 +642,8 @@ class _NotificationTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: notification.isRead
-              ? _kBorder
-              : _kAccent.withValues(alpha: 0.2),
+              ? p.border
+              : AppColors.accent.withValues(alpha: 0.2),
         ),
       ),
       child: Row(
@@ -661,8 +667,8 @@ class _NotificationTile extends StatelessWidget {
               children: [
                 Text(
                   notification.title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: p.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -671,7 +677,7 @@ class _NotificationTile extends StatelessWidget {
                 Text(
                   notification.body,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
+                    color: p.textSecondary,
                     fontSize: 12,
                     height: 1.45,
                   ),
@@ -683,7 +689,7 @@ class _NotificationTile extends StatelessWidget {
           Text(
             _formatTimestamp(notification.timestamp),
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.35),
+              color: p.textTertiary,
               fontSize: 11,
             ),
           ),
@@ -695,13 +701,13 @@ class _NotificationTile extends StatelessWidget {
   Color _colorForType(AlertType type) {
     switch (type) {
       case AlertType.weeklyDigest:
-        return _kAccent;
+        return AppColors.accent;
       case AlertType.scoreChange:
-        return const Color(0xFF22C55E);
+        return AppColors.success;
       case AlertType.newAmenity:
         return const Color(0xFFFFA726);
       case AlertType.safetyAlert:
-        return const Color(0xFFEF4444);
+        return AppColors.error;
     }
   }
 

@@ -95,7 +95,7 @@ class _DNAWidgetState extends State<DNAWidget> with SingleTickerProviderStateMix
                 Text(
                   'Visual fingerprint of what makes this area unique.',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.60),
+                    color: Colors.white.withValues(alpha: 0.60),
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
                     height: 1.4,
@@ -106,7 +106,7 @@ class _DNAWidgetState extends State<DNAWidget> with SingleTickerProviderStateMix
                   Text(
                     _locationMeta(widget.address)!,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.45),
+                      color: Colors.white.withValues(alpha: 0.45),
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.1,
@@ -203,10 +203,10 @@ class _DNAWidgetState extends State<DNAWidget> with SingleTickerProviderStateMix
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: active ? color : color.withOpacity(0.15),
+              color: active ? color : color.withValues(alpha: 0.15),
               shape: BoxShape.circle,
-              border: Border.all(color: color.withOpacity(active ? 1 : 0.4), width: 1.5),
-              boxShadow: active ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 12)] : [],
+              border: Border.all(color: color.withValues(alpha: active ? 1 : 0.4), width: 1.5),
+              boxShadow: active ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 12)] : [],
             ),
             child: Icon(_icons[e.value.id] ?? Icons.place_rounded,
                 color: active ? Colors.white : color, size: 16),
@@ -264,7 +264,7 @@ class _DNAPainter extends CustomPainter {
 
     // Reference rings
     final gridPaint = Paint()
-      ..color = Colors.white.withOpacity(0.06)
+      ..color = Colors.white.withValues(alpha: 0.06)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.8;
     for (final pct in [0.25, 0.5, 0.75, 1.0]) {
@@ -273,7 +273,7 @@ class _DNAPainter extends CustomPainter {
 
     // Spoke lines
     final spokePaint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
+      ..color = Colors.white.withValues(alpha: 0.05)
       ..strokeWidth = 0.8;
     for (int i = 0; i < n; i++) {
       final a = (2 * pi / n) * i - pi / 2;
@@ -315,7 +315,7 @@ class _DNAPainter extends CustomPainter {
     // Filled shape
     canvas.saveLayer(Rect.fromLTWH(0, 0, size.width, size.height), Paint());
     canvas.drawPath(shapePath, Paint()..shader = sweepShader..style = PaintingStyle.fill);
-    canvas.drawPath(shapePath, Paint()..color = const Color(0xFF080E1A).withOpacity(0.45));
+    canvas.drawPath(shapePath, Paint()..color = const Color(0xFF080E1A).withValues(alpha: 0.45));
     canvas.restore();
 
     // Stroke
@@ -334,17 +334,17 @@ class _DNAPainter extends CustomPainter {
       final isActive = selectedIndex == i;
       if (isActive) {
         canvas.drawCircle(pts[i], 14,
-            Paint()..color = color.withOpacity(0.2)..style = PaintingStyle.fill);
+            Paint()..color = color.withValues(alpha: 0.2)..style = PaintingStyle.fill);
         canvas.drawCircle(pts[i], 14,
-            Paint()..color = color.withOpacity(0.5)..style = PaintingStyle.stroke..strokeWidth = 1.5);
+            Paint()..color = color.withValues(alpha: 0.5)..style = PaintingStyle.stroke..strokeWidth = 1.5);
       }
       canvas.drawCircle(pts[i], isActive ? 6.5 : 4.5, Paint()..color = color);
       canvas.drawCircle(pts[i], isActive ? 3 : 2, Paint()..color = Colors.white);
     }
 
     // Center dot
-    canvas.drawCircle(c, 5, Paint()..color = Colors.white.withOpacity(0.3));
-    canvas.drawCircle(c, 2.5, Paint()..color = Colors.white.withOpacity(0.7));
+    canvas.drawCircle(c, 5, Paint()..color = Colors.white.withValues(alpha: 0.3));
+    canvas.drawCircle(c, 2.5, Paint()..color = Colors.white.withValues(alpha: 0.7));
   }
 
   Path _smoothPath(List<Offset> pts) {
@@ -397,7 +397,7 @@ class _DetailCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF151E30),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.35), width: 1.5),
+        border: Border.all(color: color.withValues(alpha: 0.35), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,7 +407,7 @@ class _DetailCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
+                  color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -440,7 +440,7 @@ class _DetailCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(

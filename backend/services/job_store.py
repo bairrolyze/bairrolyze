@@ -24,8 +24,26 @@ logger = logging.getLogger(__name__)
 
 JOB_KEY_PREFIX = "job:"
 
-# The 4 real pipeline stages, in dependency order.
-STAGE_NAMES = ["geocode", "amenities", "score", "ai_summary"]
+# The 5 real pipeline stages, in dependency order. address_found and
+# map_ready both come from the single geocode() call (split for UI
+# granularity, not two backend round-trips); amenities_ready/score_ready/
+# summary_ready are the original amenities/score/ai_summary stages renamed
+# to match the event-type naming used by the SSE stream.
+STAGE_NAMES = ["address_found", "map_ready", "amenities_ready", "crime_ready", "score_ready", "summary_ready"]
+
+# Cumulative progress (0-100) once a stage reaches STAGE_DONE. Approximate
+# and hand-tuned to reflect relative real-world stage duration (amenities/
+# Overpass is the slowest stage), not a formula — purely a UI progress-bar
+# signal, not used for any control flow.
+STAGE_PROGRESS = {
+    "address_found": 10,
+    "map_ready": 25,
+    "amenities_ready": 50,
+    "crime_ready": 62,
+    "score_ready": 78,
+    "summary_ready": 90,
+}
+PROGRESS_COMPLETE = 100
 
 # Job-level statuses.
 STATUS_PENDING = "pending"
@@ -70,10 +88,13 @@ class JobStore:
         job = {
             "analysis_id": analysis_id,
             "status": STATUS_PENDING,
+            "progress": 0,
             "partial_failure": False,
             "request": request,
             "stages": {name: _empty_stage() for name in STAGE_NAMES},
             "final": None,
+            "started_at": now,
+            "completed_at": None,
             "created_at": now,
             "updated_at": now,
         }
@@ -105,6 +126,9 @@ class JobStore:
             job["partial_failure"] = partial_failure
         if final is not None:
             job["final"] = final
+        if status in (STATUS_DONE, STATUS_ERROR):
+            job["progress"] = PROGRESS_COMPLETE
+            job["completed_at"] = _now_iso()
         await self._write(analysis_id, job)
         return job
 
@@ -118,7 +142,8 @@ class JobStore:
     ) -> Optional[dict]:
         """Idempotent overwrite of a single stage's state. Safe to call
         repeatedly for the same stage (e.g. 'running' then 'done') — always
-        replaces, never appends.
+        replaces, never appends. Bumps the job-level `progress` when a stage
+        reaches STAGE_DONE, per STAGE_PROGRESS.
         """
         job = await self.get_job(analysis_id)
         if job is None:
@@ -128,6 +153,8 @@ class JobStore:
             )
             return None
         job["stages"][stage] = {"status": status, "result": result, "error": error}
+        if status == STAGE_DONE and stage in STAGE_PROGRESS:
+            job["progress"] = max(job.get("progress", 0), STAGE_PROGRESS[stage])
         await self._write(analysis_id, job)
         return job
 

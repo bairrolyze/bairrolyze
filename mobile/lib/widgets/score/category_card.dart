@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/score_model.dart';
-import '../../config/app_constants.dart';
 
 class CategoryCard extends ConsumerWidget {
   final CategoryScore categoryScore;
@@ -46,7 +45,7 @@ class CategoryCard extends ConsumerWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 22),
@@ -87,7 +86,7 @@ class CategoryCard extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: pct,
-                      backgroundColor: color.withOpacity(0.12),
+                      backgroundColor: color.withValues(alpha: 0.12),
                       valueColor: AlwaysStoppedAnimation(color),
                       minHeight: 6,
                     ),

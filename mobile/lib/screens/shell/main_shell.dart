@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../config/app_theme.dart';
 import '../../providers/shell_provider.dart';
-import '../explorer/explorer_screen.dart';
 import '../home/home_screen.dart';
+import '../map/map_screen.dart';
 import '../neighborhood/neighborhood_screen.dart';
+import '../saved/saved_screen.dart';
 import '../settings/settings_screen.dart';
 
-const kShellBg      = Color(0xFF060B14);
-const kShellSurface = Color(0xFF0D1625);
-const kShellBorder  = Color(0xFF1A2845);
-const kShellAccent  = Color(0xFF3B82F6);
+// IndexedStack indices. Results (index 1) is shown after an analysis rather
+// than being a bottom-bar destination, so the existing `state = 1` calls that
+// reveal it keep working unchanged.
+class _Tab {
+  static const home = 0;
+  static const results = 1;
+  static const map = 2;
+  static const saved = 3;
+  static const profile = 4;
+}
 
 class MainShell extends ConsumerWidget {
   const MainShell({super.key});
@@ -18,21 +26,23 @@ class MainShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tab = ref.watch(shellTabProvider);
+    final p = AppPalette.of(context);
 
     return Scaffold(
-      backgroundColor: kShellBg,
+      backgroundColor: p.bg,
       body: IndexedStack(
         index: tab,
         children: const [
-          HomeScreen(),
-          NeighborhoodScreen(),
-          ExplorerScreen(),
-          SettingsScreen(),
+          HomeScreen(),          // 0 — Home
+          NeighborhoodScreen(),  // 1 — Results (post-analyse)
+          MapScreen(),           // 2 — Map
+          SavedScreen(),         // 3 — Saved
+          SettingsScreen(),      // 4 — Profile
         ],
       ),
       bottomNavigationBar: _BottomNav(
         current: tab,
-        onTap: (i) => ref.read(shellTabProvider.notifier).state = i,
+        onSelect: (i) => ref.read(shellTabProvider.notifier).state = i,
       ),
     );
   }
@@ -40,69 +50,151 @@ class MainShell extends ConsumerWidget {
 
 class _BottomNav extends StatelessWidget {
   final int current;
-  final ValueChanged<int> onTap;
+  final ValueChanged<int> onSelect;
 
-  const _BottomNav({required this.current, required this.onTap});
-
-  static const _items = [
-    (Icons.search_rounded,         Icons.search_rounded,         'Search'),
-    (Icons.explore_outlined,       Icons.explore_rounded,        'Explore'),
-    (Icons.travel_explore_rounded, Icons.travel_explore_rounded, 'Discover'),
-    (Icons.person_outline_rounded, Icons.person_rounded,         'You'),
-  ];
+  const _BottomNav({required this.current, required this.onSelect});
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     final bottom = MediaQuery.of(context).padding.bottom;
+
+    // Results (index 1) belongs to the Home/search flow, so Home stays lit.
+    final homeActive = current == _Tab.home || current == _Tab.results;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: kShellSurface,
-        border: Border(top: BorderSide(color: kShellBorder, width: 1)),
+      decoration: BoxDecoration(
+        color: p.surface,
+        border: Border(top: BorderSide(color: p.border, width: 1)),
       ),
       padding: EdgeInsets.only(bottom: bottom),
-      child: Row(
-        children: List.generate(_items.length, (i) {
-          final active = i == current;
-          final item = _items[i];
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onTap(i),
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      child: Icon(
-                        active ? item.$2 : item.$1,
-                        key: ValueKey(active),
-                        color: active
-                            ? kShellAccent
-                            : Colors.white.withValues(alpha: 0.32),
-                        size: 23,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.$3,
-                      style: TextStyle(
-                        color: active
-                            ? kShellAccent
-                            : Colors.white.withValues(alpha: 0.32),
-                        fontSize: 10.5,
-                        fontWeight:
-                            active ? FontWeight.w600 : FontWeight.w400,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                  ],
-                ),
+      child: SizedBox(
+        height: 62,
+        child: Row(
+          children: [
+            _NavItem(
+              icon: Icons.home_outlined,
+              activeIcon: Icons.home_rounded,
+              label: 'Home',
+              active: homeActive,
+              onTap: () => onSelect(_Tab.home),
+            ),
+            _NavItem(
+              icon: Icons.map_outlined,
+              activeIcon: Icons.map_rounded,
+              label: 'Map',
+              active: current == _Tab.map,
+              onTap: () => onSelect(_Tab.map),
+            ),
+            // Center "+" — analyse a new property (jumps to Home search).
+            _AnalyseFab(onTap: () => onSelect(_Tab.home)),
+            _NavItem(
+              icon: Icons.bookmark_border_rounded,
+              activeIcon: Icons.bookmark_rounded,
+              label: 'Saved',
+              active: current == _Tab.saved,
+              onTap: () => onSelect(_Tab.saved),
+            ),
+            _NavItem(
+              icon: Icons.person_outline_rounded,
+              activeIcon: Icons.person_rounded,
+              label: 'Profile',
+              active: current == _Tab.profile,
+              onTap: () => onSelect(_Tab.profile),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    final color = active ? AppColors.accent : p.textTertiary;
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                active ? activeIcon : icon,
+                key: ValueKey(active),
+                color: color,
+                size: 24,
               ),
             ),
-          );
-        }),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 10.5,
+                fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                letterSpacing: 0.1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AnalyseFab extends StatelessWidget {
+  final VoidCallback onTap;
+  const _AnalyseFab({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return Expanded(
+      child: Center(
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.accent, AppColors.accent2],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+              border: Border.all(color: p.surface, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.accent.withValues(alpha: 0.45),
+                  blurRadius: 16,
+                  spreadRadius: -2,
+                ),
+              ],
+            ),
+            child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+          ),
+        ),
       ),
     );
   }
