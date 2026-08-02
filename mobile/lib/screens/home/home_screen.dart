@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui' show ImageFilter;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../config/app_constants.dart';
 import '../../config/app_theme.dart';
+import '../../models/user_preferences_model.dart';
 import '../../providers/analysis_provider.dart';
 import '../../providers/country_provider.dart';
 import '../../providers/preferences_provider.dart';
@@ -171,7 +171,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _analyze() async {
     if (!_formKey.currentState!.validate()) return;
     final country = ref.read(selectedCountryProvider);
-    final profile = ref.read(preferencesProvider).profile.name;
+    final profile = ref.read(preferencesProvider).profile.jsonValue;
     // Geocode the full picked address for accuracy; show the short label.
     final query =
         (_pickedFullAddress ?? _addressController.text).trim();
@@ -823,7 +823,7 @@ class _CategoryCarouselState extends State<_CategoryCarousel> {
           subtitle: 'Seven signals we score for every address · swipe to explore',
         ),
         SizedBox(
-          height: 162,
+          height: 188,
           child: PageView.builder(
             controller: _pc,
             physics: const BouncingScrollPhysics(),
@@ -873,7 +873,6 @@ class _GlassCategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final p = AppPalette.of(context);
     final focus = 1 - t; // 1 at centre → 0 at the edges
 
@@ -883,119 +882,88 @@ class _GlassCategoryCard extends StatelessWidget {
     final iconScale = 0.88 + 0.12 * focus;   // icon gently scales on focus
     final parallax = delta * 16.0;           // content drifts against the drag
 
-    final glassFill = dark
-        ? Colors.white.withValues(alpha: 0.07)
-        : Colors.white.withValues(alpha: 0.55);
-    final glassBorder = dark
-        ? Colors.white.withValues(alpha: 0.13)
-        : Colors.black.withValues(alpha: 0.06);
-
     return Transform.translate(
       offset: Offset(0, lift),
       child: Transform.scale(
         scale: scale,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
-          child: DecoratedBox(
+          // Extra vertical room so the focused (scaled + lifted) card and its
+          // glow are never clipped at the top of the PageView.
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 16),
+          child: Container(
+            // Transparent card — just a tinted border + soft category glow.
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: cat.color.withValues(alpha: 0.22)),
               boxShadow: [
-                // Ambient category glow — intensifies with focus.
                 BoxShadow(
-                  color: cat.color.withValues(alpha: 0.10 + 0.24 * focus),
-                  blurRadius: 36,
-                  spreadRadius: -6,
-                  offset: const Offset(0, 14),
-                ),
-                // Neutral floating shadow.
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: dark ? 0.35 : 0.10),
-                  blurRadius: 26,
-                  spreadRadius: -12,
-                  offset: const Offset(0, 16),
+                  color: cat.color.withValues(alpha: 0.06 + 0.18 * focus),
+                  blurRadius: 30,
+                  spreadRadius: -8,
+                  offset: const Offset(0, 12),
                 ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: glassBorder, width: 1),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        glassFill,
-                        cat.color.withValues(alpha: dark ? 0.11 : 0.06),
-                      ],
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(20),
-                  child: Transform.translate(
-                    offset: Offset(parallax, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Row(
-                          children: [
-                            Transform.scale(
-                              scale: iconScale,
-                              child: Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: cat.color.withValues(alpha: 0.16),
-                                  border: Border.all(
-                                      color: cat.color.withValues(alpha: 0.35)),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: cat.color
-                                          .withValues(alpha: 0.32 * focus),
-                                      blurRadius: 20,
-                                      spreadRadius: -4,
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(cat.icon, color: cat.color, size: 25),
+            padding: const EdgeInsets.all(20),
+            child: Transform.translate(
+              offset: Offset(parallax, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      Transform.scale(
+                        scale: iconScale,
+                        child: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: cat.color.withValues(alpha: 0.16),
+                            border: Border.all(
+                                color: cat.color.withValues(alpha: 0.35)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: cat.color.withValues(alpha: 0.32 * focus),
+                                blurRadius: 20,
+                                spreadRadius: -4,
                               ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Text(
-                                cat.label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: p.textPrimary,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
+                          child: Icon(cat.icon, color: cat.color, size: 25),
                         ),
-                        const SizedBox(height: 14),
-                        Text(
-                          cat.desc,
-                          maxLines: 2,
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          cat.label,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: p.textSecondary,
-                            fontSize: 13.5,
-                            height: 1.45,
-                            letterSpacing: -0.1,
+                            color: p.textPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
                           ),
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    cat.desc,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: p.textSecondary,
+                      fontSize: 13.5,
+                      height: 1.45,
+                      letterSpacing: -0.1,
                     ),
                   ),
-                ),
+                ],
               ),
             ),
           ),

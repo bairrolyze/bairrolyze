@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../config/app_theme.dart';
+import '../../config/score_format.dart';
 import '../../models/address_model.dart';
 import '../../models/amenity_model.dart';
 import '../../models/score_model.dart';
@@ -128,9 +129,9 @@ class DashboardWidget extends StatelessWidget {
           children: [
             // ── Category scores ──────────────────────────────────────────
             _SectionLabel('NEIGHBOURHOOD SCORES'),
-            const SizedBox(height: 4),
+            const SizedBox(height: 5),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+              padding: const EdgeInsets.fromLTRB(33, 0, 24, 0),
               child: Text(
                 'Tap a card to see details',
                 style: TextStyle(
@@ -281,7 +282,7 @@ class _CategoryCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    _shortLabel(cat),
+                    shortCategoryLabel(cat.id, cat.label),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -292,7 +293,7 @@ class _CategoryCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  _scoreLabel(score),
+                  scoreLabel(score),
                   style: TextStyle(
                     color: color,
                     fontSize: 12,
@@ -333,7 +334,7 @@ class _CategoryCard extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  _shortLabel(cat),
+                  shortCategoryLabel(cat.id, cat.label),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -361,7 +362,7 @@ class _CategoryCard extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                _scoreLabel(score),
+                scoreLabel(score),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -380,26 +381,6 @@ class _CategoryCard extends StatelessWidget {
   }
 }
 
-String _scoreLabel(double s) {
-  if (s >= 90) return 'Excellent';
-  if (s >= 80) return 'Very Good';
-  if (s >= 65) return 'Good';
-  if (s >= 45) return 'Fair';
-  return 'Poor';
-}
-
-// Compact names so labels fit inside the 3-column tiles.
-const _shortLabels = {
-  'transportation': 'Transport',
-  'education': 'Education',
-  'healthcare': 'Health',
-  'shopping': 'Shopping',
-  'safety': 'Safety',
-  'religion': 'Religion',
-  'recreation': 'Leisure',
-};
-
-String _shortLabel(CategoryScore cat) => _shortLabels[cat.id] ?? cat.label;
 
 // ── Nearest row ───────────────────────────────────────────────────────────────
 
@@ -530,15 +511,36 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: p.textTertiary,
-          fontSize: 10.5,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.8,
-        ),
+      padding: const EdgeInsets.fromLTRB(20, 0, 24, 0),
+      child: Row(
+        children: [
+          // Left accent "glass" bar to anchor the section title.
+          Container(
+            width: 3,
+            height: 13,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppColors.accent,
+                  AppColors.accent.withValues(alpha: 0.25),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            text,
+            style: TextStyle(
+              color: p.textSecondary,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.8,
+            ),
+          ),
+        ],
       ),
     );
   }

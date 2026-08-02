@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/app_theme.dart';
+import '../../config/score_format.dart';
 import '../../models/address_model.dart';
 import '../../models/score_model.dart';
+import '../../models/user_preferences_model.dart';
 import '../../providers/analysis_provider.dart';
+import '../../providers/preferences_provider.dart';
 import '../../providers/alerts_provider.dart';
 import '../../providers/compare_provider.dart';
 import '../../providers/pro_provider.dart';
@@ -20,6 +23,10 @@ import '../../widgets/map/map_tab_body.dart';
 import '../alerts/alerts_screen.dart';
 import '../compare/compare_screen.dart';
 import '../paywall/paywall_screen.dart';
+
+// Toggle the grouped Compare / Follow / Alerts action bar. Kept off for v1 and
+// flipped on in v2 once the features have real data behind them.
+const bool _kShowActionBar = false;
 
 class NeighborhoodScreen extends ConsumerStatefulWidget {
   const NeighborhoodScreen({super.key});
@@ -56,7 +63,9 @@ class _NeighborhoodScreenState extends ConsumerState<NeighborhoodScreen> {
       children: [
         SizedBox(height: top),
         _ScoreHeader(score: result.score, address: analysis.address),
-        _ActionBar(score: result.score, address: analysis.address),
+        // Compare / Follow / Alerts — hidden until v2 (needs real data behind them).
+        // ignore: dead_code
+        if (_kShowActionBar) _ActionBar(score: result.score, address: analysis.address),
         _TabStrip(
           current: _tab,
           tabs: _tabs,
@@ -395,36 +404,21 @@ class _EmptyExplore extends StatelessWidget {
 
 // ── Score header ──────────────────────────────────────────────────────────────
 
-class _ScoreHeader extends StatelessWidget {
+class _ScoreHeader extends ConsumerWidget {
   final LocationScore score;
   final AddressModel? address;
   const _ScoreHeader({required this.score, this.address});
-
-  Color _scoreColor() {
-    final s = score.overall;
-    if (s >= 80) return const Color(0xFF22C55E);
-    if (s >= 60) return const Color(0xFF3B82F6);
-    if (s >= 40) return const Color(0xFFF59E0B);
-    return const Color(0xFFEF4444);
-  }
-
-  String _scoreLabel() {
-    final s = score.overall;
-    if (s >= 80) return 'Excellent';
-    if (s >= 60) return 'Good';
-    if (s >= 40) return 'Fair';
-    return 'Poor';
-  }
 
   String _article(String label) =>
       'aeiouAEIOU'.contains(label[0]) ? 'an' : 'a';
 
   @override
-  Widget build(BuildContext context) {
-    final color = _scoreColor();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final color = scoreColor(score.overall);
     final p = AppPalette.of(context);
-    final tenth = (score.overall / 10).toStringAsFixed(1);
-    final label = _scoreLabel();
+    final profile = ref.watch(preferencesProvider).profile;
+    final tenth = scoreTenth(score.overall);
+    final label = scoreLabel(score.overall);
     final cityLine = address?.city?.trim().isNotEmpty == true
         ? address!.city!.trim()
         : (address?.shortSecondary ?? '');
@@ -432,7 +426,6 @@ class _ScoreHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
       decoration: BoxDecoration(
-        color: p.surface,
         border: Border(bottom: BorderSide(color: p.border)),
       ),
       child: Column(
@@ -560,26 +553,67 @@ class _ScoreHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          // ── Verdict ─────────────────────────────────────────────────────
-          RichText(
-            text: TextSpan(
-              style: TextStyle(
-                color: p.textSecondary,
-                fontSize: 13,
-                height: 1.35,
-                letterSpacing: -0.1,
-              ),
-              children: [
-                TextSpan(text: 'This is ${_article(label)} '),
-                TextSpan(
-                  text: label.toLowerCase(),
-                  style: TextStyle(color: color, fontWeight: FontWeight.w700),
+          // ── Verdict + persona chip ──────────────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      color: p.textSecondary,
+                      fontSize: 13,
+                      height: 1.35,
+                      letterSpacing: -0.1,
+                    ),
+                    children: [
+                      TextSpan(text: 'This is ${_article(label)} '),
+                      TextSpan(
+                        text: label.toLowerCase(),
+                        style: TextStyle(
+                            color: color, fontWeight: FontWeight.w700),
+                      ),
+                      const TextSpan(text: ' neighbourhood to live in.'),
+                    ],
+                  ),
                 ),
-                const TextSpan(text: ' neighbourhood to live in.'),
+              ),
+              if (address != null) ...[
+                const SizedBox(width: 10),
+                _PersonaChip(
+                  profile: profile,
+                  onTap: () => _openProfilePicker(context, ref, profile),
+                ),
               ],
-            ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _openProfilePicker(
+    BuildContext context,
+    WidgetRef ref,
+    UserProfile current,
+  ) async {
+    final addr = address;
+    if (addr == null) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _ProfilePickerSheet(
+        current: current,
+        onSelect: (chosen) {
+          Navigator.of(context).pop();
+          if (chosen == current) return;
+          ref.read(preferencesProvider.notifier).setProfile(chosen);
+          ref.read(analysisProvider.notifier).analyze(
+                addr.displayAddress,
+                profile: chosen.jsonValue,
+                countryCode: ref.read(preferencesProvider).defaultCountry,
+              );
+        },
       ),
     );
   }
@@ -590,6 +624,171 @@ class _ScoreHeader extends StatelessWidget {
       '&viewpoint=${lat.toStringAsFixed(6)},${lng.toStringAsFixed(6)}',
     );
     await launchUrl(url, mode: LaunchMode.externalApplication);
+  }
+}
+
+// ── Persona chip ──────────────────────────────────────────────────────────────
+
+class _PersonaChip extends StatelessWidget {
+  final UserProfile profile;
+  final VoidCallback onTap;
+  const _PersonaChip({required this.profile, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: p.surface2,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: p.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Scored for ',
+              style: TextStyle(
+                color: p.textTertiary,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(profile.emoji, style: const TextStyle(fontSize: 12)),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                profile.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: p.textSecondary,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Text(
+              ' · ',
+              style: TextStyle(color: p.textTertiary, fontSize: 11.5),
+            ),
+            Text(
+              'Change',
+              style: TextStyle(
+                color: AppColors.accent,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Profile picker sheet ────────────────────────────────────────────────────────
+
+class _ProfilePickerSheet extends StatelessWidget {
+  final UserProfile current;
+  final ValueChanged<UserProfile> onSelect;
+  const _ProfilePickerSheet({required this.current, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    final bottom = MediaQuery.of(context).padding.bottom;
+    return Container(
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border.all(color: p.border),
+      ),
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: p.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Score for who?',
+            style: TextStyle(
+              color: p.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Re-scores this neighbourhood for your chosen lens.',
+            style: TextStyle(color: p.textTertiary, fontSize: 13),
+          ),
+          const SizedBox(height: 16),
+          GridView.count(
+            crossAxisCount: 3,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 1.55,
+            children: UserProfile.values.map((profile) {
+              final active = profile == current;
+              return GestureDetector(
+                onTap: () => onSelect(profile),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  decoration: BoxDecoration(
+                    color: active
+                        ? AppColors.accent.withValues(alpha: 0.14)
+                        : p.surface2,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: active ? AppColors.accent : p.border,
+                      width: active ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(profile.emoji,
+                          style: const TextStyle(fontSize: 20)),
+                      const SizedBox(height: 4),
+                      Text(
+                        profile.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color:
+                              active ? AppColors.accent : p.textSecondary,
+                          fontSize: 11.5,
+                          fontWeight:
+                              active ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
   }
 }
 

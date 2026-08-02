@@ -26,6 +26,7 @@ class PreferencesNotifier extends StateNotifier<UserPreferences> {
         // Keep defaults if parse fails
       }
     }
+    state = state.copyWith(initialized: true);
   }
 
   Future<void> _save() async {
@@ -50,6 +51,16 @@ class PreferencesNotifier extends StateNotifier<UserPreferences> {
 
   Future<void> setShowAiSummary(bool show) async {
     state = state.copyWith(showAiSummary: show);
+    await _save();
+  }
+
+  Future<void> setOnboardingComplete(bool value) async {
+    state = state.copyWith(onboardingComplete: value);
+    await _save();
+  }
+
+  Future<void> setPriorities(List<String> priorities) async {
+    state = state.copyWith(priorities: priorities);
     await _save();
   }
 }
