@@ -94,10 +94,7 @@ class AnalysisNotifier extends StateNotifier<AnalysisState> {
       final cached = cache.get<Map<String, dynamic>>(cacheKey);
       if (cached != null) {
         final result = AnalysisResult.fromJson(cached);
-        final addr = AddressModel(
-          displayAddress: rawAddress,
-          countryCode: countryCode,
-        );
+        final addr = _addressFromPayload(cached, rawAddress, countryCode);
         state = state.copyWith(
           status: AnalysisStatus.done,
           result: result,
@@ -159,16 +156,7 @@ class AnalysisNotifier extends StateNotifier<AnalysisState> {
 
       final data = finalPayload;
       final result = AnalysisResult.fromJson(data);
-      final geoData = data['address'] as Map<String, dynamic>;
-      final address = AddressModel(
-        displayAddress: geoData['display_name'] as String? ?? rawAddress,
-        city: geoData['city'] as String?,
-        country: geoData['country'] as String? ?? 'Portugal',
-        countryCode: countryCode,
-        lat: (geoData['lat'] as num?)?.toDouble(),
-        lng: (geoData['lng'] as num?)?.toDouble(),
-        id: _uuid.v4(),
-      );
+      final address = _addressFromPayload(data, rawAddress, countryCode);
 
       cache.set(cacheKey, data);
       await _ref.read(searchHistoryProvider.notifier).add(address, result);
@@ -185,6 +173,40 @@ class AnalysisNotifier extends StateNotifier<AnalysisState> {
         statusMessage: '',
       );
     }
+  }
+
+  /// Builds a full [AddressModel] from an analysis payload's `address` block,
+  /// preserving coordinates (needed for Street View) and the geocoded
+  /// display name / city. Used by both the cached and freshly-fetched paths so
+  /// cached results keep their lat/lng and full address just like new ones.
+  AddressModel _addressFromPayload(
+    Map<String, dynamic> data,
+    String rawAddress,
+    String countryCode,
+  ) {
+    final geoData = data['address'] as Map<String, dynamic>?;
+    if (geoData == null) {
+      return AddressModel(
+        displayAddress: rawAddress,
+        countryCode: countryCode,
+      );
+    }
+    return AddressModel(
+      displayAddress: geoData['display_name'] as String? ?? rawAddress,
+      street: geoData['street'] as String? ?? geoData['road'] as String?,
+      number: geoData['number'] as String? ??
+          geoData['house_number'] as String?,
+      district:
+          geoData['district'] as String? ?? geoData['suburb'] as String?,
+      postalCode:
+          geoData['postcode'] as String? ?? geoData['postal_code'] as String?,
+      city: geoData['city'] as String?,
+      country: geoData['country'] as String? ?? 'Portugal',
+      countryCode: countryCode,
+      lat: (geoData['lat'] as num?)?.toDouble(),
+      lng: (geoData['lng'] as num?)?.toDouble(),
+      id: _uuid.v4(),
+    );
   }
 
   /// Maps a backend pipeline stage name to the existing (already-real, no

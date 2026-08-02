@@ -357,6 +357,7 @@ class _RingPainter extends CustomPainter {
         ..strokeWidth = 11,
     );
 
+    if (percent <= 0) return;
     final sweep = 2 * 3.14159265358979 * percent;
     final rect = Rect.fromCircle(center: center, radius: radius);
     final gradient = SweepGradient(

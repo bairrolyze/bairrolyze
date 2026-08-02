@@ -61,6 +61,28 @@ class AddressModel {
     return first;
   }
 
+  /// Fuller primary label for the results header: the leading street/place
+  /// segments (up to two) before the city/region/postcode, so a specific
+  /// address like "Oriente, Praça do Oriente" isn't collapsed to just
+  /// "Oriente". Falls back to [shortPrimary] when nothing better is available.
+  String get headerTitle {
+    final segs = _segments;
+    if (segs.isEmpty) return shortPrimary;
+    final stops = <String>{
+      city?.trim().toLowerCase() ?? '',
+      district?.trim().toLowerCase() ?? '',
+      country.trim().toLowerCase(),
+    }..removeWhere((e) => e.isEmpty);
+    final kept = <String>[];
+    for (final s in segs) {
+      if (stops.contains(s.toLowerCase())) break;
+      if (_extractPostcode(s) == s) break; // pure postcode segment
+      kept.add(s);
+      if (kept.length == 2) break;
+    }
+    return kept.isEmpty ? shortPrimary : kept.join(', ');
+  }
+
   /// Short secondary label — the human-readable context not already in the
   /// primary: "City, Country" ("Amadora, Portugal"), else "Postcode, Country"
   /// ("SW3, United Kingdom"), else "Region, Country".

@@ -193,7 +193,7 @@ class _ActionBar extends ConsumerWidget {
               );
             },
           ),
-          const Spacer(),
+          const SizedBox(width: 8),
           // Alerts shortcut
           GestureDetector(
             onTap: () => AlertsScreen.show(context),
@@ -416,108 +416,166 @@ class _ScoreHeader extends StatelessWidget {
     return 'Poor';
   }
 
+  String _article(String label) =>
+      'aeiouAEIOU'.contains(label[0]) ? 'an' : 'a';
+
   @override
   Widget build(BuildContext context) {
     final color = _scoreColor();
     final p = AppPalette.of(context);
+    final tenth = (score.overall / 10).toStringAsFixed(1);
+    final label = _scoreLabel();
+    final cityLine = address?.city?.trim().isNotEmpty == true
+        ? address!.city!.trim()
+        : (address?.shortSecondary ?? '');
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
       decoration: BoxDecoration(
         color: p.surface,
         border: Border(bottom: BorderSide(color: p.border)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // The persistent top header is the single, primary score display
-          // (visible across every tab); DashboardWidget's Summary-tab hero
-          // no longer repeats the ring/number, only the label context.
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: color, width: 2.5),
-              color: color.withValues(alpha: 0.08),
-            ),
-            child: Center(
-              child: Text(
-                score.overall.round().toString(),
+          // ── Status row ──────────────────────────────────────────────────
+          Row(
+            children: [
+              const Icon(Icons.verified_user_rounded,
+                  size: 15, color: AppColors.success),
+              const SizedBox(width: 6),
+              const Text(
+                'Analysis Complete',
                 style: TextStyle(
-                  color: color,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
+                  color: AppColors.success,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.1,
                 ),
               ),
-            ),
+              const Spacer(),
+              if (address?.lat != null && address?.lng != null)
+                _StreetViewButton(
+                  onTap: () => _openStreetView(address!.lat!, address!.lng!),
+                ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
+          const SizedBox(height: 10),
+          // ── Address + score + ring ──────────────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        _scoreLabel(),
-                        style: TextStyle(
-                          color: color,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
                     Text(
-                      '${score.categories.length} categories',
+                      address?.headerTitle ?? '—',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: p.textTertiary,
-                        fontSize: 11,
+                        color: p.textPrimary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.8,
+                        height: 1.1,
                       ),
                     ),
-                    const Spacer(),
-                    if (address?.lat != null)
-                      GestureDetector(
-                        onTap: () =>
-                            _openStreetView(address!.lat!, address!.lng!),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.streetview_rounded,
-                                size: 12, color: AppColors.accent2),
-                            const SizedBox(width: 3),
-                            const Text(
-                              'Street View',
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on_rounded,
+                            size: 15, color: p.textTertiary),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            cityLine,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                color: p.textSecondary, fontSize: 14),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          tenth,
+                          style: TextStyle(
+                            color: p.textPrimary,
+                            fontSize: 46,
+                            fontWeight: FontWeight.w800,
+                            height: 1,
+                            letterSpacing: -1.8,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6, left: 3),
+                          child: Text(
+                            '/10',
+                            style: TextStyle(
+                              color: p.textTertiary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 9),
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 9, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: color.withValues(alpha: 0.35)),
+                            ),
+                            child: Text(
+                              label.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: AppColors.accent2,
+                                color: color,
                                 fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.4,
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  address?.shortPrimary ?? '—',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: p.textSecondary,
-                    fontSize: 12,
-                  ),
+              ),
+              const SizedBox(width: 6),
+              _ScoreRing(
+                percent: (score.overall / 100).clamp(0.0, 1.0),
+                color: color,
+                size: 92,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // ── Verdict ─────────────────────────────────────────────────────
+          RichText(
+            text: TextSpan(
+              style: TextStyle(
+                color: p.textSecondary,
+                fontSize: 13,
+                height: 1.35,
+                letterSpacing: -0.1,
+              ),
+              children: [
+                TextSpan(text: 'This is ${_article(label)} '),
+                TextSpan(
+                  text: label.toLowerCase(),
+                  style: TextStyle(color: color, fontWeight: FontWeight.w700),
                 ),
+                const TextSpan(text: ' neighbourhood to live in.'),
               ],
             ),
           ),
@@ -533,6 +591,139 @@ class _ScoreHeader extends StatelessWidget {
     );
     await launchUrl(url, mode: LaunchMode.externalApplication);
   }
+}
+
+// ── Street View pill ──────────────────────────────────────────────────────────
+
+class _StreetViewButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _StreetViewButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: p.surface2,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.accent2.withValues(alpha: 0.35)),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.map_rounded, size: 15, color: AppColors.accent2),
+            SizedBox(width: 6),
+            Text(
+              'Street View',
+              style: TextStyle(
+                color: AppColors.accent2,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Score ring (with heart) ───────────────────────────────────────────────────
+
+class _ScoreRing extends StatelessWidget {
+  final double percent;
+  final Color color;
+  final double size;
+  const _ScoreRing(
+      {required this.percent, required this.color, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.32),
+            blurRadius: 28,
+            spreadRadius: -6,
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: percent),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeOutCubic,
+            builder: (_, v, __) => CustomPaint(
+              size: Size(size, size),
+              painter: _ScoreRingPainter(v, color, p.border),
+            ),
+          ),
+          Icon(Icons.favorite_rounded, color: color, size: size * 0.3),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScoreRingPainter extends CustomPainter {
+  final double percent;
+  final Color color;
+  final Color track;
+  _ScoreRingPainter(this.percent, this.color, this.track);
+
+  static const _twoPi = 6.28318530718;
+  static const _start = -1.5707963268; // -90°, start at 12 o'clock
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    const stroke = 9.0;
+    final radius = (size.width - stroke) / 2;
+
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..color = track
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke,
+    );
+
+    if (percent <= 0) return;
+    final sweep = _twoPi * percent;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    canvas.drawArc(
+      rect,
+      _start,
+      sweep,
+      false,
+      Paint()
+        ..shader = SweepGradient(
+          startAngle: _start,
+          endAngle: _start + sweep,
+          colors: [color.withValues(alpha: 0.55), color],
+          transform: const GradientRotation(_start),
+        ).createShader(rect)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ScoreRingPainter old) =>
+      old.percent != percent || old.color != color || old.track != track;
 }
 
 // ── Horizontal tab strip ──────────────────────────────────────────────────────
