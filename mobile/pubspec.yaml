@@ -67,3 +67,14 @@ flutter:
     - assets/icons/
     - assets/animations/
     - assets/config/
+
+# App launcher icon — regenerate the source with:
+#   flutter test test/tools/generate_app_icon.dart
+# then rebuild the platform icons with:
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/icons/app_icon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  background_color_ios: "#0A1220"

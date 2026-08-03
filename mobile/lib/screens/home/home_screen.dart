@@ -15,19 +15,32 @@ import '../../providers/preferences_provider.dart';
 import '../../providers/shell_provider.dart';
 import '../../services/validation_service.dart';
 import '../../widgets/home/analyzing_progress_view.dart';
+import '../../widgets/home/brand.dart';
 import '../../widgets/home/recent_search_tile.dart';
 
 // ── Brand gradient ────────────────────────────────────────────────────────────
-// Single source for the blue→violet accent used on the hero icon and CTA.
-// Built from theme tokens so it stays correct in light and dark mode.
+// The premium blue→purple accent used on the primary CTA, active accents and
+// section ticks. Kept in one place so the whole screen stays consistent.
+const _kPrimaryBlue = Color(0xFF2F80FF);
+const _kPrimaryPurple = Color(0xFF7C4DFF);
 const _brandGradient = LinearGradient(
-  colors: [AppColors.accent, AppColors.accent2],
+  colors: [_kPrimaryBlue, _kPrimaryPurple],
   begin: Alignment.centerLeft,
   end: Alignment.centerRight,
 );
 
 // Horizontal gutter used consistently across every section.
 const _kGutter = 22.0;
+
+// Translucent glass surface / border for dark-mode cards (Apple-style).
+Color _glassFill(BuildContext c) =>
+    Theme.of(c).brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.05)
+        : AppColors.surfaceLight;
+Color _glassBorder(BuildContext c) =>
+    Theme.of(c).brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.08)
+        : AppColors.borderLight;
 
 // ── Suggestion model ──────────────────────────────────────────────────────────
 
@@ -171,14 +184,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _analyze() async {
     if (!_formKey.currentState!.validate()) return;
     final country = ref.read(selectedCountryProvider);
-    final profile = ref.read(preferencesProvider).profile.jsonValue;
     // Geocode the full picked address for accuracy; show the short label.
-    final query =
-        (_pickedFullAddress ?? _addressController.text).trim();
-    setState(() => _analyzingAddress = _addressController.text.trim());
+    await _runAnalysis(
+      query: (_pickedFullAddress ?? _addressController.text).trim(),
+      label: _addressController.text.trim(),
+      countryCode: country?.code ?? 'PT',
+    );
+  }
+
+  // Popular-search shortcut: skips the text field, analysing a well-known city
+  // in the currently selected country.
+  Future<void> _runPopularSearch(_PopularCity city) async {
+    final country = ref.read(selectedCountryProvider);
+    final countryName = country?.name ?? 'Portugal';
+    _focusNode.unfocus();
+    setState(() => _showSuggestions = false);
+    await _runAnalysis(
+      query: '${city.name}, $countryName',
+      label: city.name,
+      countryCode: country?.code ?? 'PT',
+    );
+  }
+
+  Future<void> _runAnalysis({
+    required String query,
+    required String label,
+    required String countryCode,
+  }) async {
+    final profile = ref.read(preferencesProvider).profile.jsonValue;
+    setState(() => _analyzingAddress = label);
     await ref.read(analysisProvider.notifier).analyze(
           query,
-          countryCode: country?.code ?? 'PT',
+          countryCode: countryCode,
           profile: profile,
         );
     if (!mounted) return;
@@ -257,7 +294,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final analysis = ref.watch(analysisProvider);
-    final history  = ref.watch(searchHistoryProvider);
     final p        = AppPalette.of(context);
 
     ref.listen(analysisProvider, (_, next) {
@@ -270,9 +306,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     });
 
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       backgroundColor: p.bg,
-      body: AnimatedSwitcher(
+      body: DecoratedBox(
+        // Deep navy cinematic gradient (never pure black) with a soft blue
+        // radial glow behind the hero — the atmospheric base for everything.
+        decoration: BoxDecoration(
+          gradient: dark
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF060B18), Color(0xFF081223), Color(0xFF050A16)],
+                  stops: [0.0, 0.5, 1.0],
+                )
+              : null,
+          color: dark ? null : p.bg,
+        ),
+        child: Stack(
+          children: [
+            if (dark)
+              const Positioned(
+                top: -80,
+                left: 0,
+                right: 0,
+                child: IgnorePointer(child: _RadialGlow()),
+              ),
+            _buildBody(analysis),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody(AnalysisState analysis) {
+    final history = ref.watch(searchHistoryProvider);
+    return AnimatedSwitcher(
         duration: const Duration(milliseconds: 260),
         child: analysis.isLoading
             ? AnalyzingProgressView(
@@ -281,71 +351,79 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 status: analysis.status,
                 progress: analysis.progress,
               )
-            : Stack(
+            : Center(
                 key: const ValueKey('search'),
-                children: [
-                  // Soft brand glow behind the hero for depth.
-                  const Positioned(
-                      top: -60, left: 0, right: 0, child: Center(child: _GlowBlob())),
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 560),
-                      child: SafeArea(
-                        bottom: false,
-                        child: CustomScrollView(
-                          controller: _scrollController,
-                          slivers: [
-                            // 1 ── Branding hero (centred)
-                            const SliverToBoxAdapter(child: _Hero()),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: SafeArea(
+                    top: false,
+                    bottom: false,
+                    child: CustomScrollView(
+                      controller: _scrollController,
+                      slivers: [
+                        // 1 ── City hero: skyline backdrop + logo + wordmark
+                        const SliverToBoxAdapter(child: _Hero()),
 
-                            // 2 ── Search + CTA
-                            SliverToBoxAdapter(child: _buildSearchAndCta()),
+                        // 2 ── Search + CTA
+                        SliverToBoxAdapter(child: _buildSearchAndCta()),
 
-                            const SliverToBoxAdapter(child: SizedBox(height: 30)),
+                        const SliverToBoxAdapter(child: SizedBox(height: 26)),
 
-                            // 3 ── Recent searches (only when there is history;
-                            // shows the 3 most recent).
-                            if (history.isNotEmpty) ...[
-                              SliverToBoxAdapter(
-                                child: _RecentHeader(
-                                  onClear: () => ref
-                                      .read(searchHistoryProvider.notifier)
-                                      .clear(),
-                                ),
-                              ),
-                              SliverToBoxAdapter(
-                                child: Column(
-                                  children: [
-                                    for (final entry in history.take(3))
-                                      RecentSearchTile(
-                                        entry: entry,
-                                        onTap: () => _openHistory(entry),
-                                        onRemove: () => ref
-                                            .read(searchHistoryProvider.notifier)
-                                            .remove(entry.id),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              const SliverToBoxAdapter(child: SizedBox(height: 30)),
-                            ],
-
-                            // 4 ── What we analyse
-                            const SliverToBoxAdapter(child: _CategoryCarousel()),
-
-                            // 5 ── How it works
-                            const SliverToBoxAdapter(child: SizedBox(height: 34)),
-                            const SliverToBoxAdapter(child: _HowItWorksCard()),
-
-                            const SliverToBoxAdapter(child: SizedBox(height: 40)),
-                          ],
+                        // 3 ── Popular searches
+                        SliverToBoxAdapter(
+                          child: _PopularSearches(onTap: _runPopularSearch),
                         ),
-                      ),
+
+                        const SliverToBoxAdapter(child: SizedBox(height: 26)),
+
+                        // 4 ── Why trust it (Smart Data / AI / Score / Private)
+                        const SliverToBoxAdapter(child: _FeatureGrid()),
+
+                        // 5 ── Recent searches (only when there is history;
+                        // shows the 3 most recent).
+                        if (history.isNotEmpty) ...[
+                          const SliverToBoxAdapter(child: SizedBox(height: 34)),
+                          SliverToBoxAdapter(
+                            child: _RecentHeader(
+                              onClear: () => ref
+                                  .read(searchHistoryProvider.notifier)
+                                  .clear(),
+                            ),
+                          ),
+                          SliverToBoxAdapter(
+                            child: Column(
+                              children: [
+                                for (final entry in history.take(3))
+                                  RecentSearchTile(
+                                    entry: entry,
+                                    onTap: () => _openHistory(entry),
+                                    onRemove: () => ref
+                                        .read(searchHistoryProvider.notifier)
+                                        .remove(entry.id),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        // 6 ── What we analyse
+                        const SliverToBoxAdapter(child: SizedBox(height: 40)),
+                        const SliverToBoxAdapter(child: _CategoryCarousel()),
+
+                        // 7 ── How it works
+                        const SliverToBoxAdapter(child: SizedBox(height: 34)),
+                        const SliverToBoxAdapter(child: _HowItWorksCard()),
+
+                        // 8 ── Trusted-by social proof (moved to the very end)
+                        const SliverToBoxAdapter(child: SizedBox(height: 40)),
+                        const SliverToBoxAdapter(child: _TrustedBy()),
+
+                        const SliverToBoxAdapter(child: SizedBox(height: 40)),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-      ),
     );
   }
 
@@ -354,19 +432,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildSearchAndCta() {
     final p = AppPalette.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(_kGutter, 8, _kGutter, 0),
+      padding: const EdgeInsets.fromLTRB(_kGutter, 2, _kGutter, 0),
       child: Form(
         key: _formKey,
         child: Column(
           children: [
-            // Search field
+            // Search field — 64px dark-glass, 22px radius
             Container(
               decoration: BoxDecoration(
-                color: p.surface,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: p.border),
+                color: _glassFill(context),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: _glassBorder(context)),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 6),
+              constraints: const BoxConstraints(minHeight: 64),
               child: Row(
                 children: [
                   Padding(
@@ -498,7 +577,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-// ── Branding hero (centred icon + name + subtitle) ────────────────────────────
+// ── City hero (skyline backdrop + logo mark + wordmark + subtitle) ────────────
 
 class _Hero extends StatelessWidget {
   const _Hero();
@@ -506,86 +585,111 @@ class _Hero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(_kGutter, 20, _kGutter, 30),
-      child: Column(
+    final topInset = MediaQuery.of(context).padding.top;
+    // The painted skyline fills the full hero and reaches under the status bar;
+    // content is inset from the top so it clears the notch. The skyline sits as
+    // a V (tall edges, open centre) in the lower band, so the logo + wordmark
+    // rest against clear sky and the buildings meet the search field below.
+    const heroHeight = 404.0;
+
+    return SizedBox(
+      height: heroHeight,
+      child: Stack(
+        alignment: Alignment.topCenter,
         children: [
-          // Home icon badge
-          Container(
-            width: 76,
-            height: 76,
-            decoration: BoxDecoration(
-              color: p.surface,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: AppColors.accent.withValues(alpha: 0.30)),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.35),
-                  blurRadius: 28,
-                  spreadRadius: -6,
+          // Skyline backdrop, full-bleed to the top edge.
+          Positioned.fill(
+            child: CityHeroBackdrop(height: heroHeight),
+          ),
+          // Centred brand lockup, floating above the skyline.
+          Padding(
+            padding: EdgeInsets.only(top: topInset + 30),
+            child: Column(
+              children: [
+                const BairrolyzeLogoMark(size: 104)
+                    .animate()
+                    .fadeIn(duration: 500.ms)
+                    .scale(
+                        begin: const Offset(0.82, 0.82),
+                        curve: Curves.easeOutBack),
+                const SizedBox(height: 14),
+                const BairrolyzeWordmark(fontSize: 44)
+                    .animate(delay: 80.ms)
+                    .fadeIn(duration: 500.ms)
+                    .slideY(begin: 0.15, end: 0, curve: Curves.easeOut),
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: _kGutter),
+                  child: Text(
+                    'AI-powered neighbourhood insights\nto help you make better decisions.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: p.textSecondary,
+                      fontSize: 15.5,
+                      height: 1.5,
+                      letterSpacing: -0.1,
+                    ),
+                  ).animate(delay: 130.ms).fadeIn(duration: 500.ms),
                 ),
               ],
             ),
-            alignment: Alignment.center,
-            child: const Icon(Icons.home_rounded,
-                color: AppColors.accent, size: 38),
-          )
-              .animate()
-              .fadeIn(duration: 460.ms)
-              .scale(begin: const Offset(0.85, 0.85), curve: Curves.easeOutBack),
-
-          const SizedBox(height: 18),
-
-          // App name
-          Text(
-            'Bairrolyze',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: p.textPrimary,
-              fontSize: 33,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.8,
-            ),
-          ).animate(delay: 60.ms).fadeIn(duration: 460.ms),
-
-          const SizedBox(height: 12),
-
-          // Subtitle
-          Text(
-            'Neighbourhood insights to help you\nmake better decisions.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: p.textSecondary,
-              fontSize: 15.5,
-              height: 1.5,
-              letterSpacing: -0.1,
-            ),
-          ).animate(delay: 110.ms).fadeIn(duration: 460.ms),
+          ),
         ],
       ),
     );
   }
 }
 
-// ── Decorative brand glow ─────────────────────────────────────────────────────
+// ── Subtle press-scale wrapper (buttons dip to 0.98 on press) ─────────────────
 
-class _GlowBlob extends StatelessWidget {
-  const _GlowBlob();
+class _PressableScale extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  const _PressableScale({required this.child, required this.onTap});
+
+  @override
+  State<_PressableScale> createState() => _PressableScaleState();
+}
+
+class _PressableScaleState extends State<_PressableScale> {
+  bool _down = false;
 
   @override
   Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: 340,
-        height: 340,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [
-              AppColors.accent.withValues(alpha: 0.16),
-              AppColors.accent.withValues(alpha: 0.0),
-            ],
-          ),
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _down = true),
+      onTapUp: (_) => setState(() => _down = false),
+      onTapCancel: () => setState(() => _down = false),
+      child: AnimatedScale(
+        scale: _down ? 0.98 : 1.0,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+// ── Soft blue radial glow behind the hero ─────────────────────────────────────
+
+class _RadialGlow extends StatelessWidget {
+  const _RadialGlow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 460,
+      height: 460,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            _kPrimaryBlue.withValues(alpha: 0.18),
+            _kPrimaryPurple.withValues(alpha: 0.05),
+            _kPrimaryBlue.withValues(alpha: 0.0),
+          ],
+          stops: const [0.0, 0.45, 1.0],
         ),
       ),
     );
@@ -600,40 +704,405 @@ class _CtaButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 58,
-      decoration: BoxDecoration(
-        gradient: _brandGradient,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent.withValues(alpha: 0.40),
-            blurRadius: 26,
-            offset: const Offset(0, 9),
-            spreadRadius: -4,
+    return _PressableScale(
+      onTap: onPressed,
+      child: Container(
+        height: 70,
+        decoration: BoxDecoration(
+          gradient: _brandGradient,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            // Soft ambient blue-purple glow beneath the button.
+            BoxShadow(
+              color: _kPrimaryPurple.withValues(alpha: 0.38),
+              blurRadius: 34,
+              offset: const Offset(0, 12),
+              spreadRadius: -6,
+            ),
+            BoxShadow(
+              color: _kPrimaryBlue.withValues(alpha: 0.28),
+              blurRadius: 22,
+              offset: const Offset(0, 6),
+              spreadRadius: -8,
+            ),
+          ],
+        ),
+        child: const Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Analyse Neighbourhood',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              SizedBox(width: 10),
+              Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Popular searches ──────────────────────────────────────────────────────────
+
+class _PopularCity {
+  final String name;
+  final IconData icon;
+  final Color color;
+  const _PopularCity(this.name, this.icon, this.color);
+}
+
+// Most-visited places per supported country. The active country (from
+// `selectedCountryProvider`) decides which set is shown, so a user never sees
+// another country's cities.
+const _kPopularByCountry = <String, List<_PopularCity>>{
+  'PT': [
+    _PopularCity('Lisbon', Icons.location_city_rounded, Color(0xFF5B8CFF)),
+    _PopularCity('Porto', Icons.account_balance_rounded, Color(0xFFF87171)),
+    _PopularCity('Cascais', Icons.house_rounded, Color(0xFF34D399)),
+    _PopularCity('Sintra', Icons.terrain_rounded, Color(0xFFFBBF24)),
+  ],
+  'ES': [
+    _PopularCity('Madrid', Icons.location_city_rounded, Color(0xFFF87171)),
+    _PopularCity('Barcelona', Icons.account_balance_rounded, Color(0xFF5B8CFF)),
+    _PopularCity('Valencia', Icons.beach_access_rounded, Color(0xFF34D399)),
+    _PopularCity('Seville', Icons.wb_sunny_rounded, Color(0xFFFBBF24)),
+  ],
+  'GB': [
+    _PopularCity('London', Icons.account_balance_rounded, Color(0xFF34D399)),
+    _PopularCity('Manchester', Icons.location_city_rounded, Color(0xFF5B8CFF)),
+    _PopularCity('Edinburgh', Icons.castle_rounded, Color(0xFFF87171)),
+    _PopularCity('Bristol', Icons.directions_boat_rounded, Color(0xFFFBBF24)),
+  ],
+  'FR': [
+    _PopularCity('Paris', Icons.location_city_rounded, Color(0xFF5B8CFF)),
+    _PopularCity('Lyon', Icons.account_balance_rounded, Color(0xFFF87171)),
+    _PopularCity('Nice', Icons.beach_access_rounded, Color(0xFF34D399)),
+    _PopularCity('Bordeaux', Icons.wine_bar_rounded, Color(0xFFFBBF24)),
+  ],
+  'DE': [
+    _PopularCity('Berlin', Icons.location_city_rounded, Color(0xFFFBBF24)),
+    _PopularCity('Munich', Icons.account_balance_rounded, Color(0xFF5B8CFF)),
+    _PopularCity('Hamburg', Icons.directions_boat_rounded, Color(0xFF34D399)),
+    _PopularCity('Cologne', Icons.church_rounded, Color(0xFFF87171)),
+  ],
+};
+
+List<_PopularCity> _popularFor(String code) =>
+    _kPopularByCountry[code] ?? _kPopularByCountry['PT']!;
+
+class _PopularSearches extends ConsumerWidget {
+  final ValueChanged<_PopularCity> onTap;
+  const _PopularSearches({required this.onTap});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final country = ref.watch(selectedCountryProvider);
+    final countryName = country?.name ?? 'Portugal';
+    final cities = _popularFor(country?.code ?? 'PT');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: 'Popular Searches',
+          subtitle: 'Most-visited places in $countryName',
+        ),
+        SizedBox(
+          height: 44,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: _kGutter),
+            itemCount: cities.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, i) {
+              final c = cities[i];
+              return _PopularChip(city: c, onTap: () => onTap(c));
+            },
+          ),
+        ),
+      ],
+    ).animate(delay: 180.ms).fadeIn(duration: 460.ms);
+  }
+}
+
+class _PopularChip extends StatelessWidget {
+  final _PopularCity city;
+  final VoidCallback onTap;
+  const _PopularChip({required this.city, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return _PressableScale(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        decoration: BoxDecoration(
+          color: _glassFill(context),
+          borderRadius: BorderRadius.circular(22),
+          // Glowing coloured border, tinted to the city's accent.
+          border: Border.all(
+              color: city.color.withValues(alpha: 0.55), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: city.color.withValues(alpha: 0.28),
+              blurRadius: 14,
+              spreadRadius: -3,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(city.icon, size: 17, color: city.color),
+            const SizedBox(width: 8),
+            Text(
+              city.name,
+              style: TextStyle(
+                color: p.textSecondary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Why trust it — 4-up feature grid ──────────────────────────────────────────
+
+class _Feature {
+  final IconData icon;
+  final String title;
+  final String desc;
+  final Color color;
+  const _Feature(this.icon, this.title, this.desc, this.color);
+}
+
+const _kFeatures = <_Feature>[
+  _Feature(Icons.verified_user_rounded, 'Smart Data',
+      'Real-time and reliable sources', Color(0xFF8B5CF6)),
+  _Feature(Icons.psychology_rounded, 'AI Analysis',
+      '25+ factors analysed in seconds', Color(0xFF3B82F6)),
+  _Feature(Icons.track_changes_rounded, 'Accurate Score',
+      'A clear score to decide with confidence', Color(0xFF22C55E)),
+  _Feature(Icons.lock_rounded, 'Private & Secure',
+      'Your searches and data stay protected', Color(0xFFFBBF24)),
+];
+
+class _FeatureGrid extends StatelessWidget {
+  const _FeatureGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: _kGutter),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 24),
+        decoration: BoxDecoration(
+          color: _glassFill(context),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: _glassBorder(context)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final f in _kFeatures) Expanded(child: _FeatureCell(f)),
+          ],
+        ),
+      ),
+    ).animate(delay: 200.ms).fadeIn(duration: 460.ms).slideY(
+          begin: 0.06,
+          end: 0,
+          curve: Curves.easeOut,
+        );
+  }
+}
+
+class _FeatureCell extends StatelessWidget {
+  final _Feature f;
+  const _FeatureCell(this.f);
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Column(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: f.color.withValues(alpha: 0.14),
+              boxShadow: [
+                BoxShadow(
+                  color: f.color.withValues(alpha: 0.22),
+                  blurRadius: 16,
+                  spreadRadius: -4,
+                ),
+              ],
+            ),
+            child: Icon(f.icon, color: f.color, size: 22),
+          ),
+          const SizedBox(height: 11),
+          Text(
+            f.title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: p.textPrimary,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+              height: 1.15,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            f.desc,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: p.textTertiary,
+              fontSize: 10.5,
+              height: 1.3,
+              letterSpacing: -0.1,
+            ),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(18),
-          splashColor: Colors.white.withValues(alpha: 0.10),
-          highlightColor: Colors.white.withValues(alpha: 0.05),
-          child: const Center(
-            child: Text(
-              'Analyse Neighbourhood',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.2,
-              ),
+    );
+  }
+}
+
+// ── Trusted-by social proof ───────────────────────────────────────────────────
+
+class _TrustedBy extends StatelessWidget {
+  const _TrustedBy();
+
+  // Deterministic gradient pairs for the faux avatar stack.
+  static const _avatarColors = <List<Color>>[
+    [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+    [Color(0xFF0EA5E9), Color(0xFF22D3EE)],
+    [Color(0xFFF472B6), Color(0xFFFB7185)],
+    [Color(0xFF34D399), Color(0xFF10B981)],
+    [Color(0xFFF59E0B), Color(0xFFF97316)],
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: _kGutter),
+      child: Row(
+        children: [
+          // Shield badge.
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.accent.withValues(alpha: 0.12),
+              border:
+                  Border.all(color: AppColors.accent.withValues(alpha: 0.30)),
+            ),
+            child: const Icon(Icons.verified_user_rounded,
+                color: AppColors.accent, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Trusted by thousands of users worldwide',
+                  style: TextStyle(
+                    color: p.textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    // Overlapping avatar stack.
+                    SizedBox(
+                      width: 26.0 * _avatarColors.length - (18.0 * (_avatarColors.length - 1)) + 4,
+                      height: 30,
+                      child: Stack(
+                        children: [
+                          for (int i = 0; i < _avatarColors.length; i++)
+                            Positioned(
+                              left: i * 18.0,
+                              child: _Avatar(
+                                colors: _avatarColors[i],
+                                ringColor: p.bg,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        '+2.5K',
+                        style: TextStyle(
+                          color: AppColors.accent,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
+        ],
+      ),
+    ).animate(delay: 220.ms).fadeIn(duration: 460.ms);
+  }
+}
+
+class _Avatar extends StatelessWidget {
+  final List<Color> colors;
+  final Color ringColor;
+  const _Avatar({required this.colors, required this.ringColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        border: Border.all(color: ringColor, width: 2),
+      ),
+      child: Icon(
+        Icons.person_rounded,
+        size: 16,
+        color: Colors.white.withValues(alpha: 0.92),
       ),
     );
   }
