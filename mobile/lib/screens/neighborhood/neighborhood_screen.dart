@@ -303,8 +303,11 @@ class _TimelineTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Historical development timeline
-          NeighborhoodTimelineWidget(score: score, topPadding: 0),
+          // Time Machine — fixed height so Expanded children inside resolve
+          SizedBox(
+            height: 520,
+            child: TimeMachineWidget(score: score, topPadding: 0),
+          ),
 
           // ── Divider ─────────────────────────────────────────────────────
           Padding(
@@ -317,7 +320,7 @@ class _TimelineTab extends StatelessWidget {
                     size: 12, color: p.textTertiary),
                 const SizedBox(width: 6),
                 Text(
-                  'DAILY ACTIVITY RADAR',
+                  'DEVELOPMENT TIMELINE',
                   style: TextStyle(
                     color: p.textTertiary,
                     fontSize: 10.5,
@@ -331,11 +334,8 @@ class _TimelineTab extends StatelessWidget {
             ),
           ),
 
-          // Time Machine — fixed height so Expanded children inside resolve
-          SizedBox(
-            height: 520,
-            child: TimeMachineWidget(score: score, topPadding: 0),
-          ),
+          // Historical development timeline
+          NeighborhoodTimelineWidget(score: score, topPadding: 0),
 
           const SizedBox(height: 32),
         ],
