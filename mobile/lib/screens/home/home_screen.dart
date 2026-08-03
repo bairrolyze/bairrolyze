@@ -615,7 +615,7 @@ class _Hero extends StatelessWidget {
     // content is inset from the top so it clears the notch. The skyline sits as
     // a V (tall edges, open centre) in the lower band, so the logo + wordmark
     // rest against clear sky and the buildings meet the search field below.
-    const heroHeight = 394.0;
+    const heroHeight = 366.0;
 
     return SizedBox(
       height: heroHeight,
@@ -732,44 +732,56 @@ class _CtaButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _PressableScale(
-      onTap: onPressed,
-      child: Container(
-        height: 70,
-        decoration: BoxDecoration(
-          gradient: _brandGradient,
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [
-            // Soft ambient blue-purple glow beneath the button.
-            BoxShadow(
-              color: _kPrimaryPurple.withValues(alpha: 0.38),
-              blurRadius: 34,
-              offset: const Offset(0, 12),
-              spreadRadius: -6,
-            ),
-            BoxShadow(
-              color: _kPrimaryBlue.withValues(alpha: 0.28),
-              blurRadius: 22,
-              offset: const Offset(0, 6),
-              spreadRadius: -8,
-            ),
-          ],
-        ),
-        child: const Center(
+    // A content-hugging pill, centred rather than full-bleed, with a circular
+    // arrow badge — reads lighter and more refined than a broad slab button.
+    return Center(
+      child: _PressableScale(
+        onTap: onPressed,
+        child: Container(
+          height: 58,
+          padding: const EdgeInsets.only(left: 30, right: 11),
+          decoration: BoxDecoration(
+            gradient: _brandGradient,
+            borderRadius: BorderRadius.circular(29),
+            boxShadow: [
+              // Soft ambient blue-purple glow beneath the button.
+              BoxShadow(
+                color: _kPrimaryPurple.withValues(alpha: 0.42),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
+                spreadRadius: -6,
+              ),
+              BoxShadow(
+                color: _kPrimaryBlue.withValues(alpha: 0.30),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+                spreadRadius: -8,
+              ),
+            ],
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
+              const Text(
                 'Analyse Neighbourhood',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16.5,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                   letterSpacing: -0.2,
                 ),
               ),
-              SizedBox(width: 10),
-              Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 14),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.22),
+                ),
+                child: const Icon(Icons.arrow_forward_rounded,
+                    color: Colors.white, size: 18),
+              ),
             ],
           ),
         ),
@@ -867,20 +879,19 @@ class _PopularChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final p = AppPalette.of(context);
     return _PressableScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18),
         decoration: BoxDecoration(
-          color: _glassFill(context),
+          // Native/transparent fill — just the glowing coloured ring.
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(22),
-          // Glowing coloured border, tinted to the city's accent.
           border: Border.all(
-              color: city.color.withValues(alpha: 0.55), width: 1.2),
+              color: city.color.withValues(alpha: 0.65), width: 1.3),
           boxShadow: [
             BoxShadow(
-              color: city.color.withValues(alpha: 0.28),
+              color: city.color.withValues(alpha: 0.24),
               blurRadius: 14,
               spreadRadius: -3,
             ),
@@ -890,10 +901,11 @@ class _PopularChip extends StatelessWidget {
           children: [
             Icon(city.icon, size: 17, color: city.color),
             const SizedBox(width: 8),
+            // Label tinted to the chip's accent to match the border.
             Text(
               city.name,
               style: TextStyle(
-                color: p.textSecondary,
+                color: city.color,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 letterSpacing: -0.1,
