@@ -48,6 +48,8 @@ dependencies:
   # Splash screen
   flutter_native_splash: ^2.4.0
   geolocator: ^14.0.3
+  # Device magnetometer heading for the transit radar's live compass.
+  flutter_compass: ^0.8.1
 
 dev_dependencies:
   flutter_test:
