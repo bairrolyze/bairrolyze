@@ -300,7 +300,7 @@ class _TutorialPage extends StatelessWidget {
           Text(
             data.title,
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 24,
               fontWeight: FontWeight.w800,
               color: p.textPrimary,
               letterSpacing: -0.8,

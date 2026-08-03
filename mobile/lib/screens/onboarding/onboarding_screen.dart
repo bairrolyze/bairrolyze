@@ -188,7 +188,7 @@ class _WelcomePage extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: p.textPrimary,
-              fontSize: 32,
+              fontSize: 26,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.8,
               height: 1.1,

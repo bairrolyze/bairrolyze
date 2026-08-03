@@ -39,7 +39,7 @@ class SavedScreen extends ConsumerWidget {
                       'Saved',
                       style: TextStyle(
                         color: p.textPrimary,
-                        fontSize: 28,
+                        fontSize: 24,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.8,
                       ),

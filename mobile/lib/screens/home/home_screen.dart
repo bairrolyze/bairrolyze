@@ -112,6 +112,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _onFocusChange() {
+    // Rebuild so the search field's focus styling (border/glow/icon) updates.
+    if (mounted) setState(() {});
     if (!_focusNode.hasFocus) {
       Future.delayed(const Duration(milliseconds: 150), () {
         if (mounted) setState(() => _showSuggestions = false);
@@ -431,60 +433,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildSearchAndCta() {
     final p = AppPalette.of(context);
+    final focused = _focusNode.hasFocus;
     return Padding(
       padding: const EdgeInsets.fromLTRB(_kGutter, 2, _kGutter, 0),
       child: Form(
         key: _formKey,
         child: Column(
           children: [
-            // Search field — glass over the native background, ringed by a
-            // glowing blue→purple gradient border.
+            // Search field — flat deep-navy field with a thin, subtle blue
+            // border and a faint outer glow (brighter on focus).
             Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
                 gradient: const LinearGradient(
-                  colors: [_kPrimaryBlue, _kPrimaryPurple],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF08152B), Color(0xFF071022)],
+                ),
+                borderRadius: BorderRadius.circular(11),
+                border: Border.all(
+                  color: focused
+                      ? const Color(0xFF4F7DFF)
+                      : const Color(0xFF2E5DFF).withValues(alpha: 0.25),
+                  width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: _kPrimaryBlue.withValues(alpha: 0.30),
-                    blurRadius: 20,
-                    spreadRadius: -5,
-                    offset: const Offset(0, 2),
-                  ),
-                  BoxShadow(
-                    color: _kPrimaryPurple.withValues(alpha: 0.26),
-                    blurRadius: 22,
-                    spreadRadius: -5,
-                    offset: const Offset(0, 6),
+                    color: focused
+                        ? const Color(0xFF4F7DFF).withValues(alpha: 0.15)
+                        : const Color(0xFF2E5DFF).withValues(alpha: 0.08),
+                    blurRadius: 10,
                   ),
                 ],
               ),
-              padding: const EdgeInsets.all(1.5),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: p.bg,
-                  borderRadius: BorderRadius.circular(20.5),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                constraints: const BoxConstraints(minHeight: 62),
-                child: Row(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              constraints: const BoxConstraints(minHeight: 50),
+              child: Row(
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(left: 12, right: 4),
                     child: _fetching
-                        ? SizedBox(
+                        ? const SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 1.8,
-                              color: p.textTertiary,
+                              color: Color(0xFF7C8598),
                             ),
                           )
-                        : Icon(Icons.search_rounded,
-                            color: p.textTertiary, size: 22),
+                        : const Icon(Icons.search_rounded,
+                            color: Color(0xFF7C8598), size: 22),
                   ),
                   Expanded(
                     child: TextFormField(
@@ -492,12 +489,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       focusNode: _focusNode,
                       style: TextStyle(
                           color: p.textPrimary,
-                          fontSize: 15.5,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w400,
                           letterSpacing: -0.1),
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: 'Search any address, city or area',
                         hintStyle:
-                            TextStyle(color: p.textTertiary, fontSize: 15),
+                            TextStyle(color: Color(0xFF8B8F9D), fontSize: 16),
                         isDense: true,
                         filled: false,
                         border: InputBorder.none,
@@ -524,8 +522,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   // Clear (only when text present) then "use my location".
                   if (_addressController.text.isNotEmpty)
                     IconButton(
-                      icon: Icon(Icons.clear_rounded,
-                          color: p.textTertiary, size: 18),
+                      icon: const Icon(Icons.clear_rounded,
+                          color: Color(0xFF7C8598), size: 18),
                       onPressed: () {
                         _addressController.clear();
                         _pickedFullAddress = null;
@@ -537,21 +535,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   IconButton(
                     icon: _locating
-                        ? SizedBox(
+                        ? const SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 1.8,
-                              color: AppColors.accent,
+                              color: Color(0xFF4F7DFF),
                             ),
                           )
-                        : const Icon(Icons.my_location_rounded,
-                            color: AppColors.accent, size: 20),
+                        : Icon(Icons.my_location_rounded,
+                            color: focused
+                                ? const Color(0xFF4F7DFF)
+                                : const Color(0xFF7C8598),
+                            size: 20),
                     tooltip: 'Use my current location',
                     onPressed: _locating ? null : _useCurrentLocation,
                   ),
                 ],
-              ),
               ),
             ),
 
@@ -586,7 +586,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   : const SizedBox.shrink(),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
 
             // Primary CTA
             _CtaButton(
@@ -615,7 +615,7 @@ class _Hero extends StatelessWidget {
     // content is inset from the top so it clears the notch. The skyline sits as
     // a V (tall edges, open centre) in the lower band, so the logo + wordmark
     // rest against clear sky and the buildings meet the search field below.
-    const heroHeight = 366.0;
+    const heroHeight = 316.0;
 
     return SizedBox(
       height: heroHeight,
@@ -631,14 +631,14 @@ class _Hero extends StatelessWidget {
             padding: EdgeInsets.only(top: topInset + 30),
             child: Column(
               children: [
-                const BairrolyzeLogoMark(size: 104)
+                const BairrolyzeLogoMark(size: 68)
                     .animate()
                     .fadeIn(duration: 500.ms)
                     .scale(
                         begin: const Offset(0.82, 0.82),
                         curve: Curves.easeOutBack),
                 const SizedBox(height: 14),
-                const BairrolyzeWordmark(fontSize: 44)
+                const BairrolyzeWordmark(fontSize: 36)
                     .animate(delay: 80.ms)
                     .fadeIn(duration: 500.ms)
                     .slideY(begin: 0.15, end: 0, curve: Curves.easeOut),
@@ -732,58 +732,59 @@ class _CtaButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // A content-hugging pill, centred rather than full-bleed, with a circular
-    // arrow badge — reads lighter and more refined than a broad slab button.
-    return Center(
-      child: _PressableScale(
-        onTap: onPressed,
-        child: Container(
-          height: 58,
-          padding: const EdgeInsets.only(left: 30, right: 11),
-          decoration: BoxDecoration(
-            gradient: _brandGradient,
-            borderRadius: BorderRadius.circular(29),
-            boxShadow: [
-              // Soft ambient blue-purple glow beneath the button.
-              BoxShadow(
-                color: _kPrimaryPurple.withValues(alpha: 0.42),
-                blurRadius: 30,
-                offset: const Offset(0, 10),
-                spreadRadius: -6,
+    // Full-bleed bar matching the search field's width and 11px radius, with a
+    // reduced height so it reads as a companion to the field above it.
+    return _PressableScale(
+      onTap: onPressed,
+      child: Container(
+        width: double.infinity,
+        height: 50,
+        padding: const EdgeInsets.symmetric(horizontal: 11),
+        decoration: BoxDecoration(
+          gradient: _brandGradient,
+          borderRadius: BorderRadius.circular(11),
+          boxShadow: [
+            // Soft ambient blue-purple glow beneath the button.
+            BoxShadow(
+              color: _kPrimaryPurple.withValues(alpha: 0.42),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+              spreadRadius: -6,
+            ),
+            BoxShadow(
+              color: _kPrimaryBlue.withValues(alpha: 0.30),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+              spreadRadius: -8,
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            const Text(
+              'Analyse Neighbourhood',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.2,
               ),
-              BoxShadow(
-                color: _kPrimaryBlue.withValues(alpha: 0.30),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
-                spreadRadius: -8,
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Analyse Neighbourhood',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.2,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Container(
-                width: 36,
-                height: 36,
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white.withValues(alpha: 0.22),
                 ),
                 child: const Icon(Icons.arrow_forward_rounded,
-                    color: Colors.white, size: 18),
+                    color: Colors.white, size: 16),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

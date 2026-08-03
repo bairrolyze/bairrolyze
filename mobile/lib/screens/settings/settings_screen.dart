@@ -34,7 +34,7 @@ class SettingsScreen extends ConsumerWidget {
                 'You',
                 style: TextStyle(
                   color: p.textPrimary,
-                  fontSize: 30,
+                  fontSize: 24,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.8,
                 ),

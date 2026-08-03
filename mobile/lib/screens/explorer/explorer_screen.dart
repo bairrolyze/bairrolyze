@@ -231,7 +231,7 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
                         'Explore',
                         style: TextStyle(
                           color: p.textPrimary,
-                          fontSize: 22,
+                          fontSize: 24,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.6,
                           height: 1,

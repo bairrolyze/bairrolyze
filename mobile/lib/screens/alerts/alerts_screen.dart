@@ -137,7 +137,7 @@ class _PaywallSection extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: p.textPrimary,
-                    fontSize: 24,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                     letterSpacing: -0.5,
                   ),
