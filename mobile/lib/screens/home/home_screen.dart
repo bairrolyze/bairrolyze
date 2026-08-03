@@ -621,8 +621,11 @@ class _Hero extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: _kGutter),
                   child: Text(
-                    'AI-powered neighbourhood insights\nto help you make better decisions.',
+                    'The Smarter Way to Choose Home',
                     textAlign: TextAlign.center,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.visible,
                     style: TextStyle(
                       color: p.textSecondary,
                       fontSize: 15.5,
