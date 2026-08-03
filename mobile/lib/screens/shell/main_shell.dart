@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_theme.dart';
 import '../../providers/shell_provider.dart';
+import '../explorer/explorer_screen.dart';
 import '../home/home_screen.dart';
-import '../map/map_screen.dart';
 import '../neighborhood/neighborhood_screen.dart';
 import '../saved/saved_screen.dart';
 import '../settings/settings_screen.dart';
@@ -15,7 +15,7 @@ import '../settings/settings_screen.dart';
 class _Tab {
   static const home = 0;
   static const results = 1;
-  static const map = 2;
+  static const explore = 2;
   static const saved = 3;
   static const profile = 4;
 }
@@ -35,7 +35,7 @@ class MainShell extends ConsumerWidget {
         children: const [
           HomeScreen(),          // 0 — Home
           NeighborhoodScreen(),  // 1 — Results (post-analyse)
-          MapScreen(),           // 2 — Map
+          ExplorerScreen(),      // 2 — Explore
           SavedScreen(),         // 3 — Saved
           SettingsScreen(),      // 4 — Profile
         ],
@@ -80,11 +80,11 @@ class _BottomNav extends StatelessWidget {
               onTap: () => onSelect(_Tab.home),
             ),
             _NavItem(
-              icon: Icons.map_outlined,
-              activeIcon: Icons.map_rounded,
-              label: 'Map',
-              active: current == _Tab.map,
-              onTap: () => onSelect(_Tab.map),
+              icon: Icons.explore_outlined,
+              activeIcon: Icons.explore_rounded,
+              label: 'Explore',
+              active: current == _Tab.explore,
+              onTap: () => onSelect(_Tab.explore),
             ),
             // Center "+" — analyse a new property (jumps to Home search).
             _AnalyseFab(onTap: () => onSelect(_Tab.home)),
