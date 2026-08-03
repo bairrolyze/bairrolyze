@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_theme.dart';
-import '../../providers/shell_provider.dart';
+import '../../models/user_preferences_model.dart';
+import '../../providers/analysis_provider.dart';
 import '../../providers/country_provider.dart';
+import '../../providers/preferences_provider.dart';
+import '../../providers/shell_provider.dart';
+import '../../widgets/home/analyzing_progress_view.dart';
 
 // ── Tag colors ─────────────────────────────────────────────────────────────────
 const _kTagTransport  = Color(0xFF29B6F6);
@@ -150,6 +154,7 @@ class ExplorerScreen extends ConsumerStatefulWidget {
 
 class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
   int _filterIndex = 0;
+  String? _analyzingLabel;
 
   static const _filters = [
     'All',
@@ -166,6 +171,23 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
     return _neighborhoods.where((n) => n.tags.contains(tag)).toList();
   }
 
+  // Run a real analysis for the tapped neighbourhood, then jump to results.
+  Future<void> _analyze(_Neighborhood n) async {
+    final country = ref.read(selectedCountryProvider);
+    final countryName = country?.name ?? 'Portugal';
+    final profile = ref.read(preferencesProvider).profile.jsonValue;
+    setState(() => _analyzingLabel = '${n.name}, ${n.city}');
+    await ref.read(analysisProvider.notifier).analyze(
+          '${n.name}, ${n.city}, $countryName',
+          countryCode: country?.code ?? 'PT',
+          profile: profile,
+        );
+    if (!mounted) return;
+    if (ref.read(analysisProvider).status == AnalysisStatus.done) {
+      ref.read(shellTabProvider.notifier).state = 1;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final country = ref.watch(selectedCountryProvider);
@@ -173,6 +195,16 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
     final top = MediaQuery.of(context).padding.top;
     final filtered = _filtered;
     final p = AppPalette.of(context);
+
+    // While an analysis (started here) runs, show the shared progress view.
+    final analysis = ref.watch(analysisProvider);
+    if (analysis.isLoading) {
+      return AnalyzingProgressView(
+        address: _analyzingLabel ?? '',
+        status: analysis.status,
+        progress: analysis.progress,
+      );
+    }
 
     return Container(
       color: p.bg,
@@ -322,9 +354,7 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
                 if (index >= filtered.length) return null;
                 return _NeighborhoodCard(
                   neighborhood: filtered[index],
-                  onAnalyze: () {
-                    ref.read(shellTabProvider.notifier).state = 0;
-                  },
+                  onAnalyze: () => _analyze(filtered[index]),
                 );
               },
               childCount: filtered.length,
