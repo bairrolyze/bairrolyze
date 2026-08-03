@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/app_theme.dart';
 
@@ -44,11 +45,13 @@ class BairrolyzeWordmark extends StatelessWidget {
     return Text(
       'Bairrolyze',
       textAlign: TextAlign.center,
-      style: TextStyle(
+      // Poppins — a geometric, softly-rounded display face that echoes the
+      // curves of the logo mark and gives the wordmark a distinct brand voice.
+      style: GoogleFonts.poppins(
         color: color ?? Colors.white,
         fontSize: fontSize,
-        fontWeight: FontWeight.w800,
-        letterSpacing: -1.2,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.5,
         height: 1.0,
       ),
     );
