@@ -437,16 +437,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         key: _formKey,
         child: Column(
           children: [
-            // Search field — 64px dark-glass, 22px radius
+            // Search field — glass over the native background, ringed by a
+            // glowing blue→purple gradient border.
             Container(
               decoration: BoxDecoration(
-                color: _glassFill(context),
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: _glassBorder(context)),
+                gradient: const LinearGradient(
+                  colors: [_kPrimaryBlue, _kPrimaryPurple],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: _kPrimaryBlue.withValues(alpha: 0.30),
+                    blurRadius: 20,
+                    spreadRadius: -5,
+                    offset: const Offset(0, 2),
+                  ),
+                  BoxShadow(
+                    color: _kPrimaryPurple.withValues(alpha: 0.26),
+                    blurRadius: 22,
+                    spreadRadius: -5,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              constraints: const BoxConstraints(minHeight: 64),
-              child: Row(
+              padding: const EdgeInsets.all(1.5),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: p.bg,
+                  borderRadius: BorderRadius.circular(20.5),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                constraints: const BoxConstraints(minHeight: 62),
+                child: Row(
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(left: 12, right: 4),
@@ -528,6 +552,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ],
               ),
+              ),
             ),
 
             // Suggestion dropdown
@@ -590,7 +615,7 @@ class _Hero extends StatelessWidget {
     // content is inset from the top so it clears the notch. The skyline sits as
     // a V (tall edges, open centre) in the lower band, so the logo + wordmark
     // rest against clear sky and the buildings meet the search field below.
-    const heroHeight = 404.0;
+    const heroHeight = 394.0;
 
     return SizedBox(
       height: heroHeight,
@@ -617,7 +642,7 @@ class _Hero extends StatelessWidget {
                     .animate(delay: 80.ms)
                     .fadeIn(duration: 500.ms)
                     .slideY(begin: 0.15, end: 0, curve: Curves.easeOut),
-                const SizedBox(height: 14),
+                const SizedBox(height: 6),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: _kGutter),
                   child: Text(
