@@ -90,29 +90,6 @@ class _DNAWidgetState extends State<DNAWidget> with SingleTickerProviderStateMix
                     height: 1.05,
                   ),
                 ).animate(delay: 60.ms).fadeIn(duration: 500.ms).slideY(begin: 0.15, end: 0),
-                const SizedBox(height: 8),
-                // Subtitle
-                Text(
-                  'Visual fingerprint of what makes this area unique.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.60),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    height: 1.4,
-                  ),
-                ).animate(delay: 120.ms).fadeIn(duration: 500.ms),
-                if (_locationMeta(widget.address) != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    _locationMeta(widget.address)!,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.1,
-                    ),
-                  ).animate(delay: 180.ms).fadeIn(duration: 400.ms),
-                ],
               ],
             ),
           ),
@@ -177,6 +154,36 @@ class _DNAWidgetState extends State<DNAWidget> with SingleTickerProviderStateMix
                   ),
           ),
 
+          const SizedBox(height: 24),
+          // Caption — moved below the visual so the DNA fingerprint sits higher.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Visual fingerprint of what makes this area unique.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+                if (_locationMeta(widget.address) != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _locationMeta(widget.address)!,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.40),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
           const SizedBox(height: 32),
         ],
       ),

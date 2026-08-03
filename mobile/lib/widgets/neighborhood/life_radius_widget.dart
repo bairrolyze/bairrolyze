@@ -123,16 +123,6 @@ class _LifeRadiusWidgetState extends State<LifeRadiusWidget>
                     height: 1.05,
                   ),
                 ).animate(delay: 60.ms).fadeIn(duration: 500.ms).slideY(begin: 0.15, end: 0),
-                const SizedBox(height: 8),
-                Text(
-                  'Everything within reach, mapped around your address.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.60),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    height: 1.4,
-                  ),
-                ).animate(delay: 120.ms).fadeIn(duration: 500.ms),
               ],
             ),
           ),
@@ -348,6 +338,19 @@ class _LifeRadiusWidgetState extends State<LifeRadiusWidget>
             ),
           ],
 
+          const SizedBox(height: 24),
+          // Caption — moved below the map so the radius sits higher.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              'Everything within reach, mapped around your address.',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.55),
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ),
           const SizedBox(height: 32),
         ],
       ),

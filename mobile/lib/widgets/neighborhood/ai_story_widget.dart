@@ -190,16 +190,6 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
                     height: 1.05,
                   ),
                 ).animate(delay: 60.ms).fadeIn(duration: 500.ms).slideY(begin: 0.15, end: 0),
-                const SizedBox(height: 16),
-                Text(
-                  'Your neighbourhood through a human lens.\nChoose your perspective.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.72),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w400,
-                    height: 1.6,
-                  ),
-                ).animate(delay: 120.ms).fadeIn(duration: 500.ms),
               ],
             ),
           ),
@@ -384,6 +374,20 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
               ],
             ),
           ).animate(delay: 500.ms).fadeIn(),
+
+          const SizedBox(height: 22),
+          // Caption — moved below the story so the narrative sits higher.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'Your neighbourhood through a human lens — choose your perspective above.',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.50),
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ),
+          ),
         ],
       ),
     );
