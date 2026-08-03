@@ -119,6 +119,27 @@ const _kTransportColors = <String, Color>{
   'parking':         Color(0xFF64748B),
 };
 
+// OSM transit sub-type → human mode, for the radar mode summary + its drill-in.
+const _transitModeOf = <String, String>{
+  'subway_entrance': 'Metro',
+  'station':         'Train',
+  'tram_stop':       'Tram',
+  'ferry_terminal':  'Ferry',
+  'bus_stop':        'Bus',
+  'taxi':            'Taxi',
+  'bicycle_rental':  'Bike',
+};
+const _transitModeIcon = <String, IconData>{
+  'Metro': Icons.subway_rounded,
+  'Train': Icons.train_rounded,
+  'Tram':  Icons.tram_rounded,
+  'Ferry': Icons.directions_boat_rounded,
+  'Bus':   Icons.directions_bus_rounded,
+  'Taxi':  Icons.local_taxi_rounded,
+  'Bike':  Icons.pedal_bike_rounded,
+};
+const _transitModeOrder = ['Metro', 'Train', 'Tram', 'Ferry', 'Bus', 'Taxi', 'Bike'];
+
 const _subTypeIcon = <String, IconData>{
   'bus_stop': Icons.directions_bus_rounded,
   'station': Icons.train_rounded,
@@ -1711,36 +1732,16 @@ class _TransitRadarSectionState extends State<_TransitRadarSection>
 
   Widget _modeSummary() {
     // Group the sub-type stop counts into human transport modes.
-    const modeOf = {
-      'subway_entrance': 'Metro',
-      'station': 'Train',
-      'tram_stop': 'Tram',
-      'ferry_terminal': 'Ferry',
-      'bus_stop': 'Bus',
-      'taxi': 'Taxi',
-      'bicycle_rental': 'Bike',
-    };
-    const iconOf = {
-      'Metro': Icons.subway_rounded,
-      'Train': Icons.train_rounded,
-      'Tram': Icons.tram_rounded,
-      'Ferry': Icons.directions_boat_rounded,
-      'Bus': Icons.directions_bus_rounded,
-      'Taxi': Icons.local_taxi_rounded,
-      'Bike': Icons.pedal_bike_rounded,
-    };
-    const order = ['Metro', 'Train', 'Tram', 'Ferry', 'Bus', 'Taxi', 'Bike'];
-
     final counts = <String, int>{};
     final colors = <String, Color>{};
     for (final st in widget.subtypes) {
-      final mode = modeOf[st.type];
+      final mode = _transitModeOf[st.type];
       if (mode == null) continue;
       counts[mode] = (counts[mode] ?? 0) + st.count;
       colors.putIfAbsent(
           mode, () => _kTransportColors[st.type] ?? widget.color);
     }
-    final modes = order.where((m) => (counts[m] ?? 0) > 0).toList();
+    final modes = _transitModeOrder.where((m) => (counts[m] ?? 0) > 0).toList();
     if (modes.isEmpty) return const SizedBox.shrink();
 
     final p = AppPalette.of(context);
@@ -1751,33 +1752,157 @@ class _TransitRadarSectionState extends State<_TransitRadarSection>
         runSpacing: 8,
         children: modes.map((m) {
           final c = colors[m] ?? widget.color;
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: c.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: c.withValues(alpha: 0.25)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(iconOf[m], size: 14, color: c),
-                const SizedBox(width: 6),
-                Text('${counts[m]}',
-                    style: TextStyle(
-                        color: p.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800)),
-                const SizedBox(width: 4),
-                Text(m,
-                    style: TextStyle(
-                        color: p.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500)),
-              ],
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _showModeStops(m, c),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: c.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: c.withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(_transitModeIcon[m], size: 14, color: c),
+                  const SizedBox(width: 6),
+                  Text('${counts[m]}',
+                      style: TextStyle(
+                          color: p.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800)),
+                  const SizedBox(width: 4),
+                  Text(m,
+                      style: TextStyle(
+                          color: p.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500)),
+                  const SizedBox(width: 3),
+                  Icon(Icons.chevron_right_rounded, size: 13, color: p.textTertiary),
+                ],
+              ),
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  /// Compact sheet listing the nearby stops of one mode (Metro/Train/…). Just
+  /// name + distance/walk; tap a row for directions.
+  void _showModeStops(String mode, Color color) {
+    final p = AppPalette.of(context);
+    final stops = widget.amenities
+        .where((a) => _transitModeOf[a.type] == mode)
+        .toList()
+      ..sort((a, b) =>
+          (a.distanceMeters ?? 999999).compareTo(b.distanceMeters ?? 999999));
+    if (stops.isEmpty) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: p.bg,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: DraggableScrollableSheet(
+          initialChildSize: stops.length > 6 ? 0.6 : 0.4,
+          minChildSize: 0.3,
+          maxChildSize: 0.85,
+          expand: false,
+          builder: (_, ctrl) => Column(
+            children: [
+              const SizedBox(height: 12),
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32, height: 32,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(_transitModeIcon[mode], size: 17, color: color),
+                    ),
+                    const SizedBox(width: 12),
+                    Text('${stops.length} $mode ${stops.length == 1 ? 'stop' : 'stops'} nearby',
+                        style: TextStyle(
+                            color: p.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+              Divider(height: 1, color: p.border),
+              Expanded(
+                child: ListView.separated(
+                  controller: ctrl,
+                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 20),
+                  itemCount: stops.length,
+                  separatorBuilder: (_, __) =>
+                      Divider(height: 1, color: p.border),
+                  itemBuilder: (_, i) {
+                    final s = stops[i];
+                    final sub = [
+                      _dist(s.distanceMeters),
+                      if (s.walkingMinutes != null) '${s.walkingMinutes} min walk',
+                    ].join(' · ');
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _openDirections(context, s.lat, s.lng, label: s.name);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Row(
+                          children: [
+                            Icon(_subTypeIcon[s.type] ?? Icons.place_rounded,
+                                size: 16, color: color),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(s.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                          color: p.textPrimary,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500)),
+                                  const SizedBox(height: 2),
+                                  Text(sub,
+                                      style: TextStyle(
+                                          color: p.textTertiary, fontSize: 11.5)),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.directions_rounded,
+                                size: 16, color: p.textTertiary),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -3146,12 +3271,14 @@ class _CompassRadarPainter extends CustomPainter {
       tp.paint(canvas, o - Offset(tp.width / 2, tp.height / 2));
     }
 
-    // Cardinals coloured like a phone compass: north red, the rest bright white.
+    // Coloured cardinals: north red (the standout), the other three a legible
+    // blue so every letter is clearly tinted, not plain white.
     const northColor = Color(0xFFFF453A);
+    const otherColor = Color(0xFF4FA8F5);
     label('N', atAngle(0, maxR + 13), color: northColor);
-    label('E', atAngle(pi / 2, maxR + 13));
-    label('S', atAngle(pi, maxR + 13));
-    label('W', atAngle(3 * pi / 2, maxR + 13));
+    label('E', atAngle(pi / 2, maxR + 13), color: otherColor);
+    label('S', atAngle(pi, maxR + 13), color: otherColor);
+    label('W', atAngle(3 * pi / 2, maxR + 13), color: otherColor);
 
     // Blips at true bearing + scaled distance (rotated with heading).
     for (final b in blips) {
