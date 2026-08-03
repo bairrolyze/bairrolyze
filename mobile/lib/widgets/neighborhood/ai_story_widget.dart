@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../config/score_format.dart';
 import '../../models/score_model.dart';
 import '../common/section_label.dart';
 
@@ -65,7 +66,10 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
 
   String _generateStory(_Persona persona, LocationScore score) {
     final cats = score.categories;
+    // `overall` stays on the 0-100 scale for threshold checks below; the text
+    // always shows the one-decimal /10 form (e.g. 84 → "8.4").
     final overall = score.overall.round();
+    final overallTenth = scoreTenth(score.overall);
 
     String adj(double s) {
       if (s >= 85) return 'excellent';
@@ -92,7 +96,7 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
         final safe = cats['safety'];
         final health = cats['healthcare'];
         final rec = cats['recreation'];
-        return 'For families, this neighbourhood scores $overall out of 100 — '
+        return 'For families, this neighbourhood scores $overallTenth out of 10 — '
             '${overall >= 70 ? 'a solid foundation for family life' : 'a work in progress with potential'}. '
             '${edu != null ? 'Education access is ${adj(edu.score)}, with ${edu.count} schools and learning facilities nearby. ' : ''}'
             '${safe != null ? 'Safety infrastructure ${grade(safe.score)}, giving parents ${safe.score >= 70 ? 'peace of mind' : 'something to factor in'}. ' : ''}'
@@ -102,7 +106,7 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
       case 'professional':
         final transit = cats['transportation'];
         final rec = cats['recreation'];
-        return 'For young professionals, this area scores $overall — '
+        return 'For young professionals, this area scores $overallTenth out of 10 — '
             '${overall >= 70 ? 'a strong base for an active urban lifestyle' : 'functional, with tradeoffs worth considering'}. '
             '${transit != null ? 'Transit connectivity is ${adj(transit.score)}, ${transit.score >= 70 ? 'making the daily commute manageable' : 'so a car may be useful'}. ' : ''}'
             '${rec != null ? 'After-work recreation options are ${adj(rec.score)} — ${rec.count} parks, gyms and leisure spots within reach. ' : ''}'
@@ -112,7 +116,7 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
         final transit = cats['transportation'];
         final shop = cats['shopping'];
         final edu = cats['education'];
-        return 'For students, the location scores $overall. '
+        return 'For students, the location scores $overallTenth out of 10. '
             '${transit != null ? 'Getting around is ${adj(transit.score)} — ${transit.count} transit options mean ${transit.score >= 70 ? 'cheap and easy travel' : 'some planning may be needed'}. ' : ''}'
             '${shop != null ? 'Day-to-day shopping is ${adj(shop.score)}, with ${shop.count} spots for groceries and essentials. ' : ''}'
             '${edu != null ? 'Academic resources ${grade(edu.score)} with ${edu.count} educational institutions in the area. ' : ''}'
@@ -122,15 +126,15 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
         final health = cats['healthcare'];
         final rec = cats['recreation'];
         final transit = cats['transportation'];
-        return 'For those in retirement, peace of mind matters most — and this neighbourhood scores $overall. '
+        return 'For those in retirement, peace of mind matters most — and this neighbourhood scores $overallTenth out of 10. '
             '${health != null ? 'Healthcare accessibility is ${adj(health.score)}, ${health.closest != null ? 'with ${health.closest!.name} just ${health.closest!.walkingMinutes} minutes away' : 'with clinics in reach'}. ' : ''}'
-            '${rec != null ? 'Green spaces and recreation score ${rec.score.round()}/100 — ${rec.score >= 70 ? 'lovely for daily walks and relaxation' : 'limited but present'}. ' : ''}'
+            '${rec != null ? 'Green spaces and recreation score ${scoreTenth(rec.score)}/10 — ${rec.score >= 70 ? 'lovely for daily walks and relaxation' : 'limited but present'}. ' : ''}'
             '${transit != null ? 'Getting around without a car is ${adj(transit.score)}.' : ''}';
 
       case 'investor':
         final transit = cats['transportation'];
         final shop = cats['shopping'];
-        return 'From an investment perspective, this location scores $overall. '
+        return 'From an investment perspective, this location scores $overallTenth out of 10. '
             '${transit != null ? 'Transit links are ${adj(transit.score)} — a key driver of long-term value. ' : ''}'
             '${shop != null ? 'Commercial activity is ${adj(shop.score)}, suggesting ${shop.score >= 70 ? 'strong footfall and economic activity' : 'an area still maturing commercially'}. ' : ''}'
             'With ${score.categories.values.fold(0, (s, c) => s + c.count)} total amenities indexed, '
@@ -139,8 +143,8 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
       default:
         final aiSummary = widget.result.aiSummary as String?;
         if (aiSummary != null && aiSummary.isNotEmpty) return aiSummary;
-        return 'This neighbourhood scores $overall out of 100 across ${cats.length} key categories. '
-            '${top.isNotEmpty ? '${top.first.label} leads at ${top.first.score.round()}/100. ' : ''}'
+        return 'This neighbourhood scores $overallTenth out of 10 across ${cats.length} key categories. '
+            '${top.isNotEmpty ? '${top.first.label} leads at ${scoreTenth(top.first.score)}/10. ' : ''}'
             'With ${score.categories.values.fold(0, (s, c) => s + c.count)} local amenities mapped within walking distance, '
             'the area ${overall >= 70 ? 'offers strong everyday convenience' : 'provides the basics with room to grow'}. '
             '${overall >= 80 ? 'A well-rounded choice for most lifestyles.' : overall >= 60 ? 'A decent option worth exploring in person.' : 'Consider the tradeoffs carefully before committing.'}';
@@ -316,7 +320,7 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
                   spacing: 8,
                   runSpacing: 8,
                   children: strengths.map((c) => _InsightChip(
-                    label: '${c.label}  ${c.score.round()}',
+                    label: '${c.label}  ${scoreTenth(c.score)}',
                     color: const Color(0xFF66BB6A),
                     icon: Icons.arrow_upward_rounded,
                   )).toList(),
@@ -339,7 +343,7 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
                   spacing: 8,
                   runSpacing: 8,
                   children: cautions.map((c) => _InsightChip(
-                    label: '${c.label}  ${c.score.round()}',
+                    label: '${c.label}  ${scoreTenth(c.score)}',
                     color: const Color(0xFFFFA726),
                     icon: Icons.info_outline_rounded,
                   )).toList(),
