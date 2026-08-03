@@ -880,33 +880,27 @@ class _PopularChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return _PressableScale(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          // Native/transparent fill — just the glowing coloured ring.
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(22),
+          // Light glassmorphism: a faint frosted fill with a thin hairline
+          // border — the accent lives only in the icon.
+          color: p.textPrimary.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: city.color.withValues(alpha: 0.65), width: 1.3),
-          boxShadow: [
-            BoxShadow(
-              color: city.color.withValues(alpha: 0.24),
-              blurRadius: 14,
-              spreadRadius: -3,
-            ),
-          ],
+              color: p.textPrimary.withValues(alpha: 0.12), width: 1),
         ),
         child: Row(
           children: [
             Icon(city.icon, size: 17, color: city.color),
             const SizedBox(width: 8),
-            // Label tinted to the chip's accent to match the border.
             Text(
               city.name,
               style: TextStyle(
-                color: city.color,
+                color: p.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 letterSpacing: -0.1,

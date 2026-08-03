@@ -339,39 +339,43 @@ class _CategoryCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: p.textPrimary,
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w500,
+                    letterSpacing: -0.2,
                   ),
                 ),
               ),
             ],
           ),
-          // Big score + qualitative label
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                (score / 10).toStringAsFixed(1),
-                style: TextStyle(
-                  color: p.textPrimary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  height: 1.0,
-                  letterSpacing: -0.6,
+          // Big score + qualitative label, centred in the card.
+          Center(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  (score / 10).toStringAsFixed(1),
+                  style: TextStyle(
+                    color: p.textPrimary,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    height: 1.0,
+                    letterSpacing: -0.6,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                scoreLabel(score),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(height: 2),
+                Text(
+                  scoreLabel(score),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           // Progress bar
           _bar(score),

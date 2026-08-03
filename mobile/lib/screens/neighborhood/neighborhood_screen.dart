@@ -448,13 +448,10 @@ class _ScoreHeader extends ConsumerWidget {
                 ),
               ),
               const Spacer(),
-              if (address != null) _SaveButton(address: address!),
-              if (address?.lat != null && address?.lng != null) ...[
-                const SizedBox(width: 8),
+              if (address?.lat != null && address?.lng != null)
                 _StreetViewButton(
                   onTap: () => _openStreetView(address!.lat!, address!.lng!),
                 ),
-              ],
             ],
           ),
           const SizedBox(height: 10),
@@ -519,30 +516,48 @@ class _ScoreHeader extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 9),
-                        Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 9, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                  color: color.withValues(alpha: 0.35)),
-                            ),
-                            child: Text(
-                              label.toUpperCase(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: color,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.4,
+                        const SizedBox(width: 14),
+                        // Vertical divider separating the score from the
+                        // profile it was scored for.
+                        Container(width: 1, height: 42, color: p.border),
+                        const SizedBox(width: 14),
+                        // Profile selector — a muted "Profile" label above the
+                        // active profile name, which is tappable to change it.
+                        if (address != null)
+                          Flexible(
+                            child: GestureDetector(
+                              onTap: () =>
+                                  _openProfilePicker(context, ref, profile),
+                              behavior: HitTestBehavior.opaque,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Profile',
+                                    style: TextStyle(
+                                      color: p.textTertiary,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: -0.1,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    profile.label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: AppColors.accent,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ],
@@ -557,7 +572,7 @@ class _ScoreHeader extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          // ── Verdict + persona chip ──────────────────────────────────────
+          // ── Verdict + save ──────────────────────────────────────────────
           Row(
             children: [
               Expanded(
@@ -583,10 +598,7 @@ class _ScoreHeader extends ConsumerWidget {
               ),
               if (address != null) ...[
                 const SizedBox(width: 10),
-                _PersonaChip(
-                  profile: profile,
-                  onTap: () => _openProfilePicker(context, ref, profile),
-                ),
+                _SaveButton(address: address!),
               ],
             ],
           ),
@@ -628,70 +640,6 @@ class _ScoreHeader extends ConsumerWidget {
       '&viewpoint=${lat.toStringAsFixed(6)},${lng.toStringAsFixed(6)}',
     );
     await launchUrl(url, mode: LaunchMode.externalApplication);
-  }
-}
-
-// ── Persona chip ──────────────────────────────────────────────────────────────
-
-class _PersonaChip extends StatelessWidget {
-  final UserProfile profile;
-  final VoidCallback onTap;
-  const _PersonaChip({required this.profile, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final p = AppPalette.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: p.surface2,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: p.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Scored for ',
-              style: TextStyle(
-                color: p.textTertiary,
-                fontSize: 11.5,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(profile.emoji, style: const TextStyle(fontSize: 12)),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                profile.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: p.textSecondary,
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Text(
-              ' · ',
-              style: TextStyle(color: p.textTertiary, fontSize: 11.5),
-            ),
-            Text(
-              'Change',
-              style: TextStyle(
-                color: AppColors.accent,
-                fontSize: 11.5,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
