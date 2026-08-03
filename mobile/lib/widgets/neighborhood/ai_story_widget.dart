@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../models/score_model.dart';
+import '../common/section_label.dart';
 
 // Persona definitions — shapes what the story focuses on
 class _Persona {
@@ -164,37 +165,9 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'NARRATIVE',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 2.2,
-                    height: 1,
-                  ),
-                ).animate().fadeIn(duration: 400.ms),
-                const SizedBox(height: 10),
-                const Text(
-                  'AI Story',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 38,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -1.0,
-                    height: 1.05,
-                  ),
-                ).animate(delay: 60.ms).fadeIn(duration: 500.ms).slideY(begin: 0.15, end: 0),
-              ],
-            ),
-          ),
+          const SectionLabel('NARRATIVE'),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Persona selector
           SizedBox(

@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../models/address_model.dart';
 import '../../models/score_model.dart';
+import '../common/section_label.dart';
 
 class DNAWidget extends StatefulWidget {
   final LocationScore score;
@@ -62,37 +63,7 @@ class _DNAWidgetState extends State<DNAWidget> with SingleTickerProviderStateMix
       child: Column(
         children: [
           SizedBox(height: widget.topPadding + 32),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Section label
-                const Text(
-                  'ANALYTICS',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 2.2,
-                    height: 1,
-                  ),
-                ).animate().fadeIn(duration: 400.ms),
-                const SizedBox(height: 10),
-                // Title
-                const Text(
-                  'Area DNA',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
-                    height: 1.05,
-                  ),
-                ).animate(delay: 60.ms).fadeIn(duration: 500.ms).slideY(begin: 0.15, end: 0),
-              ],
-            ),
-          ),
+          const SectionLabel('ANALYTICS'),
           const SizedBox(height: 16),
 
           // DNA Canvas

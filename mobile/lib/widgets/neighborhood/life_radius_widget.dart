@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../models/amenity_model.dart';
+import '../common/section_label.dart';
 
 class LifeRadiusWidget extends StatefulWidget {
   final List<AmenityModel> amenities;
@@ -97,37 +98,9 @@ class _LifeRadiusWidgetState extends State<LifeRadiusWidget>
           SizedBox(height: widget.topPadding + 32),
 
           // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'PROXIMITY',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 2.2,
-                    height: 1,
-                  ),
-                ).animate().fadeIn(duration: 400.ms),
-                const SizedBox(height: 10),
-                const Text(
-                  'Life Radius',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
-                    height: 1.05,
-                  ),
-                ).animate(delay: 60.ms).fadeIn(duration: 500.ms).slideY(begin: 0.15, end: 0),
-              ],
-            ),
-          ),
+          const SectionLabel('PROXIMITY'),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
           // Filter chips
           SizedBox(
