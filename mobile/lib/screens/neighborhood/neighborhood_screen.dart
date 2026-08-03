@@ -9,6 +9,7 @@ import '../../models/score_model.dart';
 import '../../models/user_preferences_model.dart';
 import '../../providers/analysis_provider.dart';
 import '../../providers/preferences_provider.dart';
+import '../../providers/saved_provider.dart';
 import '../../providers/alerts_provider.dart';
 import '../../providers/compare_provider.dart';
 import '../../providers/pro_provider.dart';
@@ -447,10 +448,13 @@ class _ScoreHeader extends ConsumerWidget {
                 ),
               ),
               const Spacer(),
-              if (address?.lat != null && address?.lng != null)
+              if (address != null) _SaveButton(address: address!),
+              if (address?.lat != null && address?.lng != null) ...[
+                const SizedBox(width: 8),
                 _StreetViewButton(
                   onTap: () => _openStreetView(address!.lat!, address!.lng!),
                 ),
+              ],
             ],
           ),
           const SizedBox(height: 10),
@@ -793,6 +797,60 @@ class _ProfilePickerSheet extends StatelessWidget {
 }
 
 // ── Street View pill ──────────────────────────────────────────────────────────
+
+// Bookmark toggle — saves/removes the current analysis from the Saved tab.
+class _SaveButton extends ConsumerWidget {
+  final AddressModel address;
+  const _SaveButton({required this.address});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final p = AppPalette.of(context);
+    final saved = ref.watch(savedProvider).any(
+        (e) => SavedNotifier.keyFor(e.address) == SavedNotifier.keyFor(address));
+
+    return GestureDetector(
+      onTap: () {
+        final result = ref.read(analysisProvider).result;
+        if (result == null) return;
+        final nowSaved =
+            ref.read(savedProvider.notifier).toggle(address, result);
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+            content: Text(nowSaved ? 'Saved to your list' : 'Removed from Saved'),
+          ));
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: saved ? AppColors.accent.withValues(alpha: 0.14) : p.surface2,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.accent.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                size: 15, color: AppColors.accent),
+            const SizedBox(width: 6),
+            Text(
+              saved ? 'Saved' : 'Save',
+              style: const TextStyle(
+                color: AppColors.accent,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _StreetViewButton extends StatelessWidget {
   final VoidCallback onTap;

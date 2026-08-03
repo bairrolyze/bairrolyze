@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_theme.dart';
 import '../../providers/analysis_provider.dart';
+import '../../providers/saved_provider.dart';
 import '../../providers/shell_provider.dart';
 import '../../widgets/home/recent_search_tile.dart';
 
@@ -18,7 +19,7 @@ class SavedScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final history = ref.watch(searchHistoryProvider);
+    final history = ref.watch(savedProvider);
     final p = AppPalette.of(context);
 
     return Scaffold(
@@ -46,7 +47,7 @@ class SavedScreen extends ConsumerWidget {
                     if (history.isNotEmpty)
                       GestureDetector(
                         onTap: () =>
-                            ref.read(searchHistoryProvider.notifier).clear(),
+                            ref.read(savedProvider.notifier).clear(),
                         behavior: HitTestBehavior.opaque,
                         child: Text(
                           'Clear all',
@@ -76,7 +77,7 @@ class SavedScreen extends ConsumerWidget {
                       entry: entry,
                       onTap: () => _open(ref, entry),
                       onRemove: () => ref
-                          .read(searchHistoryProvider.notifier)
+                          .read(savedProvider.notifier)
                           .remove(entry.id),
                     );
                   },
@@ -115,7 +116,7 @@ class _Empty extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Text(
-              'No saved searches yet',
+              'No saved places yet',
               style: TextStyle(
                 color: p.textPrimary,
                 fontSize: 17,
@@ -124,7 +125,7 @@ class _Empty extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Analyse a neighbourhood and it will\nshow up here for quick access.',
+              'Tap the bookmark on any analysis to\nsave it here for quick access.',
               textAlign: TextAlign.center,
               style: TextStyle(color: p.textTertiary, fontSize: 13.5, height: 1.5),
             ),
