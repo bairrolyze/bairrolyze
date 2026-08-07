@@ -37,7 +37,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface.withOpacity(0.95),
+        backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.95),
         title: Text(
           address?.displayAddress ?? 'Map',
           maxLines: 1,
@@ -71,8 +71,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     point: LatLng(centerLat, centerLng),
                     radius: 2000,
                     useRadiusInMeter: true,
-                    color: theme.colorScheme.primary.withOpacity(0.05),
-                    borderColor: theme.colorScheme.primary.withOpacity(0.3),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                    borderColor: theme.colorScheme.primary.withValues(alpha: 0.3),
                     borderStrokeWidth: 1.5,
                   ),
                 ],
@@ -116,7 +116,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             border: Border.all(color: Colors.white, width: 3),
                             boxShadow: [
                               BoxShadow(
-                                color: theme.colorScheme.primary.withOpacity(0.4),
+                                color: theme.colorScheme.primary.withValues(alpha: 0.4),
                                 blurRadius: 8,
                                 spreadRadius: 2,
                               ),
@@ -175,8 +175,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
       floatingActionButton: FloatingActionButton.small(
         onPressed: () => _mapController.move(LatLng(centerLat, centerLng), 15.0),
-        child: const Icon(Icons.my_location_rounded),
         tooltip: 'Center map',
+        child: const Icon(Icons.my_location_rounded),
       ),
     );
   }

@@ -22,6 +22,7 @@ void main() async {
   await Hive.initFlutter();
   await Hive.openBox('homescope_cache');
   await Hive.openBox('search_history');
+  await Hive.openBox('saved_analyses');
 
   // RevenueCat — no-ops in mock/dev mode until real API keys are added
   await PurchaseService.init();
@@ -45,7 +46,7 @@ class HomeScopeApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
-      title: 'HomeScope',
+      title: 'Bairrolyze',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),

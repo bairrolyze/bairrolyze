@@ -94,6 +94,27 @@ class AnalyzeRequest(BaseModel):
     radius: float = Field(default=2000.0, ge=100, le=10000)
 
 
+class CrimeReport(BaseModel):
+    """Neighbourhood crime summary.
+
+    For UK (GB) addresses this is real street-level data from the UK Police
+    API (data.police.uk). Elsewhere there is no open point-level crime API,
+    so `available` is False and safety falls back to the OSM-based
+    emergency-services proximity already used by the Safety category score.
+    `safety_index` is an indicative display figure only — it is NOT fed into
+    the category score.
+    """
+
+    source: str  # "uk_police" | "osm" | "unavailable"
+    available: bool = False
+    period: Optional[str] = None  # e.g. "2024-11"
+    total: Optional[int] = None
+    by_category: Optional[Dict[str, int]] = None
+    safety_index: Optional[float] = None  # 0-100, higher = safer
+    radius_meters: Optional[int] = None
+    note: Optional[str] = None
+
+
 class AnalyzeResponse(BaseModel):
     id: str
     analyzed_at: datetime
@@ -102,6 +123,7 @@ class AnalyzeResponse(BaseModel):
     amenities: List[AmenityModel]
     ai_summary: Optional[str] = None
     profile: str
+    crime: Optional[CrimeReport] = None
 
 
 class ErrorResponse(BaseModel):
@@ -134,10 +156,12 @@ class StageState(BaseModel):
 
 
 class JobStages(BaseModel):
-    geocode: StageState = Field(default_factory=StageState)
-    amenities: StageState = Field(default_factory=StageState)
-    score: StageState = Field(default_factory=StageState)
-    ai_summary: StageState = Field(default_factory=StageState)
+    address_found: StageState = Field(default_factory=StageState)
+    map_ready: StageState = Field(default_factory=StageState)
+    amenities_ready: StageState = Field(default_factory=StageState)
+    crime_ready: StageState = Field(default_factory=StageState)
+    score_ready: StageState = Field(default_factory=StageState)
+    summary_ready: StageState = Field(default_factory=StageState)
 
 
 class JobCreatedResponse(BaseModel):
@@ -152,8 +176,11 @@ class JobStatusResponse(BaseModel):
 
     analysis_id: str
     status: str  # "pending" | "running" | "done" | "error"
+    progress: int = 0  # 0-100, cumulative across completed stages
     partial_failure: bool = False
     stages: JobStages
     final: Optional[AnalyzeResponse] = None
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
     created_at: str
     updated_at: str

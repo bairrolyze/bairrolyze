@@ -12,7 +12,7 @@ echo "🔨 Running code generation..."
 flutter pub run build_runner build --delete-conflicting-outputs
 
 echo "📱 Launching on iPhone Simulator..."
-flutter run -d "iPhone 16" --dart-define=BACKEND_URL=http://localhost:8000
+flutter run -d "iPhone" --dart-define=BACKEND_URL=http://localhost:8000
 
 # Fallback: list available devices
 if [ $? -ne 0 ]; then

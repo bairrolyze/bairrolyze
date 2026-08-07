@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../models/amenity_model.dart';
+import '../common/section_label.dart';
 
 class LifeRadiusWidget extends StatefulWidget {
   final List<AmenityModel> amenities;
@@ -97,47 +98,9 @@ class _LifeRadiusWidgetState extends State<LifeRadiusWidget>
           SizedBox(height: widget.topPadding + 32),
 
           // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'PROXIMITY',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 2.2,
-                    height: 1,
-                  ),
-                ).animate().fadeIn(duration: 400.ms),
-                const SizedBox(height: 10),
-                const Text(
-                  'Life Radius',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
-                    height: 1.05,
-                  ),
-                ).animate(delay: 60.ms).fadeIn(duration: 500.ms).slideY(begin: 0.15, end: 0),
-                const SizedBox(height: 8),
-                Text(
-                  'Everything within reach, mapped around your address.',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.60),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    height: 1.4,
-                  ),
-                ).animate(delay: 120.ms).fadeIn(duration: 500.ms),
-              ],
-            ),
-          ),
+          const SectionLabel('PROXIMITY'),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
           // Filter chips
           SizedBox(
@@ -224,7 +187,7 @@ class _LifeRadiusWidgetState extends State<LifeRadiusWidget>
                   Text(
                     (_catLabels[_filter!] ?? _filter!.name).toUpperCase(),
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.32),
+                      color: Colors.white.withValues(alpha: 0.32),
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.8,
@@ -233,7 +196,7 @@ class _LifeRadiusWidgetState extends State<LifeRadiusWidget>
                   Text(
                     '${categoryList.length} places',
                     style: TextStyle(
-                      color: (_catColors[_filter!] ?? Colors.grey).withOpacity(0.70),
+                      color: (_catColors[_filter!] ?? Colors.grey).withValues(alpha: 0.70),
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -263,17 +226,17 @@ class _LifeRadiusWidgetState extends State<LifeRadiusWidget>
                           Divider(
                             height: 1,
                             thickness: 0.5,
-                            color: Colors.white.withOpacity(0.05),
+                            color: Colors.white.withValues(alpha: 0.05),
                           ),
                         InkWell(
                           onTap: () => setState(() =>
                               _tapped = isTapped ? null : a),
-                          splashColor: color.withOpacity(0.08),
-                          highlightColor: color.withOpacity(0.05),
+                          splashColor: color.withValues(alpha: 0.08),
+                          highlightColor: color.withValues(alpha: 0.05),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 180),
                             color: isTapped
-                                ? color.withOpacity(0.06)
+                                ? color.withValues(alpha: 0.06)
                                 : Colors.transparent,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 11),
@@ -282,7 +245,7 @@ class _LifeRadiusWidgetState extends State<LifeRadiusWidget>
                                 width: 34,
                                 height: 34,
                                 decoration: BoxDecoration(
-                                  color: color.withOpacity(isTapped ? 0.20 : 0.10),
+                                  color: color.withValues(alpha: isTapped ? 0.20 : 0.10),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(icon, color: color, size: 15),
@@ -299,7 +262,7 @@ class _LifeRadiusWidgetState extends State<LifeRadiusWidget>
                                       style: TextStyle(
                                         color: isTapped
                                             ? Colors.white
-                                            : Colors.white.withOpacity(0.88),
+                                            : Colors.white.withValues(alpha: 0.88),
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -307,7 +270,7 @@ class _LifeRadiusWidgetState extends State<LifeRadiusWidget>
                                     Text(
                                       a.type.replaceAll('_', ' '),
                                       style: TextStyle(
-                                        color: Colors.white.withOpacity(0.35),
+                                        color: Colors.white.withValues(alpha: 0.35),
                                         fontSize: 11,
                                       ),
                                     ),
@@ -321,7 +284,7 @@ class _LifeRadiusWidgetState extends State<LifeRadiusWidget>
                                   Text(
                                     _formatDist(a.distanceMeters),
                                     style: TextStyle(
-                                      color: Colors.white.withOpacity(0.55),
+                                      color: Colors.white.withValues(alpha: 0.55),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -330,7 +293,7 @@ class _LifeRadiusWidgetState extends State<LifeRadiusWidget>
                                     Text(
                                       '${a.walkingMinutes} min',
                                       style: TextStyle(
-                                        color: color.withOpacity(0.75),
+                                        color: color.withValues(alpha: 0.75),
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -348,6 +311,19 @@ class _LifeRadiusWidgetState extends State<LifeRadiusWidget>
             ),
           ],
 
+          const SizedBox(height: 24),
+          // Caption — moved below the map so the radius sits higher.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              'Everything within reach, mapped around your address.',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.55),
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ),
           const SizedBox(height: 32),
         ],
       ),
@@ -436,7 +412,7 @@ class _RadialPainter extends CustomPainter {
       canvas.drawCircle(
         center, r,
         Paint()
-          ..color = Colors.white.withOpacity(i == ringDistances.length - 1 ? 0.10 : 0.06)
+          ..color = Colors.white.withValues(alpha: i == ringDistances.length - 1 ? 0.10 : 0.06)
           ..style = PaintingStyle.stroke
           ..strokeWidth = i == ringDistances.length - 1 ? 1.5 : 1,
       );
@@ -444,7 +420,7 @@ class _RadialPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           text: ringLabels[i],
-          style: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 9),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 9),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -459,7 +435,7 @@ class _RadialPainter extends CustomPainter {
       compassPaint
         ..text = TextSpan(
             text: label,
-            style: TextStyle(color: Colors.white.withOpacity(0.15), fontSize: 10, fontWeight: FontWeight.w700))
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.15), fontSize: 10, fontWeight: FontWeight.w700))
         ..layout();
       compassPaint.paint(
         canvas,
@@ -482,18 +458,18 @@ class _RadialPainter extends CustomPainter {
 
       if (isTapped) {
         // Highlight ring
-        canvas.drawCircle(animPt, 14, Paint()..color = color.withOpacity(0.2));
+        canvas.drawCircle(animPt, 14, Paint()..color = color.withValues(alpha: 0.2));
         canvas.drawCircle(animPt, 14,
-            Paint()..color = color.withOpacity(0.6)..style = PaintingStyle.stroke..strokeWidth = 1.5);
+            Paint()..color = color.withValues(alpha: 0.6)..style = PaintingStyle.stroke..strokeWidth = 1.5);
       }
 
       // Dot
       canvas.drawCircle(animPt, isTapped ? 7 : 5, Paint()..color = color);
-      canvas.drawCircle(animPt, isTapped ? 3.5 : 2, Paint()..color = Colors.white.withOpacity(0.9));
+      canvas.drawCircle(animPt, isTapped ? 3.5 : 2, Paint()..color = Colors.white.withValues(alpha: 0.9));
     }
 
     // Center home indicator
-    canvas.drawCircle(center, 14, Paint()..color = const Color(0xFF6C63FF).withOpacity(0.25));
+    canvas.drawCircle(center, 14, Paint()..color = const Color(0xFF6C63FF).withValues(alpha: 0.25));
     canvas.drawCircle(center, 14,
         Paint()..color = const Color(0xFF6C63FF)..style = PaintingStyle.stroke..strokeWidth = 2);
     canvas.drawCircle(center, 6, Paint()..color = const Color(0xFF6C63FF));
@@ -542,9 +518,9 @@ class _FilterChip extends StatelessWidget {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? color : color.withOpacity(0.12),
+          color: selected ? color : color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: color.withOpacity(selected ? 0 : 0.3), width: 1),
+          border: Border.all(color: color.withValues(alpha: selected ? 0 : 0.3), width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -583,13 +559,13 @@ class _AmenityInfo extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF151E30),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.35)),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
           Container(
             width: 36, height: 36,
-            decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.15), shape: BoxShape.circle),
             child: Icon(Icons.place_rounded, color: color, size: 18),
           ),
           const SizedBox(width: 12),
@@ -609,7 +585,7 @@ class _AmenityInfo extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(

@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 
-const _kBg      = Color(0xFF060B14);
-const _kSurface = Color(0xFF0D1625);
-const _kBorder  = Color(0xFF1A2845);
-const _kAccent  = Color(0xFF3B82F6);
-const _kPurple  = Color(0xFF7C3AED);
-const _kIndigo  = Color(0xFF4F46E5);
+import '../../config/app_theme.dart';
 
 class TutorialScreen extends StatefulWidget {
   const TutorialScreen({super.key});
@@ -29,7 +24,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
     _PageData(
       gradient: [Color(0xFF3B82F6), Color(0xFF7C3AED)],
       emoji: '🏠',
-      title: 'Welcome to HomeScope',
+      title: 'Welcome to Bairrolyze',
       subtitle: 'Your intelligent neighbourhood guide for smarter property decisions.',
       features: [
         (Icons.bolt_rounded,            'Analyse any address in seconds'),
@@ -81,7 +76,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
       gradient: [Color(0xFF7C3AED), Color(0xFF4F46E5)],
       emoji: '⭐',
       title: 'Unlock Pro Features',
-      subtitle: 'Go Pro or Premium to access the full HomeScope toolkit.',
+      subtitle: 'Go Pro or Premium to access the full Bairrolyze toolkit.',
       tabLabel: 'You tab → Upgrade',
       features: [
         (Icons.compare_arrows_rounded,  'Compare up to 10 properties (Pro)'),
@@ -114,9 +109,10 @@ class _TutorialScreenState extends State<TutorialScreen> {
     final bottom = MediaQuery.of(context).padding.bottom;
     final top    = MediaQuery.of(context).padding.top;
     final isLast = _page == _pages.length - 1;
+    final p      = AppPalette.of(context);
 
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: p.bg,
       body: Column(
         children: [
           // ── Top bar ───────────────────────────────────────────────────────
@@ -133,7 +129,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                         child: Text(
                           'Skip',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.38),
+                            color: p.textTertiary,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -167,7 +163,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   height: 6,
                   decoration: BoxDecoration(
                     color: active
-                        ? _kAccent
+                        ? AppColors.accent
                         : Colors.white.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(3),
                   ),
@@ -192,7 +188,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: _kAccent.withValues(alpha: 0.30),
+                      color: AppColors.accent.withValues(alpha: 0.30),
                       blurRadius: 20,
                       offset: const Offset(0, 6),
                     ),
@@ -239,10 +235,11 @@ class _PageData {
 
 class _TutorialPage extends StatelessWidget {
   final _PageData data;
-  const _TutorialPage({super.key, required this.data});
+  const _TutorialPage({required this.data});
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
@@ -302,10 +299,10 @@ class _TutorialPage extends StatelessWidget {
           // ── Title ─────────────────────────────────────────────────────────
           Text(
             data.title,
-            style: const TextStyle(
-              fontSize: 28,
+            style: TextStyle(
+              fontSize: 24,
               fontWeight: FontWeight.w800,
-              color: Colors.white,
+              color: p.textPrimary,
               letterSpacing: -0.8,
               height: 1.15,
             ),
@@ -317,7 +314,7 @@ class _TutorialPage extends StatelessWidget {
             data.subtitle,
             style: TextStyle(
               fontSize: 15,
-              color: Colors.white.withValues(alpha: 0.52),
+              color: p.textSecondary,
               height: 1.55,
             ),
           ),
@@ -327,9 +324,9 @@ class _TutorialPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: _kSurface,
+              color: p.surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: _kBorder),
+              border: Border.all(color: p.border),
             ),
             child: Column(
               children: data.features
@@ -360,32 +357,35 @@ class _FeatureRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: Icon(icon, color: color, size: 16),
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(9),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  color: Colors.white.withValues(alpha: 0.82),
-                  fontWeight: FontWeight.w500,
-                  height: 1.3,
-                ),
+            child: Icon(icon, color: color, size: 16),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13.5,
+                color: p.textSecondary,
+                fontWeight: FontWeight.w500,
+                height: 1.3,
               ),
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
+  }
 }

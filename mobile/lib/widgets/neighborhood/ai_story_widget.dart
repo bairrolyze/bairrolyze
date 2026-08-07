@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../config/score_format.dart';
 import '../../models/score_model.dart';
+import '../common/section_label.dart';
 
 // Persona definitions — shapes what the story focuses on
 class _Persona {
@@ -64,16 +66,19 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
 
   String _generateStory(_Persona persona, LocationScore score) {
     final cats = score.categories;
+    // `overall` stays on the 0-100 scale for threshold checks below; the text
+    // always shows the one-decimal /10 form (e.g. 84 → "8.4").
     final overall = score.overall.round();
+    final overallTenth = scoreTenth(score.overall);
 
-    String _adj(double s) {
+    String adj(double s) {
       if (s >= 85) return 'excellent';
       if (s >= 70) return 'good';
       if (s >= 55) return 'moderate';
       return 'limited';
     }
 
-    String _grade(double s) {
+    String grade(double s) {
       if (s >= 85) return 'stands out';
       if (s >= 70) return 'performs well';
       if (s >= 55) return 'holds its own';
@@ -91,55 +96,55 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
         final safe = cats['safety'];
         final health = cats['healthcare'];
         final rec = cats['recreation'];
-        return 'For families, this neighbourhood scores $overall out of 100 — '
+        return 'For families, this neighbourhood scores $overallTenth out of 10 — '
             '${overall >= 70 ? 'a solid foundation for family life' : 'a work in progress with potential'}. '
-            '${edu != null ? 'Education access is ${_adj(edu.score)}, with ${edu.count} schools and learning facilities nearby. ' : ''}'
-            '${safe != null ? 'Safety infrastructure ${_grade(safe.score)}, giving parents ${safe.score >= 70 ? 'peace of mind' : 'something to factor in'}. ' : ''}'
-            '${health != null ? 'Healthcare is ${_adj(health.score)} — ${health.closest != null ? '${health.closest!.name} is the closest facility at ${health.closest!.walkingMinutes} minutes\' walk' : 'clinics are accessible'}. ' : ''}'
-            '${rec != null ? 'Recreational spaces for the kids are ${_adj(rec.score)}.' : ''}';
+            '${edu != null ? 'Education access is ${adj(edu.score)}, with ${edu.count} schools and learning facilities nearby. ' : ''}'
+            '${safe != null ? 'Safety infrastructure ${grade(safe.score)}, giving parents ${safe.score >= 70 ? 'peace of mind' : 'something to factor in'}. ' : ''}'
+            '${health != null ? 'Healthcare is ${adj(health.score)} — ${health.closest != null ? '${health.closest!.name} is the closest facility at ${health.closest!.walkingMinutes} minutes\' walk' : 'clinics are accessible'}. ' : ''}'
+            '${rec != null ? 'Recreational spaces for the kids are ${adj(rec.score)}.' : ''}';
 
       case 'professional':
         final transit = cats['transportation'];
         final rec = cats['recreation'];
-        return 'For young professionals, this area scores $overall — '
+        return 'For young professionals, this area scores $overallTenth out of 10 — '
             '${overall >= 70 ? 'a strong base for an active urban lifestyle' : 'functional, with tradeoffs worth considering'}. '
-            '${transit != null ? 'Transit connectivity is ${_adj(transit.score)}, ${transit.score >= 70 ? 'making the daily commute manageable' : 'so a car may be useful'}. ' : ''}'
-            '${rec != null ? 'After-work recreation options are ${_adj(rec.score)} — ${rec.count} parks, gyms and leisure spots within reach. ' : ''}'
+            '${transit != null ? 'Transit connectivity is ${adj(transit.score)}, ${transit.score >= 70 ? 'making the daily commute manageable' : 'so a car may be useful'}. ' : ''}'
+            '${rec != null ? 'After-work recreation options are ${adj(rec.score)} — ${rec.count} parks, gyms and leisure spots within reach. ' : ''}'
             'The overall amenity density suggests a ${overall >= 70 ? 'lively' : 'quieter'} neighbourhood with ${overall >= 70 ? 'plenty to do' : 'room to develop'}.';
 
       case 'student':
         final transit = cats['transportation'];
         final shop = cats['shopping'];
         final edu = cats['education'];
-        return 'For students, the location scores $overall. '
-            '${transit != null ? 'Getting around is ${_adj(transit.score)} — ${transit.count} transit options mean ${transit.score >= 70 ? 'cheap and easy travel' : 'some planning may be needed'}. ' : ''}'
-            '${shop != null ? 'Day-to-day shopping is ${_adj(shop.score)}, with ${shop.count} spots for groceries and essentials. ' : ''}'
-            '${edu != null ? 'Academic resources ${_grade(edu.score)} with ${edu.count} educational institutions in the area. ' : ''}'
+        return 'For students, the location scores $overallTenth out of 10. '
+            '${transit != null ? 'Getting around is ${adj(transit.score)} — ${transit.count} transit options mean ${transit.score >= 70 ? 'cheap and easy travel' : 'some planning may be needed'}. ' : ''}'
+            '${shop != null ? 'Day-to-day shopping is ${adj(shop.score)}, with ${shop.count} spots for groceries and essentials. ' : ''}'
+            '${edu != null ? 'Academic resources ${grade(edu.score)} with ${edu.count} educational institutions in the area. ' : ''}'
             'Overall, this ${overall >= 65 ? 'is a practical and social base' : 'is affordable with some lifestyle compromises'}.';
 
       case 'retired':
         final health = cats['healthcare'];
         final rec = cats['recreation'];
         final transit = cats['transportation'];
-        return 'For those in retirement, peace of mind matters most — and this neighbourhood scores $overall. '
-            '${health != null ? 'Healthcare accessibility is ${_adj(health.score)}, ${health.closest != null ? 'with ${health.closest!.name} just ${health.closest!.walkingMinutes} minutes away' : 'with clinics in reach'}. ' : ''}'
-            '${rec != null ? 'Green spaces and recreation score ${rec.score.round()}/100 — ${rec.score >= 70 ? 'lovely for daily walks and relaxation' : 'limited but present'}. ' : ''}'
-            '${transit != null ? 'Getting around without a car is ${_adj(transit.score)}.' : ''}';
+        return 'For those in retirement, peace of mind matters most — and this neighbourhood scores $overallTenth out of 10. '
+            '${health != null ? 'Healthcare accessibility is ${adj(health.score)}, ${health.closest != null ? 'with ${health.closest!.name} just ${health.closest!.walkingMinutes} minutes away' : 'with clinics in reach'}. ' : ''}'
+            '${rec != null ? 'Green spaces and recreation score ${scoreTenth(rec.score)}/10 — ${rec.score >= 70 ? 'lovely for daily walks and relaxation' : 'limited but present'}. ' : ''}'
+            '${transit != null ? 'Getting around without a car is ${adj(transit.score)}.' : ''}';
 
       case 'investor':
         final transit = cats['transportation'];
         final shop = cats['shopping'];
-        return 'From an investment perspective, this location scores $overall. '
-            '${transit != null ? 'Transit links are ${_adj(transit.score)} — a key driver of long-term value. ' : ''}'
-            '${shop != null ? 'Commercial activity is ${_adj(shop.score)}, suggesting ${shop.score >= 70 ? 'strong footfall and economic activity' : 'an area still maturing commercially'}. ' : ''}'
+        return 'From an investment perspective, this location scores $overallTenth out of 10. '
+            '${transit != null ? 'Transit links are ${adj(transit.score)} — a key driver of long-term value. ' : ''}'
+            '${shop != null ? 'Commercial activity is ${adj(shop.score)}, suggesting ${shop.score >= 70 ? 'strong footfall and economic activity' : 'an area still maturing commercially'}. ' : ''}'
             'With ${score.categories.values.fold(0, (s, c) => s + c.count)} total amenities indexed, '
             'the density points to a neighbourhood that ${overall >= 70 ? 'already commands attention' : 'may appreciate with continued development'}.';
 
       default:
         final aiSummary = widget.result.aiSummary as String?;
         if (aiSummary != null && aiSummary.isNotEmpty) return aiSummary;
-        return 'This neighbourhood scores $overall out of 100 across ${cats.length} key categories. '
-            '${top.isNotEmpty ? '${top.first.label} leads at ${top.first.score.round()}/100. ' : ''}'
+        return 'This neighbourhood scores $overallTenth out of 10 across ${cats.length} key categories. '
+            '${top.isNotEmpty ? '${top.first.label} leads at ${scoreTenth(top.first.score)}/10. ' : ''}'
             'With ${score.categories.values.fold(0, (s, c) => s + c.count)} local amenities mapped within walking distance, '
             'the area ${overall >= 70 ? 'offers strong everyday convenience' : 'provides the basics with room to grow'}. '
             '${overall >= 80 ? 'A well-rounded choice for most lifestyles.' : overall >= 60 ? 'A decent option worth exploring in person.' : 'Consider the tradeoffs carefully before committing.'}';
@@ -164,47 +169,9 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'NARRATIVE',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 2.2,
-                    height: 1,
-                  ),
-                ).animate().fadeIn(duration: 400.ms),
-                const SizedBox(height: 10),
-                const Text(
-                  'AI Story',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 38,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -1.0,
-                    height: 1.05,
-                  ),
-                ).animate(delay: 60.ms).fadeIn(duration: 500.ms).slideY(begin: 0.15, end: 0),
-                const SizedBox(height: 16),
-                Text(
-                  'Your neighbourhood through a human lens.\nChoose your perspective.',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.72),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w400,
-                    height: 1.6,
-                  ),
-                ).animate(delay: 120.ms).fadeIn(duration: 500.ms),
-              ],
-            ),
-          ),
+          const SectionLabel('NARRATIVE'),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Persona selector
           SizedBox(
@@ -226,9 +193,9 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
                       gradient: active
                           ? const LinearGradient(colors: [Color(0xFF6C63FF), Color(0xFF9C63FF)])
                           : null,
-                      color: active ? null : Colors.white.withOpacity(0.07),
+                      color: active ? null : Colors.white.withValues(alpha: 0.07),
                       borderRadius: BorderRadius.circular(22),
-                      border: active ? null : Border.all(color: Colors.white.withOpacity(0.1)),
+                      border: active ? null : Border.all(color: Colors.white.withValues(alpha: 0.1)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -266,12 +233,12 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
                   color: const Color(0xFF111827),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: const Color(0xFF6C63FF).withOpacity(0.4),
+                    color: const Color(0xFF6C63FF).withValues(alpha: 0.4),
                     width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF6C63FF).withOpacity(0.12),
+                      color: const Color(0xFF6C63FF).withValues(alpha: 0.12),
                       blurRadius: 24,
                       spreadRadius: 0,
                     ),
@@ -310,7 +277,7 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF6C63FF).withOpacity(0.15),
+                            color: const Color(0xFF6C63FF).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Row(
@@ -353,7 +320,7 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
                   spacing: 8,
                   runSpacing: 8,
                   children: strengths.map((c) => _InsightChip(
-                    label: '${c.label}  ${c.score.round()}',
+                    label: '${c.label}  ${scoreTenth(c.score)}',
                     color: const Color(0xFF66BB6A),
                     icon: Icons.arrow_upward_rounded,
                   )).toList(),
@@ -376,7 +343,7 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
                   spacing: 8,
                   runSpacing: 8,
                   children: cautions.map((c) => _InsightChip(
-                    label: '${c.label}  ${c.score.round()}',
+                    label: '${c.label}  ${scoreTenth(c.score)}',
                     color: const Color(0xFFFFA726),
                     icon: Icons.info_outline_rounded,
                   )).toList(),
@@ -384,6 +351,20 @@ class _AIStoryWidgetState extends State<AIStoryWidget>
               ],
             ),
           ).animate(delay: 500.ms).fadeIn(),
+
+          const SizedBox(height: 22),
+          // Caption — moved below the story so the narrative sits higher.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'Your neighbourhood through a human lens — choose your perspective above.',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.50),
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -402,9 +383,9 @@ class _InsightChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -44,7 +44,7 @@ class AmenityMarker extends StatelessWidget {
         border: Border.all(color: Colors.white, width: isSelected ? 3 : 2),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.4),
+            color: color.withValues(alpha: 0.4),
             blurRadius: isSelected ? 12 : 6,
             spreadRadius: isSelected ? 2 : 0,
           ),

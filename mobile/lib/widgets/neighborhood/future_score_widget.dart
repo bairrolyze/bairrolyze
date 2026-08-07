@@ -133,7 +133,7 @@ class _FutureScoreWidgetState extends State<FutureScoreWidget>
                 Text(
                   'Not just where it stands —\nwhere it\'s heading.',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.72),
+                    color: Colors.white.withValues(alpha: 0.72),
                     fontSize: 18,
                     fontWeight: FontWeight.w400,
                     height: 1.6,
@@ -188,10 +188,10 @@ class _FutureScoreWidgetState extends State<FutureScoreWidget>
                     width: 130,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: active ? const Color(0xFF6C63FF).withOpacity(0.2) : const Color(0xFF151E30),
+                      color: active ? const Color(0xFF6C63FF).withValues(alpha: 0.2) : const Color(0xFF151E30),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: active ? const Color(0xFF6C63FF) : Colors.white.withOpacity(0.08),
+                        color: active ? const Color(0xFF6C63FF) : Colors.white.withValues(alpha: 0.08),
                         width: 1.5,
                       ),
                     ),
@@ -236,7 +236,7 @@ class _FutureScoreWidgetState extends State<FutureScoreWidget>
                       decoration: BoxDecoration(
                         color: const Color(0xFF151E30),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.06)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
                       ),
                       child: Row(
                         children: [
@@ -261,12 +261,12 @@ class _FutureScoreWidgetState extends State<FutureScoreWidget>
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                Icon(Icons.info_outline_rounded, color: Colors.white.withOpacity(0.2), size: 13),
+                Icon(Icons.info_outline_rounded, color: Colors.white.withValues(alpha: 0.2), size: 13),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     'Projections are indicative estimates based on current amenity data. Not investment advice.',
-                    style: TextStyle(color: Colors.white.withOpacity(0.22), fontSize: 11, height: 1.4),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.22), fontSize: 11, height: 1.4),
                   ),
                 ),
               ],
@@ -340,7 +340,7 @@ class _TrajectoryPainter extends CustomPainter {
 
     // Grid lines
     final gridPaint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
+      ..color = Colors.white.withValues(alpha: 0.05)
       ..strokeWidth = 1;
     for (final pct in [0.25, 0.5, 0.75, 1.0]) {
       final y = vPad + h * (1 - pct);
@@ -348,7 +348,7 @@ class _TrajectoryPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           text: (minS + range * pct).round().toString(),
-          style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 9),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.2), fontSize: 9),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -388,7 +388,7 @@ class _TrajectoryPainter extends CustomPainter {
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [const Color(0xFF6C63FF).withOpacity(0.2), Colors.transparent],
+            colors: [const Color(0xFF6C63FF).withValues(alpha: 0.2), Colors.transparent],
           ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
       );
     }
@@ -418,7 +418,7 @@ class _TrajectoryPainter extends CustomPainter {
 
     // Glow
     canvas.drawPath(linePath, Paint()
-      ..color = const Color(0xFF6C63FF).withOpacity(0.35)
+      ..color = const Color(0xFF6C63FF).withValues(alpha: 0.35)
       ..strokeWidth = 10
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke
@@ -433,13 +433,13 @@ class _TrajectoryPainter extends CustomPainter {
       final conf = milestones[i].confidence;
 
       if (isSelected) {
-        canvas.drawCircle(pt, 20, Paint()..color = const Color(0xFF6C63FF).withOpacity(0.2));
+        canvas.drawCircle(pt, 20, Paint()..color = const Color(0xFF6C63FF).withValues(alpha: 0.2));
         canvas.drawCircle(pt, 20,
-            Paint()..color = const Color(0xFF6C63FF).withOpacity(0.5)..style = PaintingStyle.stroke..strokeWidth = 1.5);
+            Paint()..color = const Color(0xFF6C63FF).withValues(alpha: 0.5)..style = PaintingStyle.stroke..strokeWidth = 1.5);
       }
 
       canvas.drawCircle(pt, 10,
-          Paint()..color = const Color(0xFF6C63FF).withOpacity(0.3)..style = PaintingStyle.stroke..strokeWidth = 2);
+          Paint()..color = const Color(0xFF6C63FF).withValues(alpha: 0.3)..style = PaintingStyle.stroke..strokeWidth = 2);
       canvas.drawCircle(pt, 7, Paint()..color = isSelected ? const Color(0xFF6C63FF) : const Color(0xFF1A2235));
       canvas.drawCircle(pt, 4,
           Paint()..color = const Color(0xFF6C63FF)..style = PaintingStyle.stroke..strokeWidth = 2);
@@ -467,7 +467,7 @@ class _TrajectoryPainter extends CustomPainter {
             const Radius.circular(4),
           ),
           Paint()
-            ..color = Colors.white.withOpacity(0.08)
+            ..color = Colors.white.withValues(alpha: 0.08)
             ..style = PaintingStyle.stroke
             ..strokeWidth = 1,
         );
@@ -477,7 +477,7 @@ class _TrajectoryPainter extends CustomPainter {
       final labelTp = TextPainter(
         text: TextSpan(
           text: milestones[i].label,
-          style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 10, fontWeight: FontWeight.w500),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 10, fontWeight: FontWeight.w500),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -504,7 +504,7 @@ class _FactorsPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF151E30),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.3), width: 1.5),
+        border: Border.all(color: const Color(0xFF6C63FF).withValues(alpha: 0.3), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -519,7 +519,7 @@ class _FactorsPanel extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6C63FF).withOpacity(0.15),
+                  color: const Color(0xFF6C63FF).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -537,7 +537,7 @@ class _FactorsPanel extends StatelessWidget {
                 Container(
                   width: 30, height: 30,
                   decoration: BoxDecoration(
-                    color: e.value.color.withOpacity(0.15),
+                    color: e.value.color.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(e.value.icon, color: e.value.color, size: 15),

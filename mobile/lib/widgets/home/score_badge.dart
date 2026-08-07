@@ -22,7 +22,7 @@ class ScoreBadge extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: _color.withOpacity(0.12),
+        color: _color.withValues(alpha: 0.12),
         border: Border.all(color: _color, width: 2),
       ),
       child: Center(

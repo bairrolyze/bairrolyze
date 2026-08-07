@@ -119,7 +119,7 @@ class _StreetViewCard extends StatelessWidget {
             const SizedBox(height: 12),
 
             // Divider
-            Divider(height: 1, color: theme.colorScheme.outlineVariant.withOpacity(0.6)),
+            Divider(height: 1, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6)),
             const SizedBox(height: 12),
 
             // CTA link
@@ -158,9 +158,9 @@ class _StreetViewLink extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         onTap: onTap,
         // InkWell handles ripple (mobile) and hover highlight (web) automatically.
-        splashColor: accent.withOpacity(0.12),
-        hoverColor: accent.withOpacity(0.07),
-        highlightColor: accent.withOpacity(0.05),
+        splashColor: accent.withValues(alpha: 0.12),
+        hoverColor: accent.withValues(alpha: 0.07),
+        highlightColor: accent.withValues(alpha: 0.05),
         mouseCursor: SystemMouseCursors.click,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
@@ -181,14 +181,14 @@ class _StreetViewLink extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                     height: 1.4,
                     decoration: TextDecoration.underline,
-                    decorationColor: accent.withOpacity(0.5),
+                    decorationColor: accent.withValues(alpha: 0.5),
                   ),
                 ),
               ),
               const SizedBox(width: 6),
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Icon(Icons.open_in_new_rounded, size: 13, color: accent.withOpacity(0.7)),
+                child: Icon(Icons.open_in_new_rounded, size: 13, color: accent.withValues(alpha: 0.7)),
               ),
             ],
           ),

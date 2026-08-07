@@ -3,15 +3,12 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../config/app_theme.dart';
 import '../../models/amenity_model.dart';
 import '../../providers/analysis_provider.dart';
 import 'amenity_marker.dart';
 import 'filter_chips.dart';
 import 'amenity_bottom_sheet.dart';
-
-const _kAccent   = Color(0xFF3B82F6);
-const _kSurface  = Color(0xFF0D1625);
-const _kBorder   = Color(0xFF1A2845);
 
 class MapTabBody extends ConsumerStatefulWidget {
   const MapTabBody({super.key});
@@ -29,6 +26,7 @@ class _MapTabBodyState extends ConsumerState<MapTabBody> {
     final analysisState = ref.watch(analysisProvider);
     final filteredAmenities = ref.watch(filteredAmenitiesProvider);
     final activeFilter = ref.watch(mapFilterProvider);
+    final p = AppPalette.of(context);
 
     final address = analysisState.address;
     final centerLat = address?.lat ?? 38.7139;
@@ -57,8 +55,8 @@ class _MapTabBodyState extends ConsumerState<MapTabBody> {
                   point: LatLng(centerLat, centerLng),
                   radius: 2000,
                   useRadiusInMeter: true,
-                  color: _kAccent.withOpacity(0.05),
-                  borderColor: _kAccent.withOpacity(0.3),
+                  color: AppColors.accent.withValues(alpha: 0.05),
+                  borderColor: AppColors.accent.withValues(alpha: 0.3),
                   borderStrokeWidth: 1.5,
                 ),
               ],
@@ -92,12 +90,12 @@ class _MapTabBodyState extends ConsumerState<MapTabBody> {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: _kAccent,
+                          color: AppColors.accent,
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 3),
                           boxShadow: [
                             BoxShadow(
-                              color: _kAccent.withOpacity(0.45),
+                              color: AppColors.accent.withValues(alpha: 0.45),
                               blurRadius: 10,
                               spreadRadius: 2,
                             ),
@@ -106,7 +104,7 @@ class _MapTabBodyState extends ConsumerState<MapTabBody> {
                         child: const Icon(Icons.home_rounded,
                             color: Colors.white, size: 18),
                       ),
-                      Container(width: 2, height: 12, color: _kAccent),
+                      Container(width: 2, height: 12, color: AppColors.accent),
                     ],
                   ),
                 ),
@@ -165,16 +163,16 @@ class _MapTabBodyState extends ConsumerState<MapTabBody> {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: _kSurface,
+                color: p.surface,
                 shape: BoxShape.circle,
-                border: Border.all(color: _kBorder),
+                border: Border.all(color: p.border),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withOpacity(0.3), blurRadius: 8)
+                      color: Colors.black.withValues(alpha: 0.3), blurRadius: 8)
                 ],
               ),
               child: const Icon(Icons.my_location_rounded,
-                  color: _kAccent, size: 17),
+                  color: AppColors.accent, size: 17),
             ),
           ),
         ),
@@ -190,24 +188,25 @@ class _StatsPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D1625).withOpacity(0.92),
+        color: p.surface.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF1A2845)),
+        border: Border.all(color: p.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.place_rounded, size: 13, color: _kAccent),
+          const Icon(Icons.place_rounded, size: 13, color: AppColors.accent),
           const SizedBox(width: 5),
           Text(
             filter == null
                 ? '$total places nearby'
                 : '$total ${filter!.name}',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: p.textPrimary,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),

@@ -73,6 +73,20 @@ class CarrisLine {
 
   int get colorInt => _hexToInt(color);
   int get textColorInt => _hexToInt(textColor);
+
+  /// Origin / destination termini parsed from [longName]. Carris long names
+  /// look like "Alfragide - Sete Rios" (or with " ⇄ "). Returns (from, to);
+  /// falls back to (longName, '') when no separator is present.
+  (String, String) get termini {
+    for (final sep in [' ⇄ ', ' - ', ' — ', ' – ', ' | ']) {
+      final i = longName.indexOf(sep);
+      if (i > 0) {
+        return (longName.substring(0, i).trim(),
+            longName.substring(i + sep.length).trim());
+      }
+    }
+    return (longName.trim(), '');
+  }
 }
 
 class CarrisArrival {

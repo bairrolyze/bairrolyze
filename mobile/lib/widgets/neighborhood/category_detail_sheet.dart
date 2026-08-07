@@ -1,23 +1,22 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_compass/flutter_compass.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../config/app_theme.dart';
+import '../../config/score_format.dart';
 import '../../models/address_model.dart';
 import '../../models/amenity_model.dart';
 import '../../models/carris_models.dart';
 import '../../models/score_model.dart';
 import '../../services/carris_service.dart';
-
-// ── Tokens ────────────────────────────────────────────────────────────────────
-const _kBg      = Color(0xFF060B14);
-const _kSurface = Color(0xFF0D1625);
-const _kSurface2= Color(0xFF131F33);
-const _kBorder  = Color(0xFF1A2845);
-const _kAccent2 = Color(0xFF6C63FF);
+import '../../services/osm_transit_service.dart';
 
 // ── Entry point ───────────────────────────────────────────────────────────────
 
@@ -120,16 +119,26 @@ const _kTransportColors = <String, Color>{
   'parking':         Color(0xFF64748B),
 };
 
-const _subTypeEmoji = <String, String>{
-  'subway_entrance': '🚇',
-  'bus_stop':        '🚌',
-  'station':         '🚆',
-  'taxi':            '🚕',
-  'bicycle_rental':  '🚲',
-  'tram_stop':       '🚃',
-  'ferry_terminal':  '⛴',
-  'parking':         '🅿',
+// OSM transit sub-type → human mode, for the radar mode summary + its drill-in.
+const _transitModeOf = <String, String>{
+  'subway_entrance': 'Metro',
+  'station':         'Train',
+  'tram_stop':       'Tram',
+  'ferry_terminal':  'Ferry',
+  'bus_stop':        'Bus',
+  'taxi':            'Taxi',
+  'bicycle_rental':  'Bike',
 };
+const _transitModeIcon = <String, IconData>{
+  'Metro': Icons.subway_rounded,
+  'Train': Icons.train_rounded,
+  'Tram':  Icons.tram_rounded,
+  'Ferry': Icons.directions_boat_rounded,
+  'Bus':   Icons.directions_bus_rounded,
+  'Taxi':  Icons.local_taxi_rounded,
+  'Bike':  Icons.pedal_bike_rounded,
+};
+const _transitModeOrder = ['Metro', 'Train', 'Tram', 'Ferry', 'Bus', 'Taxi', 'Bike'];
 
 const _subTypeIcon = <String, IconData>{
   'bus_stop': Icons.directions_bus_rounded,
@@ -211,20 +220,6 @@ const _lifestyleTags = <String, List<String>>{
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-Color _scoreColor(double s) {
-  if (s >= 80) return const Color(0xFF22C55E);
-  if (s >= 60) return const Color(0xFF3B82F6);
-  if (s >= 40) return const Color(0xFFF59E0B);
-  return const Color(0xFFEF4444);
-}
-
-String _scoreLabel(double s) {
-  if (s >= 80) return 'Excellent';
-  if (s >= 60) return 'Good';
-  if (s >= 40) return 'Fair';
-  return 'Poor';
-}
-
 String _dist(int? m) {
   if (m == null) return '—';
   return m < 1000 ? '${m}m' : '${(m / 1000).toStringAsFixed(1)}km';
@@ -239,53 +234,6 @@ String _percentile(double score) {
   if (score >= 70) return 'Top 30%';
   if (score >= 60) return 'Top 40%';
   return 'Average';
-}
-
-String _whyText(String catId, double score, int count, int? closestM) {
-  final tier = _scoreLabel(score).toLowerCase();
-  final distStr = closestM != null ? _dist(closestM) : 'nearby';
-  switch (catId) {
-    case 'transportation':
-      return score >= 80
-          ? 'This property has $tier transportation access with $count transit options available, the nearest being just $distStr away. Car-free living is very practical here.'
-          : score >= 60
-          ? 'Transportation access is $tier with $count options within range. Most daily destinations are reachable without a car.'
-          : 'Transportation options are limited with $count facilities in range. A private vehicle may be needed for some journeys.';
-    case 'education':
-      return score >= 80
-          ? 'Education access is $tier with $count learning facilities nearby. The closest is just $distStr away, making school runs and campus visits easy.'
-          : score >= 60
-          ? 'Education provision is $tier with $count facilities within reach. Families and students will find reasonable access to schools and institutions.'
-          : 'Educational facilities are limited with $count options in the area. Consider this if schooling proximity is a priority.';
-    case 'healthcare':
-      return score >= 80
-          ? 'Healthcare access is $tier with $count facilities available, starting from $distStr. Emergency and routine care are both well covered.'
-          : score >= 60
-          ? 'Healthcare provision is $tier with $count facilities within range. Routine care is accessible without long travel.'
-          : 'Healthcare options are limited with $count facilities nearby. Urgent or specialist care may require longer journeys.';
-    case 'shopping':
-      return score >= 80
-          ? 'Shopping convenience is $tier with $count retail options available. Daily essentials are within easy walking distance — no car needed.'
-          : score >= 60
-          ? 'Shopping access is $tier with $count stores and markets in range. Most everyday needs can be met locally.'
-          : 'Shopping options are limited with $count facilities nearby. A larger supermarket or shopping centre may require travel.';
-    case 'safety':
-      return score >= 80
-          ? 'Safety infrastructure is $tier with $count emergency services in the vicinity. Response times should be fast given the proximity of services.'
-          : score >= 60
-          ? 'Safety provision is $tier with $count emergency services within range.'
-          : 'Emergency services coverage is limited with $count facilities in the area.';
-    case 'recreation':
-      return score >= 80
-          ? 'Recreation access is $tier with $count green spaces and leisure facilities nearby. The closest is just $distStr away — an active, outdoor lifestyle is well supported.'
-          : score >= 60
-          ? 'Recreation options are $tier with $count facilities in range. Parks and leisure areas are reasonably accessible.'
-          : 'Recreation facilities are limited with $count options nearby. Green space access may require more deliberate travel.';
-    default:
-      return score >= 80
-          ? 'This category scores $tier with $count places of interest, the nearest at $distStr.'
-          : 'This category shows $tier availability with $count options within the search area.';
-  }
 }
 
 String _recommendation(String catId, double score) {
@@ -369,17 +317,49 @@ class CategoryDetailSheet extends StatefulWidget {
 class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
   late final Color _color;
   late final List<_SubType> _subtypes;
-  late final List<int> _distBands; // count per band: 0-200, 200-500, 500-1k, 1-2k, >2k
-  late final List<double> _curve;  // relative score per distance band
-  bool _showAllNearby = false;
+  // Amenities grouped by sub-type, each list sorted nearest-first, groups
+  // ordered by count (then proximity). Powers the collapsible nearby section.
+  late final List<MapEntry<String, List<AmenityModel>>> _groups;
+  final Set<String> _expandedTypes = {};
 
   @override
   void initState() {
     super.initState();
     _color = _catColor[widget.cat.id] ?? const Color(0xFF3B82F6);
     _subtypes = _computeSubtypes();
-    _distBands = _computeDistBands();
-    _curve = _computeCurve();
+    _groups = _computeGroups();
+    // All groups start collapsed — the user taps a row to reveal its places.
+  }
+
+  List<MapEntry<String, List<AmenityModel>>> _computeGroups() {
+    final groups = <String, List<AmenityModel>>{};
+    for (final a in widget.amenities) {
+      groups.putIfAbsent(a.type, () => []).add(a);
+    }
+    for (final l in groups.values) {
+      l.sort((a, b) =>
+          (a.distanceMeters ?? 99999).compareTo(b.distanceMeters ?? 99999));
+    }
+    return groups.entries.toList()
+      ..sort((a, b) {
+        final byCount = b.value.length.compareTo(a.value.length);
+        if (byCount != 0) return byCount;
+        return (a.value.first.distanceMeters ?? 99999)
+            .compareTo(b.value.first.distanceMeters ?? 99999);
+      });
+  }
+
+  /// Cumulative counts of places reachable within each distance band.
+  List<(String, int)> _reachBands() {
+    const bands = [(200.0, '200 m'), (500.0, '500 m'), (1000.0, '1 km'), (2000.0, '2 km')];
+    return bands
+        .map((b) => (
+              b.$2,
+              widget.amenities
+                  .where((a) => (a.distanceMeters ?? 99999) <= b.$1)
+                  .length,
+            ))
+        .toList();
   }
 
   List<_SubType> _computeSubtypes() {
@@ -403,53 +383,47 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
       ..sort((a, b) => b.score.compareTo(a.score)));
   }
 
-  List<int> _computeDistBands() {
-    final bands = [200, 500, 1000, 2000, 99999];
-    final prev = [0, 200, 500, 1000, 2000];
-    return List.generate(bands.length, (i) => widget.amenities
-        .where((a) {
-          final d = a.distanceMeters ?? 99999;
-          return d > prev[i] && d <= bands[i];
-        })
-        .length);
-  }
-
-  List<double> _computeCurve() {
-    final thresholds = [200.0, 500.0, 1000.0, 2000.0, 5000.0];
-    final total = widget.amenities.length;
-    if (total == 0) return List.filled(thresholds.length, 0);
-    return thresholds.map((t) {
-      final inRange = widget.amenities.where((a) => (a.distanceMeters ?? 99999) <= t).length;
-      return (widget.cat.score * (0.35 + 0.65 * inRange / total)).clamp(0.0, 100.0);
-    }).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).padding.bottom;
+    final p = AppPalette.of(context);
     return DraggableScrollableSheet(
       initialChildSize: 0.92,
       minChildSize: 0.5,
       maxChildSize: 0.96,
       builder: (ctx, ctrl) => Container(
-        decoration: const BoxDecoration(
-          color: _kBg,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        decoration: BoxDecoration(
+          color: p.bg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
         ),
         child: CustomScrollView(
           controller: ctrl,
           slivers: [
             SliverToBoxAdapter(child: _buildHandle()),
             SliverToBoxAdapter(child: _buildHeader()),
-            SliverToBoxAdapter(child: _buildScoreOverview()),
+            // Transport gets the radar + lines instead of the generic reach bars.
+            if (widget.cat.id != 'transportation')
+              SliverToBoxAdapter(child: _buildScoreOverview()),
             if (widget.cat.id == 'transportation')
               SliverToBoxAdapter(child: _buildTransportDNA()),
-            SliverToBoxAdapter(child: _buildBreakdown()),
-            SliverToBoxAdapter(child: _buildNearby()),
+            if (widget.cat.id == 'transportation' &&
+                widget.address?.lat != null &&
+                widget.address?.lng != null)
+              SliverToBoxAdapter(
+                child: _TransitLinesSection(
+                  lat: widget.address!.lat!,
+                  lng: widget.address!.lng!,
+                  color: _color,
+                  amenities: widget.amenities,
+                ),
+              ),
+            // Lines + radar cover transport; the grouped stop list is only for
+            // the other categories.
+            if (widget.cat.id != 'transportation')
+              SliverToBoxAdapter(child: _buildNearbyGrouped()),
             if (widget.address?.lat != null && widget.address?.lng != null)
               SliverToBoxAdapter(child: _buildMiniMap()),
             SliverToBoxAdapter(child: _buildWhatMakes()),
-            SliverToBoxAdapter(child: _buildQuickStats()),
             SliverToBoxAdapter(child: _buildLifestyle()),
             SliverToBoxAdapter(child: _buildRecommendation()),
             SliverToBoxAdapter(child: SizedBox(height: 32 + bottom)),
@@ -467,7 +441,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
       child: Container(
         width: 40, height: 4,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.18),
+          color: Colors.white.withValues(alpha: 0.18),
           borderRadius: BorderRadius.circular(2),
         ),
       ),
@@ -479,12 +453,13 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
   Widget _buildHeader() {
     final score = widget.cat.score;
     final color = _color;
-    final label = _scoreLabel(score);
+    final label = scoreLabel(score);
+    final p = AppPalette.of(context);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: _kBorder)),
+        border: Border(bottom: BorderSide(color: p.border)),
       ),
       child: Row(
         children: [
@@ -500,7 +475,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                 children: [
                   CustomPaint(
                     size: const Size(80, 80),
-                    painter: _RingPainter(progress: 1, color: _kBorder, stroke: 5),
+                    painter: _RingPainter(progress: 1, color: p.border, stroke: 5),
                   ),
                   CustomPaint(
                     size: const Size(80, 80),
@@ -510,14 +485,14 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        score.round().toString(),
+                        scoreTenth(score),
                         style: TextStyle(
-                          color: color, fontSize: 24,
-                          fontWeight: FontWeight.w900, height: 1,
+                          color: color, fontSize: 22,
+                          fontWeight: FontWeight.w800, height: 1,
                         ),
                       ),
-                      Text('/ 100', style: TextStyle(
-                        color: Colors.white.withOpacity(0.3), fontSize: 9.5,
+                      Text('/ 10', style: TextStyle(
+                        color: p.textTertiary, fontSize: 9.5,
                       )),
                     ],
                   ),
@@ -538,9 +513,9 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      widget.cat.label,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      shortCategoryLabel(widget.cat.id, widget.cat.label),
+                      style: TextStyle(
+                        color: p.textPrimary,
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
@@ -554,13 +529,13 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                       decoration: BoxDecoration(
-                        color: _scoreColor(score).withOpacity(0.15),
+                        color: scoreColor(score).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(7),
                       ),
                       child: Text(
                         label,
                         style: TextStyle(
-                          color: _scoreColor(score),
+                          color: scoreColor(score),
                           fontSize: 11.5, fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -569,9 +544,9 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(7),
-                        border: Border.all(color: color.withOpacity(0.25)),
+                        border: Border.all(color: color.withValues(alpha: 0.25)),
                       ),
                       child: Text(
                         _percentile(score),
@@ -585,9 +560,11 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '${widget.cat.count} places found within 2km',
+                  widget.cat.id == 'transportation'
+                      ? '${widget.cat.count} transit stops within 2km'
+                      : '${widget.cat.count} places found within 2km',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.38),
+                    color: p.textTertiary,
                     fontSize: 12,
                   ),
                 ),
@@ -599,241 +576,212 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
     ).animate().fadeIn(duration: 300.ms);
   }
 
-  // ── Score overview chart ─────────────────────────────────────────────────────
+  // ── Places within reach (real distance-band counts) ──────────────────────────
 
   Widget _buildScoreOverview() {
-    const xLabels = ['0–200m', '–500m', '–1km', '–2km', '–5km'];
-    const leftPad = 32.0;
     final color = _color;
+    final p = AppPalette.of(context);
+    final bands = _reachBands();
+    final maxCount = bands.map((b) => b.$2).fold<int>(0, max);
+
+    if (maxCount == 0) {
+      return _Section(
+        title: 'PLACES WITHIN REACH',
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 22),
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: p.border),
+          ),
+          child: Text(
+            'No places found nearby.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: p.textTertiary, fontSize: 12.5),
+          ),
+        ),
+      ).animate(delay: 80.ms).fadeIn(duration: 350.ms);
+    }
 
     return _Section(
-      title: 'SCORE OVERVIEW',
-      child: SizedBox(
-        height: 168,
-        child: Stack(
-          children: [
-            // Chart canvas (leaves 20px at bottom for X labels)
-            Positioned(
-              left: 0, right: 0, top: 0, bottom: 20,
-              child: CustomPaint(
-                painter: _SparklinePainter(
-                  values: _curve,
-                  color: color,
-                  leftPad: leftPad,
-                ),
-              ),
-            ),
-            // X-axis labels aligned to the chart area
-            Positioned(
-              left: leftPad, right: 0, bottom: 0, height: 20,
+      title: 'PLACES WITHIN REACH',
+      child: Column(
+        children: [
+          for (final band in bands)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: xLabels.map((l) => Expanded(
-                  child: Text(
-                    l,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.30),
-                      fontSize: 8.5,
+                children: [
+                  SizedBox(
+                    width: 42,
+                    child: Text(
+                      band.$1,
+                      style: TextStyle(
+                        color: p.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                )).toList(),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: band.$2 / maxCount),
+                      duration: const Duration(milliseconds: 800),
+                      curve: Curves.easeOutCubic,
+                      builder: (_, v, __) => ClipRRect(
+                        borderRadius: BorderRadius.circular(5),
+                        child: LinearProgressIndicator(
+                          value: v,
+                          minHeight: 9,
+                          backgroundColor: color.withValues(alpha: 0.12),
+                          valueColor: AlwaysStoppedAnimation(color),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 30,
+                    child: Text(
+                      '${band.$2}',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: p.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+        ],
       ),
     ).animate(delay: 80.ms).fadeIn(duration: 350.ms);
   }
 
   // ── Transit radar (transportation only) ──────────────────────────────────────
 
-  // ── Subtype count cards (replaces sparkline) ─────────────────────────────────
-
-  Widget _buildSubtypeCounts() {
-    if (_subtypes.isEmpty) return const SizedBox.shrink();
-    final isTransport = widget.cat.id == 'transportation';
-
-    return _Section(
-      title: 'AT A GLANCE',
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: _subtypes.map((st) {
-          final stColor = isTransport
-              ? (_kTransportColors[st.type] ?? _color)
-              : _color;
-          final icon  = _subTypeIcon[st.type] ?? _catIcon[widget.cat.id] ?? Icons.place_rounded;
-          final label = (_subTypeLabel[st.type] ?? _prettify(st.type))
-              .split(' ').first; // first word keeps chips compact
-
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: _kSurface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: stColor.withOpacity(0.30)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: stColor, size: 20),
-                const SizedBox(height: 6),
-                Text(
-                  '${st.count}',
-                  style: TextStyle(
-                    color: stColor,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    height: 1,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.42),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    ).animate(delay: 80.ms).fadeIn(duration: 300.ms);
-  }
-
   Widget _buildTransportDNA() {
     if (widget.amenities.isEmpty) return const SizedBox.shrink();
-    return _Section(
-      title: 'TRANSIT RADAR',
-      child: _TransitRadarSection(
-        amenities: widget.amenities,
-        address: widget.address,
-        color: _color,
-        subtypes: _subtypes,
-      ),
+    // The section renders its own "NEAREST STOP" + "AROUND YOU" blocks.
+    return _TransitRadarSection(
+      amenities: widget.amenities,
+      address: widget.address,
+      color: _color,
+      subtypes: _subtypes,
     ).animate(delay: 80.ms).fadeIn(duration: 300.ms);
   }
 
-  // ── Breakdown ────────────────────────────────────────────────────────────────
+  // ── What's nearby (grouped by type, collapsible) ─────────────────────────────
 
-  Widget _buildBreakdown() {
-    if (_subtypes.isEmpty) return const SizedBox.shrink();
-    final color = _color;
-    final top = _subtypes.take(6).toList();
-    final maxScore = top.map((s) => s.score).reduce(max);
-
-    return _Section(
-      title: 'BREAKDOWN',
-      child: Column(
-        children: List.generate(top.length, (i) {
-          final s = top[i];
-          final label = _subTypeLabel[s.type] ?? _prettify(s.type);
-          final icon = _subTypeIcon[s.type] ?? _catIcon[widget.cat.id] ?? Icons.place_rounded;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 32, height: 32,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  child: Icon(icon, color: color, size: 15),
-                ),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(label, style: const TextStyle(
-                            color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w500,
-                          )),
-                          Text(
-                            s.score.round().toString(),
-                            style: TextStyle(
-                              color: color, fontSize: 13, fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-                      TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0, end: s.score / maxScore),
-                        duration: Duration(milliseconds: 700 + i * 80),
-                        curve: Curves.easeOutCubic,
-                        builder: (_, v, __) => ClipRRect(
-                          borderRadius: BorderRadius.circular(3),
-                          child: LinearProgressIndicator(
-                            value: v,
-                            minHeight: 5,
-                            backgroundColor: _kBorder,
-                            valueColor: AlwaysStoppedAnimation(color),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ).animate(delay: (i * 60).ms).fadeIn(duration: 300.ms).slideX(begin: 0.04, end: 0);
-        }),
-      ),
-    );
-  }
-
-  // ── Nearby places ────────────────────────────────────────────────────────────
-
-  Widget _buildNearby() {
+  Widget _buildNearbyGrouped() {
+    if (_groups.isEmpty) return const SizedBox.shrink();
     final isTransport = widget.cat.id == 'transportation';
-    final limit = isTransport ? 8 : 6;
-    final hasMore = widget.amenities.length > limit;
-    final top = (_showAllNearby ? widget.amenities : widget.amenities.take(limit)).toList();
-    if (top.isEmpty) return const SizedBox.shrink();
-    final color = _color;
-    final icon = _catIcon[widget.cat.id] ?? Icons.place_rounded;
+    final p = AppPalette.of(context);
 
     return _Section(
-      title: isTransport ? 'NEARBY STOPS' : 'NEARBY PLACES',
-      trailing: hasMore
-          ? GestureDetector(
-              onTap: () => setState(() => _showAllNearby = !_showAllNearby),
-              child: Text(
-                _showAllNearby
-                    ? 'Show less'
-                    : 'View all ${widget.amenities.length}',
-                style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
-              ),
-            )
-          : null,
+      title: isTransport ? 'NEARBY TRANSIT' : "WHAT'S NEARBY",
       child: Container(
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: p.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: p.border),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
-            for (int i = 0; i < top.length; i++) ...[
-              if (i > 0) Divider(height: 1, color: Colors.white.withOpacity(0.05)),
-              if (isTransport)
-                _TransportStopCard(amenity: top[i], typeColor: color)
-              else
-                _NearbyTile(amenity: top[i], color: color, icon: icon),
+            for (int i = 0; i < _groups.length; i++) ...[
+              if (i > 0)
+                Divider(height: 1, color: Colors.white.withValues(alpha: 0.05)),
+              _buildGroup(_groups[i], isTransport),
             ],
           ],
         ),
       ),
     ).animate(delay: 120.ms).fadeIn(duration: 350.ms);
+  }
+
+  Widget _buildGroup(
+    MapEntry<String, List<AmenityModel>> group,
+    bool isTransport,
+  ) {
+    final color = _color;
+    final p = AppPalette.of(context);
+    final type = group.key;
+    final places = group.value;
+    final expanded = _expandedTypes.contains(type);
+    final label = _subTypeLabel[type] ?? _prettify(type);
+    final icon =
+        _subTypeIcon[type] ?? _catIcon[widget.cat.id] ?? Icons.place_rounded;
+
+    return Column(
+      children: [
+        // Header row — tap to expand/collapse
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => setState(() {
+            expanded ? _expandedTypes.remove(type) : _expandedTypes.add(type);
+          }),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            child: Row(
+              children: [
+                Container(
+                  width: 34, height: 34,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: color, size: 16),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: p.textPrimary,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${places.length}',
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                AnimatedRotation(
+                  turns: expanded ? 0.25 : 0.0,
+                  duration: const Duration(milliseconds: 180),
+                  child: Icon(Icons.chevron_right_rounded,
+                      size: 20, color: p.textTertiary),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Expanded place list
+        if (expanded)
+          for (final a in places)
+            isTransport
+                ? _TransportStopCard(amenity: a, typeColor: color)
+                : _GroupPlaceRow(amenity: a, color: color),
+      ],
+    );
   }
 
   // ── Mini map ─────────────────────────────────────────────────────────────────
@@ -843,7 +791,16 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
     final lng = widget.address!.lng!;
     final color = _color;
     final icon = _catIcon[widget.cat.id] ?? Icons.place_rounded;
-    final markers = widget.amenities.take(15).toList();
+    final sorted = [...widget.amenities]
+      ..sort((a, b) =>
+          (a.distanceMeters ?? 99999).compareTo(b.distanceMeters ?? 99999));
+    final markers = sorted.take(15).toList();
+    // Fit the camera to home + the closest places so they're actually visible
+    // (instead of a fixed zoom that often shows only the home pin).
+    final fitPoints = <LatLng>[
+      LatLng(lat, lng),
+      ...sorted.take(8).map((a) => LatLng(a.lat, a.lng)),
+    ];
 
     return _Section(
       title: 'MAP PREVIEW',
@@ -853,8 +810,11 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
           height: 190,
           child: FlutterMap(
             options: MapOptions(
-              initialCenter: LatLng(lat, lng),
-              initialZoom: 15.5,
+              initialCameraFit: CameraFit.coordinates(
+                coordinates: fitPoints,
+                padding: const EdgeInsets.all(28),
+                maxZoom: 16.5,
+              ),
               interactionOptions: const InteractionOptions(
                 flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
               ),
@@ -868,9 +828,9 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
               PolylineLayer(polylines: [
                 ...markers.map((a) => Polyline(
                   points: [LatLng(lat, lng), LatLng(a.lat, a.lng)],
-                  color: color.withOpacity(0.45),
+                  color: color.withValues(alpha: 0.45),
                   strokeWidth: 1.5,
-                  isDotted: true,
+            
                 )),
               ]),
               CircleLayer(circles: [
@@ -878,8 +838,8 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                   point: LatLng(lat, lng),
                   radius: 500,
                   useRadiusInMeter: true,
-                  color: color.withOpacity(0.08),
-                  borderColor: color.withOpacity(0.35),
+                  color: color.withValues(alpha: 0.08),
+                  borderColor: color.withValues(alpha: 0.35),
                   borderStrokeWidth: 1.5,
                 ),
               ]),
@@ -905,10 +865,10 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
-                      border: Border.all(color: _kBg, width: 2),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 6)],
+                      border: Border.all(color: AppColors.bg, width: 2),
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 6)],
                     ),
-                    child: const Icon(Icons.home_rounded, color: Color(0xFF060B14), size: 16),
+                    child: const Icon(Icons.home_rounded, color: AppColors.bg, size: 16),
                   ),
                 ),
               ]),
@@ -923,8 +883,9 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
 
   Widget _buildWhatMakes() {
     final score = widget.cat.score;
-    final label = _scoreLabel(score).toLowerCase();
+    final label = scoreLabel(score).toLowerCase();
     final color = _color;
+    final p = AppPalette.of(context);
 
     // Build accurate bullet points: count is total within search radius (2km),
     // closestM is distance to the single nearest — not a containing radius.
@@ -947,13 +908,13 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: p.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: p.border),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [_kSurface, color.withOpacity(0.06)],
+            colors: [p.surface, color.withValues(alpha: 0.06)],
           ),
         ),
         child: Column(
@@ -986,7 +947,7 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
                   ),
                   Expanded(
                     child: Text(b, style: TextStyle(
-                      color: Colors.white.withOpacity(0.78),
+                      color: p.textSecondary,
                       fontSize: 13, height: 1.4,
                     )),
                   ),
@@ -999,41 +960,13 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
     ).animate(delay: 200.ms).fadeIn(duration: 350.ms);
   }
 
-  // ── Quick stats ──────────────────────────────────────────────────────────────
-
-  Widget _buildQuickStats() {
-    final closest = widget.amenities.isNotEmpty ? widget.amenities.first : null;
-    final within500 = widget.amenities.where((a) => (a.distanceMeters ?? 99999) <= 500).length;
-    final within1k = widget.amenities.where((a) => (a.distanceMeters ?? 99999) <= 1000).length;
-
-    final stats = [
-      _Stat('Nearest', closest != null ? _dist(closest.distanceMeters) : '—', Icons.near_me_rounded),
-      _Stat('Walk time', closest?.walkingMinutes != null ? '${closest!.walkingMinutes} min' : '—', Icons.directions_walk_rounded),
-      _Stat('Within 500m', '$within500 places', Icons.radio_button_checked_rounded),
-      _Stat('Within 1km', '$within1k places', Icons.radio_button_off_rounded),
-      _Stat('Within 2km', '${widget.cat.count} places', Icons.place_rounded),
-      _Stat('Score', '${widget.cat.score.round()} / 100', Icons.bar_chart_rounded),
-    ];
-
-    return _Section(
-      title: 'QUICK STATISTICS',
-      child: GridView.count(
-        crossAxisCount: 3,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-        childAspectRatio: 1.45,
-        children: stats.map((s) => _StatTile(stat: s, color: _color)).toList(),
-      ),
-    ).animate(delay: 240.ms).fadeIn(duration: 350.ms);
-  }
 
   // ── Lifestyle tags ────────────────────────────────────────────────────────────
 
   Widget _buildLifestyle() {
     final tags = _lifestyleTags[widget.cat.id] ?? [];
     if (tags.isEmpty) return const SizedBox.shrink();
+    final p = AppPalette.of(context);
 
     return _Section(
       title: 'LIFESTYLE INSIGHTS',
@@ -1043,12 +976,12 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
         children: tags.map((t) => Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: _kSurface,
+            color: p.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _kBorder),
+            border: Border.all(color: p.border),
           ),
           child: Text(t, style: TextStyle(
-            color: Colors.white.withOpacity(0.82),
+            color: p.textSecondary,
             fontSize: 12.5,
           )),
         )).toList(),
@@ -1060,18 +993,19 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
 
   Widget _buildRecommendation() {
     final text = _recommendation(widget.cat.id, widget.cat.score);
+    final p = AppPalette.of(context);
     return _Section(
       title: 'AI RECOMMENDATION',
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: p.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: p.border),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [_kSurface, _kAccent2.withOpacity(0.07)],
+            colors: [p.surface, AppColors.accent2.withValues(alpha: 0.07)],
           ),
         ),
         child: Row(
@@ -1080,15 +1014,15 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _kAccent2.withOpacity(0.12),
+                color: AppColors.accent2.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.auto_awesome_rounded, color: _kAccent2, size: 16),
+              child: const Icon(Icons.auto_awesome_rounded, color: AppColors.accent2, size: 16),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(text, style: TextStyle(
-                color: Colors.white.withOpacity(0.75),
+                color: p.textSecondary,
                 fontSize: 13.5, height: 1.65,
               )),
             ),
@@ -1097,6 +1031,112 @@ class _CategoryDetailSheetState extends State<CategoryDetailSheet> {
       ),
     ).animate(delay: 320.ms).fadeIn(duration: 350.ms);
   }
+}
+
+// ── Arrivals grouping + directions helpers ───────────────────────────────────
+
+/// One line + destination with its next upcoming times (minutes), soonest
+/// first. Collapses the duplicate rows (e.g. two "Colégio Militar" arrivals)
+/// into a single entry showing multiple times.
+class _ArrivalGroup {
+  final String lineId;
+  final String headsign;
+  final List<int> minutes;
+  _ArrivalGroup(this.lineId, this.headsign, this.minutes);
+}
+
+List<_ArrivalGroup> _groupArrivals(List<CarrisArrival> arrivals) {
+  final byKey = <String, _ArrivalGroup>{};
+  final order = <String>[];
+  for (final a in arrivals) {
+    final m = a.minutesUntil;
+    if (m == null) continue;
+    final key = '${a.lineId}|${a.headsign}';
+    final g = byKey.putIfAbsent(key, () {
+      order.add(key);
+      return _ArrivalGroup(a.lineId, a.headsign, []);
+    });
+    if (g.minutes.length < 3) g.minutes.add(m);
+  }
+  for (final g in byKey.values) {
+    g.minutes.sort();
+  }
+  order.sort((x, y) => byKey[x]!.minutes.first.compareTo(byKey[y]!.minutes.first));
+  return [for (final k in order) byKey[k]!];
+}
+
+/// Opens Apple or Google Maps with transit directions to [lat]/[lng].
+/// Lets the user pick the app (both offered on iOS; Google on Android).
+Future<void> _openDirections(
+  BuildContext context,
+  double lat,
+  double lng, {
+  String? label,
+}) async {
+  final p = AppPalette.of(context);
+  Future<void> launch(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  final apple =
+      'https://maps.apple.com/?daddr=$lat,$lng&dirflg=r';
+  final google =
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=transit';
+
+  await showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: p.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (ctx) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 8),
+          Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+            child: Row(
+              children: [
+                Icon(Icons.directions_rounded, size: 18, color: p.textSecondary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    label == null ? 'Directions' : 'Directions to $label',
+                    style: TextStyle(
+                        color: p.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Text('🗺️', style: TextStyle(fontSize: 20)),
+            title: Text('Apple Maps', style: TextStyle(color: p.textPrimary)),
+            onTap: () { Navigator.pop(ctx); launch(apple); },
+          ),
+          ListTile(
+            leading: const Text('📍', style: TextStyle(fontSize: 20)),
+            title: Text('Google Maps', style: TextStyle(color: p.textPrimary)),
+            onTap: () { Navigator.pop(ctx); launch(google); },
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
+  );
 }
 
 // ── Transport stop card (with route chips + Carris real-time) ─────────────────
@@ -1170,6 +1210,7 @@ class _TransportStopCardState extends State<_TransportStopCard> {
     final stColor = _kTransportColors[a.type] ?? widget.typeColor;
     final icon = _subTypeIcon[a.type] ?? Icons.train_rounded;
     final routes = _routes;
+    final p = AppPalette.of(context);
 
     final hasShelter = a.tags?['shelter'] == 'yes';
     final isAccessible = a.tags?['wheelchair'] == 'yes' ||
@@ -1187,7 +1228,7 @@ class _TransportStopCardState extends State<_TransportStopCard> {
               Container(
                 width: 36, height: 36,
                 decoration: BoxDecoration(
-                  color: stColor.withOpacity(0.12),
+                  color: stColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: stColor, size: 16),
@@ -1201,20 +1242,20 @@ class _TransportStopCardState extends State<_TransportStopCard> {
                       a.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                          color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.w500),
                     ),
                     if (_carrisStop != null)
                       Text(
                         'Carris · stop ${_carrisStop!.id}',
                         style: TextStyle(
-                            color: Colors.white.withOpacity(0.30), fontSize: 10),
+                            color: p.textTertiary, fontSize: 10),
                       )
                     else
                       Text(
                         _prettify(a.type),
                         style: TextStyle(
-                            color: Colors.white.withOpacity(0.30), fontSize: 10),
+                            color: p.textTertiary, fontSize: 10),
                       ),
                   ],
                 ),
@@ -1226,7 +1267,7 @@ class _TransportStopCardState extends State<_TransportStopCard> {
                   Text(
                     _dist(a.distanceMeters),
                     style: TextStyle(
-                        color: Colors.white.withOpacity(0.55),
+                        color: p.textSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w600),
                   ),
@@ -1234,7 +1275,7 @@ class _TransportStopCardState extends State<_TransportStopCard> {
                     Text(
                       '${a.walkingMinutes} min',
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.28), fontSize: 11),
+                          color: p.textTertiary, fontSize: 11),
                     ),
                 ],
               ),
@@ -1278,7 +1319,7 @@ class _TransportStopCardState extends State<_TransportStopCard> {
 
   Widget _routeChip(String lineId, Color fallback) {
     final line = _lineColors[lineId];
-    final bg = line != null ? Color(line.colorInt) : fallback.withOpacity(0.80);
+    final bg = line != null ? Color(line.colorInt) : fallback.withValues(alpha: 0.80);
     final fg = line != null ? Color(line.textColorInt) : Colors.white;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -1295,11 +1336,12 @@ class _TransportStopCardState extends State<_TransportStopCard> {
   }
 
   Widget _arrivalsRow() {
+    final p = AppPalette.of(context);
     return Row(
       children: [
         Text('Next  ',
             style: TextStyle(
-                color: Colors.white.withOpacity(0.30), fontSize: 10.5)),
+                color: p.textTertiary, fontSize: 10.5)),
         ..._arrivals.take(3).map((a) {
           final mins = a.minutesUntil;
           final line = _lineColors[a.lineId];
@@ -1319,7 +1361,7 @@ class _TransportStopCardState extends State<_TransportStopCard> {
               const SizedBox(width: 4),
               Text(label,
                   style: TextStyle(
-                      color: Colors.white.withOpacity(0.72),
+                      color: p.textSecondary,
                       fontSize: 11,
                       fontWeight: FontWeight.w600)),
             ]),
@@ -1330,14 +1372,15 @@ class _TransportStopCardState extends State<_TransportStopCard> {
   }
 
   Widget _facilityBadge(String label, IconData icon) {
+    final p = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.only(right: 10),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 11, color: Colors.white.withOpacity(0.32)),
+        Icon(icon, size: 11, color: p.textTertiary),
         const SizedBox(width: 3),
         Text(label,
             style: TextStyle(
-                color: Colors.white.withOpacity(0.32), fontSize: 10)),
+                color: p.textTertiary, fontSize: 10)),
       ]),
     );
   }
@@ -1345,101 +1388,78 @@ class _TransportStopCardState extends State<_TransportStopCard> {
 
 // ── Nearby tile ───────────────────────────────────────────────────────────────
 
-class _NearbyTile extends StatelessWidget {
+// Compact place row shown when a nearby group is expanded.
+class _GroupPlaceRow extends StatelessWidget {
   final AmenityModel amenity;
   final Color color;
-  final IconData icon;
-  const _NearbyTile({required this.amenity, required this.color, required this.icon});
+  const _GroupPlaceRow({required this.amenity, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    final p = AppPalette.of(context);
+    return Container(
+      color: Colors.white.withValues(alpha: 0.02),
+      padding: const EdgeInsets.fromLTRB(24, 10, 14, 10),
       child: Row(
         children: [
           Container(
-            width: 36, height: 36,
+            width: 5, height: 5,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              color: color.withValues(alpha: 0.6),
+              shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 16),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  amenity.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _prettify(amenity.type),
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.38), fontSize: 11,
-                  ),
-                ),
-              ],
+            child: Text(
+              amenity.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: p.textSecondary, fontSize: 12.5),
             ),
           ),
           const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                _dist(amenity.distanceMeters),
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.55), fontSize: 12, fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (amenity.walkingMinutes != null)
-                Text(
-                  '${amenity.walkingMinutes} min',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.3), fontSize: 11,
-                  ),
-                ),
-            ],
+          Text(
+            _dist(amenity.distanceMeters),
+            style: TextStyle(
+              color: p.textSecondary,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+            ),
           ),
+          if (amenity.walkingMinutes != null)
+            Text(
+              '  ·  ${amenity.walkingMinutes} min',
+              style: TextStyle(color: p.textTertiary, fontSize: 11),
+            ),
         ],
       ),
     );
   }
 }
 
+
 // ── Section wrapper ───────────────────────────────────────────────────────────
 
 class _Section extends StatelessWidget {
   final String title;
   final Widget child;
-  final Widget? trailing;
-  const _Section({required this.title, required this.child, this.trailing});
+  const _Section({required this.title, required this.child});
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.32),
-                  fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 1.8,
-                ),
-              ),
-              if (trailing != null) trailing!,
-            ],
+          Text(
+            title,
+            style: TextStyle(
+              color: p.textTertiary,
+              fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 1.8,
+            ),
           ),
           const SizedBox(height: 12),
           child,
@@ -1451,180 +1471,9 @@ class _Section extends StatelessWidget {
 
 // ── Stat model & tile ─────────────────────────────────────────────────────────
 
-class _Stat {
-  final String label;
-  final String value;
-  final IconData icon;
-  const _Stat(this.label, this.value, this.icon);
-}
-
-class _StatTile extends StatelessWidget {
-  final _Stat stat;
-  final Color color;
-  const _StatTile({required this.stat, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(11),
-      decoration: BoxDecoration(
-        color: _kSurface,
-        borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: _kBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Icon(stat.icon, color: color.withOpacity(0.7), size: 15),
-          const Spacer(),
-          Text(
-            stat.value,
-            style: const TextStyle(
-              color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            stat.label,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.32), fontSize: 10,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ── Sparkline painter ──────────────────────────────────────────────────────────
 
-class _SparklinePainter extends CustomPainter {
-  final List<double> values;
-  final Color color;
-  final double leftPad;
-
-  const _SparklinePainter({
-    required this.values,
-    required this.color,
-    this.leftPad = 0,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (values.isEmpty) return;
-
-    const topPad    = 16.0; // room for score labels above dots
-    const bottomPad = 6.0;  // gap above the X-axis line
-    final chartW = size.width - leftPad;
-    final chartH = size.height - topPad - bottomPad;
-    // Y coordinate for a given score (0-100 scale)
-    double scoreY(double s) => topPad + chartH - (s / 100) * chartH;
-
-    final tp = TextPainter(textDirection: TextDirection.ltr);
-
-    // ── Horizontal grid lines + Y-axis labels ──────────────────────────────
-    const yTicks = [0, 25, 50, 75, 100];
-    for (final yv in yTicks) {
-      final y = scoreY(yv.toDouble());
-      final isBaseline = yv == 0;
-
-      canvas.drawLine(
-        Offset(leftPad, y),
-        Offset(size.width, y),
-        Paint()
-          ..color = Colors.white.withOpacity(isBaseline ? 0.20 : 0.055)
-          ..strokeWidth = isBaseline ? 1.2 : 0.8,
-      );
-
-      tp.text = TextSpan(
-        text: '$yv',
-        style: TextStyle(
-          color: Colors.white.withOpacity(0.28),
-          fontSize: 8.5,
-          fontWeight: FontWeight.w500,
-        ),
-      );
-      tp.layout();
-      tp.paint(canvas, Offset(
-        leftPad - tp.width - 5,
-        y - tp.height / 2,
-      ));
-    }
-
-    // ── Y-axis vertical line ───────────────────────────────────────────────
-    canvas.drawLine(
-      Offset(leftPad, scoreY(100)),
-      Offset(leftPad, scoreY(0)),
-      Paint()
-        ..color = Colors.white.withOpacity(0.20)
-        ..strokeWidth = 1.2,
-    );
-
-    // ── Data points ────────────────────────────────────────────────────────
-    final step = chartW / (values.length - 1);
-    final pts = List.generate(values.length, (i) =>
-        Offset(leftPad + i * step, scoreY(values[i])));
-
-    // Gradient fill under curve
-    final fillPath = ui.Path()..moveTo(pts.first.dx, pts.first.dy);
-    for (int i = 1; i < pts.length; i++) {
-      final cp1 = Offset((pts[i - 1].dx + pts[i].dx) / 2, pts[i - 1].dy);
-      final cp2 = Offset((pts[i - 1].dx + pts[i].dx) / 2, pts[i].dy);
-      fillPath.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, pts[i].dx, pts[i].dy);
-    }
-    fillPath
-      ..lineTo(size.width, scoreY(0))
-      ..lineTo(leftPad, scoreY(0))
-      ..close();
-
-    canvas.drawPath(
-      fillPath,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [color.withOpacity(0.28), color.withOpacity(0.02)],
-        ).createShader(Rect.fromLTWH(leftPad, topPad, chartW, chartH)),
-    );
-
-    // Bezier line
-    final linePath = ui.Path()..moveTo(pts.first.dx, pts.first.dy);
-    for (int i = 1; i < pts.length; i++) {
-      final cp1 = Offset((pts[i - 1].dx + pts[i].dx) / 2, pts[i - 1].dy);
-      final cp2 = Offset((pts[i - 1].dx + pts[i].dx) / 2, pts[i].dy);
-      linePath.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, pts[i].dx, pts[i].dy);
-    }
-    canvas.drawPath(
-      linePath,
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..strokeCap = StrokeCap.round,
-    );
-
-    // Dots + score labels
-    for (int i = 0; i < pts.length; i++) {
-      final p = pts[i];
-      canvas.drawCircle(p, 4.5, Paint()..color = color);
-      canvas.drawCircle(p, 3.0, Paint()..color = _kBg);
-
-      tp.text = TextSpan(
-        text: values[i].round().toString(),
-        style: TextStyle(color: color, fontSize: 8.5, fontWeight: FontWeight.w700),
-      );
-      tp.layout();
-      tp.paint(canvas, Offset(p.dx - tp.width / 2, p.dy - 16));
-    }
-  }
-
-  @override
-  bool shouldRepaint(_SparklinePainter old) =>
-      old.values != values || old.leftPad != leftPad;
-}
 
 // ── Ring painter ──────────────────────────────────────────────────────────────
 
@@ -1671,16 +1520,46 @@ class _TransitRadarSection extends StatefulWidget {
   State<_TransitRadarSection> createState() => _TransitRadarSectionState();
 }
 
-class _TransitRadarSectionState extends State<_TransitRadarSection> {
+class _TransitRadarSectionState extends State<_TransitRadarSection>
+    with SingleTickerProviderStateMixin {
   CarrisStop? _carrisStop;
   List<CarrisArrival> _arrivals = [];
   Map<String, CarrisLine> _lineColors = {};
   bool _loaded = false;
+  late final AnimationController _pulseCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2200),
+  )..repeat();
+
+  // Live device heading (degrees clockwise from north) for the radar compass.
+  StreamSubscription<CompassEvent>? _compassSub;
+  double? _heading;
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose();
+    _compassSub?.cancel();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
     _load();
+    _startCompass();
+  }
+
+  void _startCompass() {
+    final events = FlutterCompass.events;
+    if (events == null) return; // no magnetometer (e.g. simulator)
+    _compassSub = events.listen((e) {
+      final h = e.heading;
+      if (h == null || !mounted) return;
+      // Only rebuild on meaningful change to avoid churn from sensor noise.
+      if (_heading == null || (h - _heading!).abs() >= 1.0) {
+        setState(() => _heading = h);
+      }
+    });
   }
 
   Future<void> _load() async {
@@ -1707,41 +1586,40 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
     });
   }
 
-  List<String> get _routes {
-    if (_carrisStop != null && _carrisStop!.lines.isNotEmpty) {
-      return _carrisStop!.lines;
-    }
-    final nearest = widget.amenities.isNotEmpty ? widget.amenities.first : null;
-    if (nearest == null) return [];
-    final ref = nearest.tags?['route_ref']?.toString() ?? '';
-    return ref.isEmpty
-        ? []
-        : ref
-            .split(RegExp(r'[;,/\s]+'))
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty)
-            .toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     final nearest = widget.amenities.isNotEmpty ? widget.amenities.first : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 1 ── Nearest stop information card
-        if (nearest != null) _stopInfoCard(nearest),
-        const SizedBox(height: 16),
-        // 2 ── Radar as the hero visualization
-        _radarHero(),
-        const SizedBox(height: 10),
-        // 3 ── Legend
-        _legendRow(),
-        // 4 ── Upcoming arrivals (shown after Carris loads)
-        if (_loaded && _arrivals.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          _arrivalsCard(),
-        ],
+        // ── Nearest stop + live departures ──
+        if (nearest != null)
+          _Section(
+            title: 'NEAREST STOP',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _stopInfoCard(nearest),
+                if (_loaded && _arrivals.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _arrivalsCard(),
+                ],
+              ],
+            ),
+          ),
+        // ── Directional radar ──
+        _Section(
+          title: 'AROUND YOU',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _modeSummary(),
+              _radarHero(),
+              const SizedBox(height: 10),
+              _legendRow(),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -1752,203 +1630,385 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
     final color = widget.color;
     final stColor = _kTransportColors[a.type] ?? color;
     final icon = _subTypeIcon[a.type] ?? Icons.train_rounded;
-    final routes = _routes;
+    final p = AppPalette.of(context);
+
+    final mode = _modeTag(a.type);
+    // Secondary line: "64m · 1 min walk · Stop 060219"
+    final secondary = [
+      _dist(a.distanceMeters),
+      if (a.walkingMinutes != null) '${a.walkingMinutes} min walk',
+      if (_carrisStop != null) 'Stop ${_carrisStop!.id}',
+    ].join(' · ');
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _kSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBorder),
+        color: p.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: p.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          // ── Header: icon + stop name + stop ID ─────────────────────────
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 44, height: 44,
-                decoration: BoxDecoration(
-                  color: stColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: stColor.withOpacity(0.25)),
-                ),
-                child: Icon(icon, color: stColor, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: stColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: stColor.withValues(alpha: 0.25)),
+            ),
+            child: Icon(icon, color: stColor, size: 19),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Text(
-                      _carrisStop?.name ?? a.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        height: 1.25,
-                        letterSpacing: -0.2,
+                    Flexible(
+                      child: Text(
+                        _carrisStop?.name ?? a.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: p.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                        ),
                       ),
                     ),
-                    if (_carrisStop != null) ...[
-                      const SizedBox(height: 2),
-                      Row(children: [
-                        Icon(Icons.bookmark_outline_rounded, size: 11,
-                            color: Colors.white.withOpacity(0.30)),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Stop ${_carrisStop!.id}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.35),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ]),
-                    ],
+                    const SizedBox(width: 8),
+                    _modeChip(mode, stColor),
                   ],
                 ),
-              ),
-              // Spinner while Carris loads
-              if (!_loaded)
-                SizedBox(
-                  width: 16, height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 1.5,
-                    valueColor: AlwaysStoppedAnimation(color.withOpacity(0.45)),
-                  ),
-                ),
-            ],
-          ),
-
-          const SizedBox(height: 14),
-
-          // ── Distance + walk time metadata row ────────────────────────
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.04),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _kBorder, width: 0.8),
-            ),
-            child: Row(children: [
-              _metaPill(Icons.near_me_rounded, _dist(a.distanceMeters), stColor),
-              if (a.walkingMinutes != null) ...[
-                Container(
-                  width: 1, height: 16,
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  color: _kBorder,
-                ),
-                _metaPill(
-                  Icons.directions_walk_rounded,
-                  '${a.walkingMinutes} min walk',
-                  Colors.white.withOpacity(0.48),
+                const SizedBox(height: 3),
+                Text(
+                  secondary,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: p.textTertiary, fontSize: 12.5),
                 ),
               ],
-            ]),
+            ),
           ),
-
-          // ── Route chips ──────────────────────────────────────────────
-          if (routes.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Text(
-              'ROUTES SERVED',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.28),
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.4,
+          if (!_loaded)
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: SizedBox(
+                width: 15, height: 15,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  valueColor:
+                      AlwaysStoppedAnimation(color.withValues(alpha: 0.45)),
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: routes.take(12).map((id) {
-                final line = _lineColors[id];
-                final bg = line != null ? Color(line.colorInt) : stColor;
-                final fg = line != null ? Color(line.textColorInt) : Colors.white;
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: bg,
-                    borderRadius: BorderRadius.circular(7),
-                    boxShadow: [
-                      BoxShadow(
-                          color: bg.withOpacity(0.35),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2)),
-                    ],
-                  ),
-                  child: Text(
-                    line?.shortName ?? id,
-                    style: TextStyle(
-                      color: fg,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
         ],
       ),
     );
   }
 
-  Widget _metaPill(IconData icon, String label, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 13, color: color),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+  Widget _modeChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 9.5,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+
+  // ── Mode summary (counts of nearby stops by transport type) ─────────────────
+
+  Widget _modeSummary() {
+    // Group the sub-type stop counts into human transport modes.
+    final counts = <String, int>{};
+    final colors = <String, Color>{};
+    for (final st in widget.subtypes) {
+      final mode = _transitModeOf[st.type];
+      if (mode == null) continue;
+      counts[mode] = (counts[mode] ?? 0) + st.count;
+      colors.putIfAbsent(
+          mode, () => _kTransportColors[st.type] ?? widget.color);
+    }
+    final modes = _transitModeOrder.where((m) => (counts[m] ?? 0) > 0).toList();
+    if (modes.isEmpty) return const SizedBox.shrink();
+
+    final p = AppPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: modes.map((m) {
+          final c = colors[m] ?? widget.color;
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _showModeStops(m, c),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: c.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: c.withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(_transitModeIcon[m], size: 14, color: c),
+                  const SizedBox(width: 6),
+                  Text('${counts[m]}',
+                      style: TextStyle(
+                          color: p.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800)),
+                  const SizedBox(width: 4),
+                  Text(m,
+                      style: TextStyle(
+                          color: p.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500)),
+                  const SizedBox(width: 3),
+                  Icon(Icons.chevron_right_rounded, size: 13, color: p.textTertiary),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  /// Compact sheet listing the nearby stops of one mode (Metro/Train/…). Just
+  /// name + distance/walk; tap a row for directions.
+  void _showModeStops(String mode, Color color) {
+    final p = AppPalette.of(context);
+    final stops = widget.amenities
+        .where((a) => _transitModeOf[a.type] == mode)
+        .toList()
+      ..sort((a, b) =>
+          (a.distanceMeters ?? 999999).compareTo(b.distanceMeters ?? 999999));
+    if (stops.isEmpty) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: p.bg,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: DraggableScrollableSheet(
+          initialChildSize: stops.length > 6 ? 0.6 : 0.4,
+          minChildSize: 0.3,
+          maxChildSize: 0.85,
+          expand: false,
+          builder: (_, ctrl) => Column(
+            children: [
+              const SizedBox(height: 12),
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32, height: 32,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(_transitModeIcon[mode], size: 17, color: color),
+                    ),
+                    const SizedBox(width: 12),
+                    Text('${stops.length} $mode ${stops.length == 1 ? 'stop' : 'stops'} nearby',
+                        style: TextStyle(
+                            color: p.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+              Divider(height: 1, color: p.border),
+              Expanded(
+                child: ListView.separated(
+                  controller: ctrl,
+                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 20),
+                  itemCount: stops.length,
+                  separatorBuilder: (_, __) =>
+                      Divider(height: 1, color: p.border),
+                  itemBuilder: (_, i) {
+                    final s = stops[i];
+                    final sub = [
+                      _dist(s.distanceMeters),
+                      if (s.walkingMinutes != null) '${s.walkingMinutes} min walk',
+                    ].join(' · ');
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _openDirections(context, s.lat, s.lng, label: s.name);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Row(
+                          children: [
+                            Icon(_subTypeIcon[s.type] ?? Icons.place_rounded,
+                                size: 16, color: color),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(s.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                          color: p.textPrimary,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500)),
+                                  const SizedBox(height: 2),
+                                  Text(sub,
+                                      style: TextStyle(
+                                          color: p.textTertiary, fontSize: 11.5)),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.directions_rounded,
+                                size: 16, color: p.textTertiary),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
   // ── 2. Radar hero (full-width, large) ──────────────────────────────────────
 
   Widget _radarHero() {
-    if (widget.subtypes.isEmpty) return const SizedBox.shrink();
+    final home = widget.address;
+    if (home?.lat == null || home?.lng == null) return const SizedBox.shrink();
+    final hlat = home!.lat!, hlng = home.lng!;
+
+    // Plot nearby transit at its true compass bearing + distance from home.
+    final pts = widget.amenities
+        .where((a) => (a.distanceMeters ?? 0) > 0)
+        .take(40)
+        .toList();
+    if (pts.isEmpty) return const SizedBox.shrink();
+
+    double maxD = 0;
+    for (final a in pts) {
+      final d = (a.distanceMeters ?? 0).toDouble();
+      if (d > maxD) maxD = d;
+    }
+    maxD = maxD.clamp(300, 2000).toDouble();
+
+    double bearing(double lat2, double lon2) {
+      final dLon = (lon2 - hlng) * pi / 180;
+      final y = sin(dLon) * cos(lat2 * pi / 180);
+      final x = cos(hlat * pi / 180) * sin(lat2 * pi / 180) -
+          sin(hlat * pi / 180) * cos(lat2 * pi / 180) * cos(dLon);
+      return atan2(y, x); // radians from north, clockwise
+    }
+
+    final blips = [
+      for (final a in pts)
+        _RadarBlip(
+          bearing(a.lat, a.lng),
+          ((a.distanceMeters ?? 0) / maxD).clamp(0.0, 1.0),
+          _kTransportColors[a.type] ?? const Color(0xFF3B82F6),
+        ),
+    ];
+
+    final p = AppPalette.of(context);
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF060C19),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: p.border),
       ),
-      padding: const EdgeInsets.all(12),
-      child: Center(
-        child: SizedBox(
-          height: 220,
-          child: AspectRatio(
-            aspectRatio: 1,
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: const Duration(milliseconds: 1400),
-              curve: Curves.elasticOut,
-              builder: (_, v, __) => CustomPaint(
-                painter: _TransportDNARadarPainter(
-                  subtypes: widget.subtypes,
-                  animValue: v,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        children: [
+          Center(
+            child: SizedBox(
+              height: 248,
+              child: AspectRatio(
+                aspectRatio: 1,
+                // Pinch to zoom / pan the radar to inspect crowded directions.
+                child: InteractiveViewer(
+                  minScale: 1.0,
+                  maxScale: 3.5,
+                  // Pinch-to-zoom only. Panning must stay OFF so single-finger
+                  // vertical drags fall through to the sheet's scroll — with it
+                  // on, the full-width radar swallows drags and you can't scroll
+                  // down to the sections below it (e.g. "Lines serving this area").
+                  panEnabled: false,
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 900),
+                    curve: Curves.easeOutCubic,
+                    builder: (_, v, __) => AnimatedBuilder(
+                      animation: _pulseCtrl,
+                      builder: (_, __) => CustomPaint(
+                        painter: _CompassRadarPainter(
+                          blips: blips,
+                          animValue: v,
+                          pulseValue: _pulseCtrl.value,
+                          headingRad: (_heading ?? 0) * pi / 180,
+                          hasHeading: _heading != null,
+                          ringColor: Colors.white,
+                          labelColor: Colors.white.withValues(alpha: 0.92),
+                          youColor: AppColors.accent2,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(_heading != null ? Icons.explore_rounded : Icons.pinch_rounded,
+                  size: 11, color: p.textTertiary),
+              const SizedBox(width: 5),
+              Text(
+                _heading != null
+                    ? 'Compass live · ring = ${(maxD / 1000).toStringAsFixed(maxD >= 1000 ? 1 : 2)} km'
+                    : 'Pinch to zoom · ring = ${(maxD / 1000).toStringAsFixed(maxD >= 1000 ? 1 : 2)} km',
+                style: TextStyle(color: p.textTertiary, fontSize: 10.5),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1958,6 +2018,7 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
   Widget _legendRow() {
     final visible = widget.subtypes.take(6).toList();
     if (visible.isEmpty) return const SizedBox.shrink();
+    final p = AppPalette.of(context);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -1975,13 +2036,13 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
                   decoration: BoxDecoration(
                     color: color,
                     shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: color.withOpacity(0.55), blurRadius: 4)],
+                    boxShadow: [BoxShadow(color: color.withValues(alpha: 0.55), blurRadius: 4)],
                   ),
                 ),
                 const SizedBox(width: 5),
                 Text(label,
                     style: TextStyle(
-                        color: Colors.white.withOpacity(0.42),
+                        color: p.textTertiary,
                         fontSize: 11,
                         fontWeight: FontWeight.w500)),
               ]),
@@ -1991,17 +2052,17 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
             Container(
               width: 7, height: 7,
               decoration: BoxDecoration(
-                color: const Color(0xFF6C63FF),
+                color: AppColors.accent2,
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(color: const Color(0xFF6C63FF).withOpacity(0.55), blurRadius: 4)
+                  BoxShadow(color: AppColors.accent2.withValues(alpha: 0.55), blurRadius: 4)
                 ],
               ),
             ),
             const SizedBox(width: 5),
             Text('You',
                 style: TextStyle(
-                    color: Colors.white.withOpacity(0.42),
+                    color: p.textTertiary,
                     fontSize: 11,
                     fontWeight: FontWeight.w500)),
           ]),
@@ -2014,12 +2075,14 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
 
   Widget _arrivalsCard() {
     final color = widget.color;
-    final count = _arrivals.length.clamp(0, 4);
+    final groups = _groupArrivals(_arrivals).take(5).toList();
+    final p = AppPalette.of(context);
+    final stop = _carrisStop;
     return Container(
       decoration: BoxDecoration(
-        color: _kSurface2,
+        color: p.surface2,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: p.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2029,102 +2092,121 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
             child: Row(children: [
               Icon(Icons.schedule_rounded, size: 13,
-                  color: Colors.white.withOpacity(0.32)),
+                  color: p.textTertiary),
               const SizedBox(width: 6),
               Text(
                 'UPCOMING ARRIVALS',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.32),
+                  color: p.textTertiary,
                   fontSize: 10.5,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.4,
                 ),
               ),
+              if (stop != null) ...[
+                const Spacer(),
+                Icon(Icons.directions_rounded, size: 13, color: color),
+                const SizedBox(width: 3),
+                Text('Tap for directions',
+                    style: TextStyle(color: color, fontSize: 10)),
+              ],
             ]),
           ),
           const SizedBox(height: 8),
 
-          // One row per arrival
-          ...List.generate(count, (i) {
-            final arr = _arrivals[i];
-            final mins = arr.minutesUntil;
-            final line = _lineColors[arr.lineId];
+          // One row per line + destination (duplicate times collapsed)
+          ...List.generate(groups.length, (i) {
+            final g = groups[i];
+            final soonest = g.minutes.first;
+            final line = _lineColors[g.lineId];
             final chipColor = line != null ? Color(line.colorInt) : color;
-            final chipText = line?.shortName ?? arr.lineId;
+            final chipText = line?.shortName ?? g.lineId;
             final chipFg = line != null ? Color(line.textColorInt) : Colors.white;
 
-            // Urgency colour for the time badge
+            // Urgency colour keyed off the soonest arrival.
             final Color timeColor;
-            if (mins == null || mins > 10) {
+            if (soonest > 10) {
               timeColor = const Color(0xFF22C55E);
-            } else if (mins > 3) {
+            } else if (soonest > 3) {
               timeColor = const Color(0xFFF59E0B);
             } else {
               timeColor = const Color(0xFFEF4444);
             }
+            // "7 min" or "7 · 22 · 40 min"
             final timeLabel =
-                mins == null ? '—' : mins == 0 ? 'Now' : '$mins min';
+                '${g.minutes.map((m) => m == 0 ? 'Now' : '$m').join(' · ')} min';
 
-            final isLast = i == count - 1;
+            final isLast = i == groups.length - 1;
             return Column(children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                child: Row(children: [
-                  // Line chip
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: chipColor,
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: Text(
-                      chipText,
-                      style: TextStyle(
-                          color: chipFg,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // Destination
-                  Expanded(
-                    child: Text(
-                      arr.headsign,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: stop == null
+                    ? null
+                    : () => _openDirections(context, stop.lat, stop.lon,
+                        label: stop.name),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                  child: Row(children: [
+                    // Line chip
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: chipColor,
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Text(
+                        chipText,
+                        style: TextStyle(
+                            color: chipFg,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Time badge with urgency tint
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: timeColor.withOpacity(0.11),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: timeColor.withOpacity(0.28), width: 0.8),
-                    ),
-                    child: Text(
-                      timeLabel,
-                      style: TextStyle(
-                        color: timeColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                    const SizedBox(width: 10),
+                    // Destination
+                    Expanded(
+                      child: Text(
+                        g.headsign,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: p.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                  ),
-                ]),
+                    const SizedBox(width: 8),
+                    // Time badge with urgency tint
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: timeColor.withValues(alpha: 0.11),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                            color: timeColor.withValues(alpha: 0.28),
+                            width: 0.8),
+                      ),
+                      child: Text(
+                        timeLabel,
+                        style: TextStyle(
+                          color: timeColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ]),
+                ),
               ),
               if (!isLast)
                 Divider(
                   height: 1, thickness: 0.5,
                   indent: 16, endIndent: 16,
-                  color: _kBorder,
+                  color: p.border,
                 ),
             ]);
           }),
@@ -2135,122 +2217,1145 @@ class _TransitRadarSectionState extends State<_TransitRadarSection> {
   }
 }
 
-// ── Transport DNA spoke radar painter (premium) ───────────────────────────────
+// ── Transit lines serving the area (Lisbon / Carris) ─────────────────────────
 
-class _TransportDNARadarPainter extends CustomPainter {
-  final List<_SubType> subtypes;
+class _TransitLinesSection extends StatefulWidget {
+  final double lat;
+  final double lng;
+  final Color color;
+  final List<AmenityModel> amenities; // nearest-first transit amenities (OSM)
+  const _TransitLinesSection({
+    required this.lat,
+    required this.lng,
+    required this.color,
+    required this.amenities,
+  });
+
+  @override
+  State<_TransitLinesSection> createState() => _TransitLinesSectionState();
+}
+
+class _TransitLinesSectionState extends State<_TransitLinesSection> {
+  bool _loaded = false;
+  bool _expanded = false;
+  final Map<String, CarrisStop> _lineStop = {}; // line id → nearest stop
+  List<CarrisStop> _stops = []; // all stops within radius (nearest-first)
+  Map<String, CarrisLine> _lines = {};
+  List<String> _order = [];
+  // OSM fallback lines used when Carris has no stops nearby — central Lisbon,
+  // Porto, and everywhere outside the AML. Built first from local `route_ref`
+  // tags (no network, always shows), then enriched with route-relation termini
+  // + colour + mode when the Overpass call returns.
+  List<_DisplayLine> _osmLines = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final stops = await CarrisService.stopsWithin(widget.lat, widget.lng, 700);
+    final lineStop = <String, CarrisStop>{};
+    for (final s in stops) {
+      // stops are nearest-first, so first occurrence is the closest stop.
+      for (final l in s.lines) {
+        lineStop.putIfAbsent(l, () => s);
+      }
+    }
+    final lines = await CarrisService.lineInfoMap(lineStop.keys.toList());
+    final order = lineStop.keys.toList()
+      ..sort((a, b) {
+        final na = int.tryParse(a), nb = int.tryParse(b);
+        if (na != null && nb != null) return na.compareTo(nb);
+        return a.compareTo(b);
+      });
+    // Local baseline from OSM `route_ref` tags — no network, so the section
+    // shows immediately when Carris has nothing nearby.
+    final localLines = order.isEmpty ? _buildLocalLines() : <_DisplayLine>[];
+    if (!mounted) return;
+    setState(() {
+      _lineStop
+        ..clear()
+        ..addAll(lineStop);
+      _stops = stops;
+      _lines = lines;
+      _order = order;
+      _osmLines = localLines;
+      _loaded = true;
+    });
+
+    // Enrich the fallback lines with route-relation data (termini, colour,
+    // mode) once Overpass responds. Failure here just leaves the baseline.
+    if (order.isEmpty) {
+      final routes =
+          await OsmTransitService.linesAround(widget.lat, widget.lng, 700);
+      if (!mounted || routes.isEmpty) return;
+      setState(() => _osmLines = _mergeRelations(localLines, routes));
+    }
+  }
+
+  static String _osmModeForType(String type) {
+    switch (type) {
+      case 'subway_entrance':
+        return 'subway';
+      case 'station':
+        return 'train';
+      case 'tram_stop':
+        return 'tram';
+      case 'ferry_terminal':
+        return 'ferry';
+      default:
+        return 'bus';
+    }
+  }
+
+  static void _sortDisplay(List<_DisplayLine> lines) {
+    lines.sort((a, b) {
+      if (a.modeRank != b.modeRank) return a.modeRank.compareTo(b.modeRank);
+      final na = int.tryParse(a.ref), nb = int.tryParse(b.ref);
+      if (na != null && nb != null) return na.compareTo(nb);
+      if (na != null) return -1;
+      if (nb != null) return 1;
+      return a.ref.compareTo(b.ref);
+    });
+  }
+
+  /// One line per distinct OSM `route_ref`, keyed to its nearest stop. Reliable
+  /// baseline (no network) so the section never disappears.
+  List<_DisplayLine> _buildLocalLines() {
+    final stopByRef = <String, AmenityModel>{};
+    final distByRef = <String, int>{};
+    for (final a in widget.amenities) {
+      final raw = a.tags?['route_ref']?.toString() ?? '';
+      if (raw.isEmpty) continue;
+      final d = a.distanceMeters ?? 999999;
+      for (final r in raw
+          .split(RegExp(r'[;,/]+'))
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)) {
+        if (d < (distByRef[r] ?? 999999)) {
+          distByRef[r] = d;
+          stopByRef[r] = a;
+        }
+      }
+    }
+    final lines = stopByRef.entries
+        .map((e) => _DisplayLine(
+              ref: e.key,
+              mode: _osmModeForType(e.value.type),
+              from: '',
+              to: '',
+              colour: '',
+              distanceM: distByRef[e.key],
+              stop: e.value,
+            ))
+        .toList();
+    _sortDisplay(lines);
+    return lines;
+  }
+
+  /// Enrich the local baseline with route-relation termini/colour/mode, and add
+  /// any relation-only lines (e.g. Metro, which has no stop `route_ref`).
+  List<_DisplayLine> _mergeRelations(
+      List<_DisplayLine> local, List<OsmRouteLine> routes) {
+    final relByRef = <String, OsmRouteLine>{};
+    for (final r in routes) {
+      relByRef.putIfAbsent(r.ref, () => r);
+    }
+    final result = <_DisplayLine>[];
+    final seen = <String>{};
+    for (final l in local) {
+      seen.add(l.ref);
+      final rel = relByRef[l.ref];
+      result.add(rel == null
+          ? l
+          : _DisplayLine(
+              ref: l.ref,
+              mode: rel.mode,
+              from: rel.from,
+              to: rel.to,
+              colour: rel.colour,
+              distanceM: l.distanceM,
+              stop: l.stop,
+            ));
+    }
+    for (final r in routes) {
+      if (!seen.add(r.ref)) continue;
+      result.add(_DisplayLine(
+        ref: r.ref,
+        mode: r.mode,
+        from: r.from,
+        to: r.to,
+        colour: r.colour,
+        distanceM: null,
+        stop: null,
+      ));
+    }
+    _sortDisplay(result);
+    return result;
+  }
+
+  /// Full-route timeline sheet: every stop the line serves, in order, with the
+  /// stops nearest you highlighted.
+  void _showLineDetails(String id) {
+    final line = _lines[id];
+    final serving = _stops.where((s) => s.lines.contains(id)).toList();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (_) => _LineRouteSheet(
+        lineId: id,
+        line: line,
+        accent: widget.color,
+        userLat: widget.lat,
+        userLng: widget.lng,
+        nearbyServing: serving,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final usingCarris = _order.isNotEmpty;
+    final usingOsm = !usingCarris && _osmLines.isNotEmpty;
+    if (!_loaded || (!usingCarris && !usingOsm)) return const SizedBox.shrink();
+    final p = AppPalette.of(context);
+    final color = widget.color;
+
+    final total = usingCarris ? _order.length : _osmLines.length;
+    final hasMore = total > 6;
+
+    final rows = <Widget>[];
+    void addRow(Widget row) {
+      if (rows.isNotEmpty) {
+        rows.add(Divider(height: 1, color: Colors.white.withValues(alpha: 0.05)));
+      }
+      rows.add(row);
+    }
+
+    if (usingCarris) {
+      final shown = _expanded ? _order : _order.take(6).toList();
+      for (final id in shown) {
+        addRow(_lineRow(id, p, color));
+      }
+    } else {
+      final shown = _expanded ? _osmLines : _osmLines.take(6).toList();
+      for (final l in shown) {
+        addRow(_osmLineRow(l, p));
+      }
+    }
+
+    return _Section(
+      title: 'LINES SERVING THIS AREA',
+      child: Container(
+        decoration: BoxDecoration(
+          color: p.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: p.border),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            if (usingOsm) _osmSourceNote(p),
+            ...rows,
+            if (hasMore)
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() => _expanded = !_expanded),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  child: Text(
+                    _expanded ? 'Show fewer' : 'Show all $total lines',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: color, fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ).animate(delay: 100.ms).fadeIn(duration: 350.ms);
+  }
+
+  // Small "sourced from OpenStreetMap" strip shown above the OSM fallback rows.
+  Widget _osmSourceNote(AppPalette p) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(14, 9, 14, 9),
+        decoration: BoxDecoration(
+          border: Border(
+              bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.public_rounded, size: 12, color: p.textTertiary),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Routes & colours from OpenStreetMap · live times available in Lisbon',
+                style: TextStyle(color: p.textTertiary, fontSize: 10.5),
+              ),
+            ),
+          ],
+        ),
+      );
+
+  // ── OSM route-relation row + detail sheet ───────────────────────────────────
+
+  // English names for Lisbon Metro lines (OSM tags them in Portuguese).
+  static const _ptMetroEn = {
+    'Azul': 'Blue',
+    'Amarela': 'Yellow',
+    'Verde': 'Green',
+    'Vermelha': 'Red',
+  };
+
+  Widget _osmLineRow(_DisplayLine l, AppPalette p) {
+    final chipBg = Color(l.colorInt);
+    final chipFg = Color(l.textColorInt);
+    final dist = l.distanceM;
+    final metroEn = l.mode == 'subway' ? _ptMetroEn[l.ref] : null;
+    final subtitle = [
+      metroEn != null ? '${l.modeLabel} · $metroEn line' : l.modeLabel,
+      if (dist != null) _dist(dist),
+    ].join(' · ');
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _showOsmRoute(l),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              constraints: const BoxConstraints(minWidth: 30),
+              decoration: BoxDecoration(
+                color: chipBg,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(l.ref,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: chipFg,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l.primaryText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: p.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: p.textTertiary, fontSize: 11)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right_rounded, size: 18, color: p.textTertiary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Detail sheet for an OSM line: mode, both termini, colour, nearest stop +
+  /// directions. (No live timeline outside Lisbon — OSM has no ordered pattern.)
+  void _showOsmRoute(_DisplayLine l) {
+    final p = AppPalette.of(context);
+    final chipBg = Color(l.colorInt);
+    final chipFg = Color(l.textColorInt);
+    final metroEn = l.mode == 'subway' ? _ptMetroEn[l.ref] : null;
+    final stop = l.stop;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: p.bg,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    constraints: const BoxConstraints(minWidth: 34),
+                    decoration: BoxDecoration(
+                      color: chipBg,
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: Text(l.ref,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: chipFg,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      metroEn != null
+                          ? '${l.modeLabel} · $metroEn line'
+                          : '${l.modeLabel} line',
+                      style: TextStyle(
+                        color: p.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              if (l.hasTermini) ...[
+                Text(
+                  'ROUTE',
+                  style: TextStyle(
+                    color: p.textTertiary,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Start → end termini as a mini timeline.
+                _osmTerminus(p, chipBg, l.from.isEmpty ? '—' : l.from,
+                    isStart: true),
+                Padding(
+                  padding: const EdgeInsets.only(left: 5),
+                  child: Container(
+                      width: 2, height: 16, color: chipBg.withValues(alpha: 0.5)),
+                ),
+                _osmTerminus(p, chipBg, l.to.isEmpty ? '—' : l.to, isStart: false),
+                const SizedBox(height: 18),
+              ] else if (stop != null) ...[
+                Text('Serves ${stop.name} near you',
+                    style: TextStyle(color: p.textSecondary, fontSize: 13)),
+                const SizedBox(height: 18),
+              ],
+              if (stop != null)
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: widget.color.withValues(alpha: 0.16),
+                      foregroundColor: widget.color,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _openDirections(context, stop.lat, stop.lng,
+                          label: stop.name);
+                    },
+                    icon: const Icon(Icons.directions_rounded, size: 18),
+                    label: Text('Directions to ${stop.name}'),
+                  ),
+                )
+              else
+                Text('Serves this area · nearest stop not identified',
+                    style: TextStyle(color: p.textTertiary, fontSize: 12)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // One terminus row (dot + name) for the OSM route detail sheet.
+  Widget _osmTerminus(AppPalette p, Color dotColor, String name,
+      {required bool isStart}) {
+    return Row(
+      children: [
+        Container(
+          width: 12, height: 12,
+          decoration: BoxDecoration(
+            color: isStart ? dotColor : p.bg,
+            shape: BoxShape.circle,
+            border: Border.all(color: dotColor, width: 2),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(name,
+              style: TextStyle(
+                  color: p.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600)),
+        ),
+      ],
+    );
+  }
+
+  Widget _lineRow(String id, AppPalette p, Color fallback) {
+    final stop = _lineStop[id]!;
+    final line = _lines[id];
+    final chipColor = line != null ? Color(line.colorInt) : fallback;
+    final chipFg = line != null ? Color(line.textColorInt) : Colors.white;
+    final chipText = line?.shortName ?? id;
+    final (from, to) = line?.termini ?? (stop.name, '');
+    final routeText = to.isEmpty ? from : '$from → $to';
+    final dist = stop.distanceTo(widget.lat, widget.lng).round();
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _showLineDetails(id),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: chipColor,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(chipText,
+                  style: TextStyle(
+                      color: chipFg,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(routeText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: p.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 2),
+                  Text('${_dist(dist)} · ${stop.name}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: p.textTertiary, fontSize: 11)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right_rounded, size: 18, color: p.textTertiary),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+// ── Full-route timeline sheet ─────────────────────────────────────────────────
+
+/// A route's complete ordered stop list rendered as a vertical timeline, with
+/// the stops nearest the user highlighted (and the single closest flagged).
+class _LineRouteSheet extends StatefulWidget {
+  final String lineId;
+  final CarrisLine? line;
+  final Color accent;
+  final double userLat;
+  final double userLng;
+  final List<CarrisStop> nearbyServing;
+
+  const _LineRouteSheet({
+    required this.lineId,
+    required this.line,
+    required this.accent,
+    required this.userLat,
+    required this.userLng,
+    required this.nearbyServing,
+  });
+
+  @override
+  State<_LineRouteSheet> createState() => _LineRouteSheetState();
+}
+
+class _LineRouteSheetState extends State<_LineRouteSheet> {
+  static const _nearRadiusM = 700.0;
+
+  List<CarrisStop> _stops = [];
+  bool _loaded = false;
+  int _nearestIdx = -1; // index of the single closest stop on the route
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    var stops = await CarrisService.routeStops(widget.lineId);
+    // Fallback to the nearby stops we already have if the pattern lookup fails
+    // (non-Lisbon line or a transient API error).
+    if (stops.isEmpty) stops = widget.nearbyServing;
+
+    int nearestIdx = -1;
+    double best = double.infinity;
+    for (var i = 0; i < stops.length; i++) {
+      final d = stops[i].distanceTo(widget.userLat, widget.userLng);
+      if (d < best) { best = d; nearestIdx = i; }
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _stops = stops;
+      _nearestIdx = nearestIdx;
+      _loaded = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    final line = widget.line;
+    final chipColor = line != null ? Color(line.colorInt) : widget.accent;
+    final chipFg = line != null ? Color(line.textColorInt) : Colors.white;
+    final chipText = line?.shortName ?? widget.lineId;
+    final (from, to) = line?.termini ?? ('', '');
+    final routeText =
+        to.isEmpty ? (line?.longName ?? 'Line $chipText') : '$from → $to';
+    final nearCount =
+        _stops.where((s) => s.distanceTo(widget.userLat, widget.userLng) <= _nearRadiusM).length;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (ctx, ctrl) => Container(
+        decoration: BoxDecoration(
+          color: p.bg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+        ),
+        child: Column(
+          children: [
+            // Handle
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 4),
+              child: Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+            // Header: line chip + route + stop-count subline
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
+              child: Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: chipColor,
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: Text(chipText,
+                        style: TextStyle(
+                            color: chipFg,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          routeText,
+                          style: TextStyle(
+                            color: p.textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            height: 1.2,
+                          ),
+                        ),
+                        if (_loaded && _stops.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            nearCount > 0
+                                ? '${_stops.length} stops · $nearCount near you'
+                                : '${_stops.length} stops on this line',
+                            style: TextStyle(
+                                color: p.textTertiary, fontSize: 11.5),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: p.border),
+            // Timeline
+            Expanded(
+              child: !_loaded
+                  ? Center(
+                      child: SizedBox(
+                        width: 22, height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(
+                              widget.accent.withValues(alpha: 0.6)),
+                        ),
+                      ),
+                    )
+                  : _stops.isEmpty
+                      ? Center(
+                          child: Text('Route details unavailable.',
+                              style: TextStyle(
+                                  color: p.textTertiary, fontSize: 13)),
+                        )
+                      : ListView.builder(
+                          controller: ctrl,
+                          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                          itemCount: _stops.length,
+                          itemBuilder: (_, i) => _stopRow(i, chipColor, p),
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _stopRow(int i, Color railColor, AppPalette p) {
+    final s = _stops[i];
+    final isFirst = i == 0;
+    final isLast = i == _stops.length - 1;
+    final d = s.distanceTo(widget.userLat, widget.userLng);
+    final isNear = d <= _nearRadiusM;
+    final isNearest = i == _nearestIdx;
+    final isTerminus = isFirst || isLast;
+
+    final dotColor = isNearest
+        ? widget.accent
+        : isNear
+            ? widget.accent.withValues(alpha: 0.9)
+            : railColor;
+
+    return IntrinsicHeight(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _openDirections(context, s.lat, s.lon, label: s.name),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Rail + dot
+            SizedBox(
+              width: 26,
+              child: CustomPaint(
+                painter: _RailPainter(
+                  color: railColor.withValues(alpha: 0.35),
+                  dotColor: dotColor,
+                  holeColor: p.bg,
+                  isFirst: isFirst,
+                  isLast: isLast,
+                  emphasized: isNear || isTerminus,
+                  ringColor: isNearest
+                      ? widget.accent.withValues(alpha: 0.35)
+                      : Colors.transparent,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Stop content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 9),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            s.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: isNear || isTerminus
+                                  ? p.textPrimary
+                                  : p.textSecondary,
+                              fontSize: 13.5,
+                              fontWeight: isNear || isTerminus
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                        if (isNearest) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: widget.accent.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(
+                              'NEAREST',
+                              style: TextStyle(
+                                color: widget.accent,
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ] else if (isFirst || isLast) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            isFirst ? 'START' : 'END',
+                            style: TextStyle(
+                              color: p.textTertiary,
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (isNear) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${_dist(d.round())} from you · tap for directions',
+                        style: TextStyle(
+                            color: widget.accent.withValues(alpha: 0.85),
+                            fontSize: 11),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Draws the vertical connector + stop dot for one timeline row.
+class _RailPainter extends CustomPainter {
+  final Color color;
+  final Color dotColor;
+  final Color ringColor;
+  final Color holeColor;
+  final bool isFirst;
+  final bool isLast;
+  final bool emphasized;
+
+  const _RailPainter({
+    required this.color,
+    required this.dotColor,
+    required this.ringColor,
+    required this.holeColor,
+    required this.isFirst,
+    required this.isLast,
+    required this.emphasized,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    // Dot sits near the top of the row so it aligns with the first text line.
+    final cy = 18.0;
+    final line = Paint()
+      ..color = color
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+
+    if (!isFirst) canvas.drawLine(Offset(cx, 0), Offset(cx, cy), line);
+    if (!isLast) canvas.drawLine(Offset(cx, cy), Offset(cx, size.height), line);
+
+    final r = emphasized ? 6.0 : 4.0;
+    if (ringColor.a > 0) {
+      canvas.drawCircle(Offset(cx, cy), r + 4, Paint()..color = ringColor);
+    }
+    // Filled dot for emphasized/terminus stops; hollow for the rest.
+    canvas.drawCircle(Offset(cx, cy), r, Paint()..color = dotColor);
+    if (!emphasized) {
+      canvas.drawCircle(Offset(cx, cy), r - 1.5, Paint()..color = holeColor);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_RailPainter old) =>
+      old.dotColor != dotColor ||
+      old.color != color ||
+      old.ringColor != ringColor ||
+      old.holeColor != holeColor ||
+      old.emphasized != emphasized;
+}
+
+// ── Display line for the OSM "lines serving this area" fallback ───────────────
+
+/// A line shown in the fallback list. Built from a local OSM `route_ref` stop
+/// (reliable baseline) and optionally enriched with route-relation termini +
+/// colour + mode. Delegates colour/label helpers to [OsmRouteLine].
+class _DisplayLine {
+  final String ref;
+  final String mode;
+  final String from;
+  final String to;
+  final String colour;
+  final int? distanceM;
+  final AmenityModel? stop; // nearest local stop (directions + fallback name)
+
+  const _DisplayLine({
+    required this.ref,
+    required this.mode,
+    required this.from,
+    required this.to,
+    required this.colour,
+    required this.distanceM,
+    required this.stop,
+  });
+
+  OsmRouteLine get _osm => OsmRouteLine(
+      mode: mode, ref: ref, from: from, to: to, colour: colour, name: '');
+
+  int get colorInt => _osm.colorInt;
+  int get textColorInt => _osm.textColorInt;
+  String get modeLabel => _osm.modeLabel;
+  bool get hasTermini => from.isNotEmpty || to.isNotEmpty;
+  String get terminiText => _osm.terminiText;
+
+  int get modeRank {
+    const order = {
+      'subway': 0,
+      'light_rail': 1,
+      'train': 2,
+      'tram': 3,
+      'ferry': 4,
+      'trolleybus': 5,
+      'bus': 6,
+    };
+    return order[mode] ?? 7;
+  }
+
+  /// Primary row text: termini when enriched, else "via [nearest stop]".
+  String get primaryText => hasTermini
+      ? terminiText
+      : (stop != null ? 'via ${stop!.name}' : modeLabel);
+}
+
+// ── Compass radar (nearby transit by true bearing + distance) ────────────────
+
+class _RadarBlip {
+  final double bearingRad; // 0 = north, clockwise
+  final double distNorm;   // 0..1 (distance / maxDist)
+  final Color color;
+  const _RadarBlip(this.bearingRad, this.distNorm, this.color);
+}
+
+class _CompassRadarPainter extends CustomPainter {
+  final List<_RadarBlip> blips;
   final double animValue;
-
-  const _TransportDNARadarPainter({
-    required this.subtypes,
+  final double pulseValue; // 0..1 repeating, drives the "you" pulse
+  final double headingRad; // device heading (clockwise from N); 0 = north-up
+  final bool hasHeading;   // true once a live magnetometer reading is in
+  final Color ringColor;
+  final Color labelColor;
+  final Color youColor;
+  const _CompassRadarPainter({
+    required this.blips,
     required this.animValue,
+    required this.pulseValue,
+    required this.headingRad,
+    required this.hasHeading,
+    required this.ringColor,
+    required this.labelColor,
+    required this.youColor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final c = Offset(size.width / 2, size.height / 2);
-    final maxR = size.width / 2 * 0.80;
-    final visible = subtypes.take(8).toList();
-    final n = visible.length;
+    // Extra inset leaves room for the outer N/E/S/W labels so they never clip
+    // the box edge (notably "S" against the caption below).
+    final maxR = min(size.width, size.height) / 2 - 26;
 
-    canvas.drawCircle(c, size.width / 2, Paint()..color = const Color(0xFF060C19));
-
-    for (int r = 1; r <= 4; r++) {
-      canvas.drawCircle(c, maxR * r / 4,
-          Paint()
-            ..color = Colors.white.withOpacity(r == 4 ? 0.10 : 0.04)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = r == 4 ? 1.0 : 0.7);
+    // Screen position for a compass angle (radians clockwise from true north),
+    // rotated so the direction the phone faces sits at the top of the radar.
+    Offset atAngle(double compassRad, double radius) {
+      final a = compassRad - headingRad;
+      return Offset(c.dx + radius * sin(a), c.dy - radius * cos(a));
     }
 
-    if (n > 0) {
-      for (int i = 0; i < n; i++) {
-        final a = (2 * pi / n) * i - pi / 2;
-        canvas.drawLine(c, Offset(c.dx + maxR * cos(a), c.dy + maxR * sin(a)),
-            Paint()..color = Colors.white.withOpacity(0.04)..strokeWidth = 0.8);
-      }
-    }
-
-    _drawHomeIcon(canvas, c, animValue.clamp(0.0, 1.0));
-
-    if (animValue <= 0.01 || n == 0) return;
-
-    final maxScore = visible.map((s) => s.score).reduce(max);
-
-    for (int i = 0; i < n; i++) {
-      final angle = (2 * pi / n) * i - pi / 2;
-      final st = visible[i];
-      final normalized = maxScore > 0 ? st.score / maxScore : 0.0;
-      final r = maxR * normalized * animValue;
-      final tip = Offset(c.dx + r * cos(angle), c.dy + r * sin(angle));
-      final color = _kTransportColors[st.type] ?? const Color(0xFF3B82F6);
-
-      final a01 = animValue.clamp(0.0, 1.0);
-
-      canvas.drawLine(c, tip,
-          Paint()
-            ..color = color.withOpacity(0.38 * a01)
-            ..strokeWidth = 1.5
-            ..strokeCap = StrokeCap.round);
-
-      canvas.drawCircle(tip, 20, Paint()..color = color.withOpacity(0.07 * a01));
-      canvas.drawCircle(tip, 14, Paint()..color = color.withOpacity(0.14 * a01));
-      canvas.drawCircle(tip, 11, Paint()..color = color.withOpacity(0.90 * a01));
-      canvas.drawCircle(tip, 11,
-          Paint()
-            ..color = Colors.white.withOpacity(0.16)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.0);
-
-      final emoji = _subTypeEmoji[st.type] ?? '🚌';
-      final ep = TextPainter(textDirection: TextDirection.ltr)
-        ..text = TextSpan(text: emoji, style: const TextStyle(fontSize: 10))
-        ..layout();
-      ep.paint(canvas, Offset(tip.dx - ep.width / 2, tip.dy - ep.height / 2));
-
-      if (animValue > 0.60) {
-        final alpha = ((animValue - 0.60) / 0.40).clamp(0.0, 1.0);
-        final lp = TextPainter(textDirection: TextDirection.ltr)
-          ..text = TextSpan(
-              text: '×${st.count}',
-              style: TextStyle(
-                  color: color.withOpacity(0.80 * alpha),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700))
-          ..layout();
-        final labelR = r + 20;
-        lp.paint(canvas,
-            Offset(c.dx + labelR * cos(angle) - lp.width / 2,
-                c.dy + labelR * sin(angle) - lp.height / 2));
-      }
-    }
-  }
-
-  void _drawHomeIcon(Canvas canvas, Offset c, double alpha) {
-    canvas.drawCircle(c, 28,
-        Paint()..color = const Color(0xFF6C63FF).withOpacity(0.05 * alpha));
-    canvas.drawCircle(c, 20,
-        Paint()..color = const Color(0xFF6C63FF).withOpacity(0.12 * alpha));
-    canvas.drawCircle(c, 20,
+    // Concentric distance rings.
+    for (int i = 1; i <= 3; i++) {
+      canvas.drawCircle(
+        c,
+        maxR * i / 3,
         Paint()
-          ..color = const Color(0xFF6C63FF).withOpacity(0.65 * alpha)
+          ..color = ringColor.withValues(alpha: 0.12)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5);
-    canvas.drawCircle(c, 12,
-        Paint()..color = const Color(0xFF6C63FF).withOpacity(alpha));
+          ..strokeWidth = 1,
+      );
+    }
+    // N–S and E–W axes (rotate with heading so they track true compass).
+    final axis = Paint()
+      ..color = ringColor.withValues(alpha: 0.14)
+      ..strokeWidth = 1;
+    canvas.drawLine(atAngle(0, maxR), atAngle(pi, maxR), axis);
+    canvas.drawLine(atAngle(pi / 2, maxR), atAngle(3 * pi / 2, maxR), axis);
 
-    final tp = TextPainter(textDirection: TextDirection.ltr)
-      ..text = const TextSpan(text: '🏠', style: TextStyle(fontSize: 13))
-      ..layout();
-    tp.paint(canvas, Offset(c.dx - tp.width / 2, c.dy - tp.height / 2));
+    // Fixed "ahead" marker straddling the top of the ring — the direction the
+    // phone is pointing. Only meaningful with a live heading (not on simulator).
+    if (hasHeading) {
+      final ahead = ui.Path()
+        ..moveTo(c.dx, c.dy - maxR - 6)
+        ..lineTo(c.dx - 5, c.dy - maxR + 3)
+        ..lineTo(c.dx + 5, c.dy - maxR + 3)
+        ..close();
+      canvas.drawPath(ahead, Paint()..color = youColor);
+    }
+
+    // Compass labels — bright, upright, positioned around the rotated ring so
+    // N always points to true north as you turn.
+    final tp = TextPainter(textDirection: TextDirection.ltr);
+    void label(String s, Offset o, {Color? color}) {
+      tp.text = TextSpan(
+        text: s,
+        style: TextStyle(
+          color: color ?? labelColor,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+          shadows: const [
+            Shadow(color: Color(0xCC060C19), blurRadius: 4),
+          ],
+        ),
+      );
+      tp.layout();
+      tp.paint(canvas, o - Offset(tp.width / 2, tp.height / 2));
+    }
+
+    // Coloured cardinals: north red (the standout), the other three a legible
+    // blue so every letter is clearly tinted, not plain white.
+    const northColor = Color(0xFFFF453A);
+    const otherColor = Color(0xFF4FA8F5);
+    label('N', atAngle(0, maxR + 13), color: northColor);
+    label('E', atAngle(pi / 2, maxR + 13), color: otherColor);
+    label('S', atAngle(pi, maxR + 13), color: otherColor);
+    label('W', atAngle(3 * pi / 2, maxR + 13), color: otherColor);
+
+    // Blips at true bearing + scaled distance (rotated with heading).
+    for (final b in blips) {
+      final r = maxR * b.distNorm.clamp(0.06, 1.0) * animValue;
+      final pos = atAngle(b.bearingRad, r);
+      canvas.drawCircle(pos, 8, Paint()..color = b.color.withValues(alpha: 0.18));
+      canvas.drawCircle(pos, 4.5, Paint()..color = b.color);
+      canvas.drawCircle(
+        pos,
+        4.5,
+        Paint()
+          ..color = Colors.white.withValues(alpha: 0.85)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1,
+      );
+    }
+
+    // Animated "you" pulse — two rings expanding out of the centre, staggered
+    // half a cycle apart, fading as they grow. Gives the "you are here" beacon.
+    const youR = 7.0;
+    for (int i = 0; i < 2; i++) {
+      final phase = (pulseValue + i * 0.5) % 1.0;
+      final pr = youR + phase * (maxR * 0.55);
+      canvas.drawCircle(
+        c,
+        pr,
+        Paint()
+          ..color = youColor.withValues(alpha: (1 - phase) * 0.40 * animValue)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
+    }
+
+    // "You" at the centre — soft glow + solid dot + white ring.
+    canvas.drawCircle(
+        c, youR * 2.2 * animValue, Paint()..color = youColor.withValues(alpha: 0.22));
+    canvas.drawCircle(c, youR * animValue, Paint()..color = youColor);
+    canvas.drawCircle(
+      c,
+      youR * animValue,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
   }
 
   @override
-  bool shouldRepaint(_TransportDNARadarPainter old) =>
-      old.animValue != animValue;
+  bool shouldRepaint(_CompassRadarPainter old) =>
+      old.animValue != animValue ||
+      old.pulseValue != pulseValue ||
+      old.headingRad != headingRad ||
+      old.hasHeading != hasHeading ||
+      old.blips != blips;
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
+
+/// Human transit-mode tag from an OSM sub-type.
+String _modeTag(String type) {
+  switch (type) {
+    case 'subway_entrance':
+      return 'METRO';
+    case 'station':
+      return 'TRAIN';
+    case 'tram_stop':
+      return 'TRAM';
+    case 'ferry_terminal':
+      return 'FERRY';
+    case 'taxi':
+      return 'TAXI';
+    case 'bus_stop':
+      return 'BUS';
+    default:
+      return 'TRANSIT';
+  }
+}
 
 String _prettify(String type) =>
     type.replaceAll('_', ' ').split(' ').map((w) => w.isEmpty ? '' : w[0].toUpperCase() + w.substring(1)).join(' ');

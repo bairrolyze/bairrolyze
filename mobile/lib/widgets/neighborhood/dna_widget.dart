@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../models/address_model.dart';
 import '../../models/score_model.dart';
+import '../common/section_label.dart';
 
 class DNAWidget extends StatefulWidget {
   final LocationScore score;
@@ -62,60 +63,7 @@ class _DNAWidgetState extends State<DNAWidget> with SingleTickerProviderStateMix
       child: Column(
         children: [
           SizedBox(height: widget.topPadding + 32),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Section label
-                const Text(
-                  'ANALYTICS',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 2.2,
-                    height: 1,
-                  ),
-                ).animate().fadeIn(duration: 400.ms),
-                const SizedBox(height: 10),
-                // Title
-                const Text(
-                  'Area DNA',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
-                    height: 1.05,
-                  ),
-                ).animate(delay: 60.ms).fadeIn(duration: 500.ms).slideY(begin: 0.15, end: 0),
-                const SizedBox(height: 8),
-                // Subtitle
-                Text(
-                  'Visual fingerprint of what makes this area unique.',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.60),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    height: 1.4,
-                  ),
-                ).animate(delay: 120.ms).fadeIn(duration: 500.ms),
-                if (_locationMeta(widget.address) != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    _locationMeta(widget.address)!,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.45),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.1,
-                    ),
-                  ).animate(delay: 180.ms).fadeIn(duration: 400.ms),
-                ],
-              ],
-            ),
-          ),
+          const SectionLabel('ANALYTICS'),
           const SizedBox(height: 16),
 
           // DNA Canvas
@@ -177,6 +125,36 @@ class _DNAWidgetState extends State<DNAWidget> with SingleTickerProviderStateMix
                   ),
           ),
 
+          const SizedBox(height: 24),
+          // Caption — moved below the visual so the DNA fingerprint sits higher.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Visual fingerprint of what makes this area unique.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+                if (_locationMeta(widget.address) != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _locationMeta(widget.address)!,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.40),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
           const SizedBox(height: 32),
         ],
       ),
@@ -203,10 +181,10 @@ class _DNAWidgetState extends State<DNAWidget> with SingleTickerProviderStateMix
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: active ? color : color.withOpacity(0.15),
+              color: active ? color : color.withValues(alpha: 0.15),
               shape: BoxShape.circle,
-              border: Border.all(color: color.withOpacity(active ? 1 : 0.4), width: 1.5),
-              boxShadow: active ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 12)] : [],
+              border: Border.all(color: color.withValues(alpha: active ? 1 : 0.4), width: 1.5),
+              boxShadow: active ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 12)] : [],
             ),
             child: Icon(_icons[e.value.id] ?? Icons.place_rounded,
                 color: active ? Colors.white : color, size: 16),
@@ -264,7 +242,7 @@ class _DNAPainter extends CustomPainter {
 
     // Reference rings
     final gridPaint = Paint()
-      ..color = Colors.white.withOpacity(0.06)
+      ..color = Colors.white.withValues(alpha: 0.06)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.8;
     for (final pct in [0.25, 0.5, 0.75, 1.0]) {
@@ -273,7 +251,7 @@ class _DNAPainter extends CustomPainter {
 
     // Spoke lines
     final spokePaint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
+      ..color = Colors.white.withValues(alpha: 0.05)
       ..strokeWidth = 0.8;
     for (int i = 0; i < n; i++) {
       final a = (2 * pi / n) * i - pi / 2;
@@ -315,7 +293,7 @@ class _DNAPainter extends CustomPainter {
     // Filled shape
     canvas.saveLayer(Rect.fromLTWH(0, 0, size.width, size.height), Paint());
     canvas.drawPath(shapePath, Paint()..shader = sweepShader..style = PaintingStyle.fill);
-    canvas.drawPath(shapePath, Paint()..color = const Color(0xFF080E1A).withOpacity(0.45));
+    canvas.drawPath(shapePath, Paint()..color = const Color(0xFF080E1A).withValues(alpha: 0.45));
     canvas.restore();
 
     // Stroke
@@ -334,17 +312,17 @@ class _DNAPainter extends CustomPainter {
       final isActive = selectedIndex == i;
       if (isActive) {
         canvas.drawCircle(pts[i], 14,
-            Paint()..color = color.withOpacity(0.2)..style = PaintingStyle.fill);
+            Paint()..color = color.withValues(alpha: 0.2)..style = PaintingStyle.fill);
         canvas.drawCircle(pts[i], 14,
-            Paint()..color = color.withOpacity(0.5)..style = PaintingStyle.stroke..strokeWidth = 1.5);
+            Paint()..color = color.withValues(alpha: 0.5)..style = PaintingStyle.stroke..strokeWidth = 1.5);
       }
       canvas.drawCircle(pts[i], isActive ? 6.5 : 4.5, Paint()..color = color);
       canvas.drawCircle(pts[i], isActive ? 3 : 2, Paint()..color = Colors.white);
     }
 
     // Center dot
-    canvas.drawCircle(c, 5, Paint()..color = Colors.white.withOpacity(0.3));
-    canvas.drawCircle(c, 2.5, Paint()..color = Colors.white.withOpacity(0.7));
+    canvas.drawCircle(c, 5, Paint()..color = Colors.white.withValues(alpha: 0.3));
+    canvas.drawCircle(c, 2.5, Paint()..color = Colors.white.withValues(alpha: 0.7));
   }
 
   Path _smoothPath(List<Offset> pts) {
@@ -397,7 +375,7 @@ class _DetailCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF151E30),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.35), width: 1.5),
+        border: Border.all(color: color.withValues(alpha: 0.35), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,7 +385,7 @@ class _DetailCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
+                  color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -440,7 +418,7 @@ class _DetailCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(

@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../config/app_theme.dart';
 import 'docs_content.dart';
-
-const _kBg       = Color(0xFF060B14);
-const _kSurface  = Color(0xFF0D1625);
-const _kSurface2 = Color(0xFF131F33);
-const _kBorder   = Color(0xFF1A2845);
 
 class DocArticleScreen extends StatelessWidget {
   final DocArticle article;
@@ -15,9 +11,10 @@ class DocArticleScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final top    = MediaQuery.of(context).padding.top;
     final bottom = MediaQuery.of(context).padding.bottom;
+    final p      = AppPalette.of(context);
 
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: p.bg,
       body: CustomScrollView(
         slivers: [
           // ── Header ──────────────────────────────────────────────────────
@@ -32,13 +29,13 @@ class DocArticleScreen extends StatelessWidget {
                     child: Container(
                       width: 36, height: 36,
                       decoration: BoxDecoration(
-                        color: _kSurface,
+                        color: p.surface,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: _kBorder),
+                        border: Border.all(color: p.border),
                       ),
                       child: Icon(Icons.arrow_back_ios_new_rounded,
                           size: 16,
-                          color: Colors.white.withValues(alpha: 0.6)),
+                          color: p.textSecondary),
                     ),
                   ),
                 ),
@@ -100,8 +97,8 @@ class DocArticleScreen extends StatelessWidget {
                       // Title
                       Text(
                         article.title,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: p.textPrimary,
                           fontSize: 26,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.8,
@@ -114,7 +111,7 @@ class DocArticleScreen extends StatelessWidget {
                       Text(
                         article.subtitle,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.48),
+                          color: p.textSecondary,
                           fontSize: 14,
                           height: 1.5,
                         ),
@@ -122,7 +119,7 @@ class DocArticleScreen extends StatelessWidget {
                       const SizedBox(height: 24),
 
                       // Divider
-                      Container(height: 1, color: _kBorder),
+                      Container(height: 1, color: p.border),
                     ],
                   ),
                 ),
@@ -156,6 +153,7 @@ class _SectionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
     // Section heading
     if (section.heading != null && section.body == null &&
         section.tip == null && section.table == null) {
@@ -191,7 +189,7 @@ class _SectionWidget extends StatelessWidget {
           Text(
             section.body!,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.75),
+              color: p.textSecondary,
               fontSize: 14.5,
               height: 1.65,
             ),
@@ -220,7 +218,7 @@ class _SectionWidget extends StatelessWidget {
               child: Text(
                 section.tip!,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.78),
+                  color: p.textSecondary,
                   fontSize: 13.5,
                   height: 1.55,
                 ),
@@ -236,9 +234,9 @@ class _SectionWidget extends StatelessWidget {
       return Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: _kSurface,
+          color: p.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: p.border),
         ),
         child: Column(
           children: section.table!.asMap().entries.map((entry) {
@@ -259,7 +257,7 @@ class _SectionWidget extends StatelessWidget {
                     child: Text(
                       entry.value.$1,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.60),
+                        color: p.textSecondary,
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
@@ -268,8 +266,8 @@ class _SectionWidget extends StatelessWidget {
                   Expanded(
                     child: Text(
                       entry.value.$2,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: p.textPrimary,
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),

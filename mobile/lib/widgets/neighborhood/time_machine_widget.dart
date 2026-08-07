@@ -132,7 +132,7 @@ class _TimeMachineWidgetState extends State<TimeMachineWidget> {
                         width: r.nextDouble() * 2 + 1,
                         height: r.nextDouble() * 2 + 1,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(r.nextDouble() * 0.6 + 0.4),
+                          color: Colors.white.withValues(alpha: r.nextDouble() * 0.6 + 0.4),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -169,7 +169,7 @@ class _TimeMachineWidgetState extends State<TimeMachineWidget> {
                       Text(
                         'See how your neighbourhood\nchanges throughout the day.',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.72),
+                          color: Colors.white.withValues(alpha: 0.72),
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
                           height: 1.6,
@@ -230,9 +230,9 @@ class _TimeMachineWidgetState extends State<TimeMachineWidget> {
                           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
                           overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
                           activeTrackColor: const Color(0xFF6C63FF),
-                          inactiveTrackColor: Colors.white.withOpacity(0.1),
+                          inactiveTrackColor: Colors.white.withValues(alpha: 0.1),
                           thumbColor: const Color(0xFF6C63FF),
-                          overlayColor: const Color(0xFF6C63FF).withOpacity(0.2),
+                          overlayColor: const Color(0xFF6C63FF).withValues(alpha: 0.2),
                         ),
                         child: Slider(
                           value: _hour,
@@ -311,7 +311,7 @@ class _ActivityRow extends StatelessWidget {
           Container(
             width: 32, height: 32,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 16),
@@ -333,7 +333,7 @@ class _ActivityRow extends StatelessWidget {
                 builder: (_, v, __) => LinearProgressIndicator(
                   value: v.clamp(0.0, 1.0),
                   minHeight: 6,
-                  backgroundColor: color.withOpacity(0.12),
+                  backgroundColor: color.withValues(alpha: 0.12),
                   valueColor: AlwaysStoppedAnimation(color),
                 ),
               ),

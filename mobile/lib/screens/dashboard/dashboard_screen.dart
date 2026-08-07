@@ -208,10 +208,10 @@ class _LivingIndexCard extends StatelessWidget {
             colors: [Color(0xFF111827), Color(0xFF1E1B4B)],
           ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.4), width: 1.5),
+          border: Border.all(color: const Color(0xFF6C63FF).withValues(alpha: 0.4), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF6C63FF).withOpacity(0.15),
+              color: const Color(0xFF6C63FF).withValues(alpha: 0.15),
               blurRadius: 24,
               offset: const Offset(0, 4),
             ),
@@ -283,9 +283,9 @@ class _FeaturePill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFF6C63FF).withOpacity(0.15),
+        color: const Color(0xFF6C63FF).withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.25)),
+        border: Border.all(color: const Color(0xFF6C63FF).withValues(alpha: 0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

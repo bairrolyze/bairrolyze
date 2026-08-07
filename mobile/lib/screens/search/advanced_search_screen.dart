@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/address_model.dart';
+import '../../models/user_preferences_model.dart';
 import '../../providers/analysis_provider.dart';
 import '../../providers/country_provider.dart';
 import '../../providers/preferences_provider.dart';
@@ -57,7 +58,7 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
   Future<void> _search() async {
     if (!_formKey.currentState!.validate()) return;
     final country = ref.read(selectedCountryProvider);
-    final profile = ref.read(preferencesProvider).profile.name;
+    final profile = ref.read(preferencesProvider).profile.jsonValue;
     final address = _buildAddress(country);
 
     await ref.read(analysisProvider.notifier).analyze(
@@ -121,7 +122,7 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
                 // Country selector
                 countriesAsync.when(
                   data: (countries) => DropdownButtonFormField<CountryConfig>(
-                    value: selectedCountry,
+                    initialValue: selectedCountry,
                     decoration: const InputDecoration(
                       labelText: 'Country',
                       prefixIcon: Icon(Icons.flag_rounded),
