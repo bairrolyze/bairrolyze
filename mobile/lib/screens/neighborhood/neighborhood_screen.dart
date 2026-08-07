@@ -408,7 +408,11 @@ class _EmptyExplore extends StatelessWidget {
 class _ScoreHeader extends ConsumerWidget {
   final LocationScore score;
   final AddressModel? address;
-  const _ScoreHeader({required this.score, this.address});
+
+  const _ScoreHeader({
+    required this.score,
+    this.address,
+  });
 
   String _article(String label) =>
       'aeiouAEIOU'.contains(label[0]) ? 'an' : 'a';
@@ -425,42 +429,64 @@ class _ScoreHeader extends ConsumerWidget {
         : (address?.shortSecondary ?? '');
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+      padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: p.border)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // ── Status row ──────────────────────────────────────────────────
-          Row(
-            children: [
-              const Icon(Icons.verified_user_rounded,
-                  size: 15, color: AppColors.success),
-              const SizedBox(width: 6),
-              const Text(
-                'Analysis Complete',
-                style: TextStyle(
-                  color: AppColors.success,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.1,
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                const Icon(Icons.verified_user_rounded,
+                    size: 15, color: AppColors.success),
+                const SizedBox(width: 6),
+                const Text(
+                  'Analysis Complete',
+                  style: TextStyle(
+                    color: AppColors.success,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.1,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              if (address?.lat != null && address?.lng != null)
-                _StreetViewButton(
-                  onTap: () => _openStreetView(address!.lat!, address!.lng!),
+                const Spacer(),
+                _RefreshButton(
+                  loading: ref.watch(analysisProvider).isLoading,
+                  onTap: () {
+                    final addr = address;
+                    if (addr == null) return;
+                    ref.read(analysisProvider.notifier).analyze(
+                          addr.displayAddress,
+                          profile: profile.jsonValue,
+                          countryCode:
+                              ref.read(preferencesProvider).defaultCountry,
+                          forceRefresh: true,
+                        );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Refreshing analysis…'),
+                        behavior: SnackBarBehavior.floating,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
                 ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 10),
-          // ── Address + score + ring ──────────────────────────────────────
+          // ── Title + city + score ring ───────────────────────────────────
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       address?.headerTitle ?? '—',
@@ -474,133 +500,137 @@ class _ScoreHeader extends ConsumerWidget {
                         height: 1.1,
                       ),
                     ),
-                    const SizedBox(height: 5),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on_rounded,
-                            size: 15, color: p.textTertiary),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            cityLine,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                color: p.textSecondary, fontSize: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          tenth,
-                          style: TextStyle(
-                            color: p.textPrimary,
-                            fontSize: 46,
-                            fontWeight: FontWeight.w800,
-                            height: 1,
-                            letterSpacing: -1.8,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 6, left: 3),
-                          child: Text(
-                            '/10',
-                            style: TextStyle(
-                              color: p.textTertiary,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
+                    Padding(
+                      padding: const EdgeInsets.only(top: 5),
+                      child: Row(
+                        children: [
+                          Icon(Icons.location_on_rounded,
+                              size: 15, color: p.textTertiary),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              cityLine,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  color: p.textSecondary, fontSize: 14),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 14),
-                        // Vertical divider separating the score from the
-                        // profile it was scored for.
-                        Container(width: 1, height: 42, color: p.border),
-                        const SizedBox(width: 14),
-                        // Profile selector — a muted "Profile" label above the
-                        // active profile name, which is tappable to change it.
-                        if (address != null)
-                          Flexible(
-                            child: GestureDetector(
-                              onTap: () =>
-                                  _openProfilePicker(context, ref, profile),
+                          if (address?.lat != null &&
+                              address?.lng != null) ...[
+                            Text(
+                              '  ·  ',
+                              style: TextStyle(
+                                  color: p.textTertiary, fontSize: 14),
+                            ),
+                            GestureDetector(
+                              onTap: () => _openStreetView(
+                                  address!.lat!, address!.lng!),
                               behavior: HitTestBehavior.opaque,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
-                                    'Profile',
+                                  Icon(Icons.streetview_rounded,
+                                      size: 14, color: AppColors.accent2),
+                                  const SizedBox(width: 3),
+                                  const Text(
+                                    'Street View',
                                     style: TextStyle(
-                                      color: p.textTertiary,
-                                      fontSize: 11.5,
+                                      color: AppColors.accent2,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      letterSpacing: -0.1,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    profile.label,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: AppColors.accent,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: -0.3,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                      ],
+                          ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 12),
+              // Score ring — holds the score inside.
               _ScoreRing(
                 percent: (score.overall / 100).clamp(0.0, 1.0),
                 color: color,
-                size: 92,
+                size: 76,
+                label: tenth,
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          // ── Verdict + save ──────────────────────────────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: RichText(
-                  text: TextSpan(
-                    style: TextStyle(
-                      color: p.textSecondary,
-                      fontSize: 13,
-                      height: 1.35,
-                      letterSpacing: -0.1,
+          // ── Profile + verdict + save ────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Profile selector — tappable to re-score for another profile.
+                if (address != null) ...[
+                  GestureDetector(
+                    onTap: () => _openProfilePicker(context, ref, profile),
+                    behavior: HitTestBehavior.opaque,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Profile',
+                          style: TextStyle(
+                            color: p.textTertiary,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.1,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          profile.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.accent,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ],
                     ),
-                    children: [
-                      TextSpan(text: 'This is ${_article(label)} '),
-                      TextSpan(
-                        text: label.toLowerCase(),
-                        style: TextStyle(
-                            color: color, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(width: 14),
+                  Container(width: 1, height: 34, color: p.border),
+                  const SizedBox(width: 14),
+                ],
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: TextStyle(
+                        color: p.textSecondary,
+                        fontSize: 13,
+                        height: 1.35,
+                        letterSpacing: -0.1,
                       ),
-                      const TextSpan(text: ' neighbourhood to live in.'),
-                    ],
+                      children: [
+                        TextSpan(text: 'This is ${_article(label)} '),
+                        TextSpan(
+                          text: label.toLowerCase(),
+                          style: TextStyle(
+                              color: color, fontWeight: FontWeight.w700),
+                        ),
+                        const TextSpan(text: ' neighbourhood to live in.'),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              if (address != null) ...[
-                const SizedBox(width: 10),
-                _SaveButton(address: address!),
+                if (address != null) ...[
+                  const SizedBox(width: 10),
+                  _SaveButton(address: address!),
+                ],
               ],
-            ],
+            ),
           ),
         ],
       ),
@@ -800,38 +830,37 @@ class _SaveButton extends ConsumerWidget {
   }
 }
 
-class _StreetViewButton extends StatelessWidget {
+// ── Refresh button — re-runs the live analysis, bypassing the cache ──────────
+
+class _RefreshButton extends StatelessWidget {
+  final bool loading;
   final VoidCallback onTap;
-  const _StreetViewButton({required this.onTap});
+  const _RefreshButton({required this.loading, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
     return GestureDetector(
-      onTap: onTap,
+      onTap: loading ? null : onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        width: 32,
+        height: 32,
         decoration: BoxDecoration(
           color: p.surface2,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.accent2.withValues(alpha: 0.35)),
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColors.accent.withValues(alpha: 0.35)),
         ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.map_rounded, size: 15, color: AppColors.accent2),
-            SizedBox(width: 6),
-            Text(
-              'Street View',
-              style: TextStyle(
-                color: AppColors.accent2,
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+        child: loading
+            ? const Padding(
+                padding: EdgeInsets.all(8),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation(AppColors.accent),
+                ),
+              )
+            : const Icon(Icons.refresh_rounded,
+                size: 17, color: AppColors.accent),
       ),
     );
   }
@@ -843,8 +872,12 @@ class _ScoreRing extends StatelessWidget {
   final double percent;
   final Color color;
   final double size;
+  final String label; // score shown inside the ring, e.g. "8.3"
   const _ScoreRing(
-      {required this.percent, required this.color, required this.size});
+      {required this.percent,
+      required this.color,
+      required this.size,
+      required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -874,7 +907,16 @@ class _ScoreRing extends StatelessWidget {
               painter: _ScoreRingPainter(v, color, p.border),
             ),
           ),
-          Icon(Icons.favorite_rounded, color: color, size: size * 0.3),
+          Text(
+            label,
+            style: TextStyle(
+              color: p.textPrimary,
+              fontSize: size * 0.30,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              height: 1,
+            ),
+          ),
         ],
       ),
     );

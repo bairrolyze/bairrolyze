@@ -78,6 +78,7 @@ class AnalysisNotifier extends StateNotifier<AnalysisState> {
     String rawAddress, {
     String countryCode = 'PT',
     String profile = 'default',
+    bool forceRefresh = false,
   }) async {
     state = state.copyWith(
       status: AnalysisStatus.addressFound,
@@ -91,16 +92,20 @@ class AnalysisNotifier extends StateNotifier<AnalysisState> {
       final cache = _ref.read(cacheServiceProvider);
 
       final cacheKey = 'analysis_${rawAddress}_$profile';
-      final cached = cache.get<Map<String, dynamic>>(cacheKey);
-      if (cached != null) {
-        final result = AnalysisResult.fromJson(cached);
-        final addr = _addressFromPayload(cached, rawAddress, countryCode);
-        state = state.copyWith(
-          status: AnalysisStatus.done,
-          result: result,
-          address: addr,
-        );
-        return;
+      // On a manual refresh, skip the cached copy and re-run the live pipeline;
+      // the fresh result overwrites the cache entry via cache.set() below.
+      if (!forceRefresh) {
+        final cached = cache.get<Map<String, dynamic>>(cacheKey);
+        if (cached != null) {
+          final result = AnalysisResult.fromJson(cached);
+          final addr = _addressFromPayload(cached, rawAddress, countryCode);
+          state = state.copyWith(
+            status: AnalysisStatus.done,
+            result: result,
+            address: addr,
+          );
+          return;
+        }
       }
 
       // Kick off the background job pipeline (returns immediately with an
