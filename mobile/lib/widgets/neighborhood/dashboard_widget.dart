@@ -257,14 +257,8 @@ class _CategoryCard extends StatelessWidget {
     final score = cat.score;
     final p = AppPalette.of(context);
     final decoration = BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          color.withValues(alpha: 0.12),
-          color.withValues(alpha: 0.02),
-        ],
-      ),
+      // Native app surface background; keep the category-coloured border.
+      color: p.surface,
       borderRadius: BorderRadius.circular(18),
       border: Border.all(color: color.withValues(alpha: 0.22)),
     );
