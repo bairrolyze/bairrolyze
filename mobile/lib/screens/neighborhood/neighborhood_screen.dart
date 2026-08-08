@@ -1159,36 +1159,47 @@ class _TabStrip extends StatelessWidget {
           return GestureDetector(
             onTap: () => onSelect(i),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeInOut,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: active
-                    ? AppColors.accent.withValues(alpha: 0.14)
-                    : p.surface2,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: active
-                      ? AppColors.accent
-                      : p.border,
-                  width: 1.5,
-                ),
+                // Active: blue→purple gradient pill with a soft glow.
+                // Inactive: clean, borderless text (no box).
+                gradient: active
+                    ? const LinearGradient(
+                        colors: [AppColors.accent, AppColors.accent2],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: active
+                    ? [
+                        BoxShadow(
+                          color: AppColors.accent2.withValues(alpha: 0.45),
+                          blurRadius: 14,
+                          spreadRadius: -3,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : null,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(tab.$1, style: const TextStyle(fontSize: 13)),
-                  const SizedBox(width: 5),
+                  Opacity(
+                    opacity: active ? 1 : 0.55,
+                    child: Text(tab.$1, style: const TextStyle(fontSize: 13)),
+                  ),
+                  const SizedBox(width: 6),
                   Text(
                     tab.$2,
                     style: TextStyle(
-                      color: active
-                          ? AppColors.accent
-                          : p.textSecondary,
-                      fontSize: 12,
-                      fontWeight:
-                          active ? FontWeight.w700 : FontWeight.w500,
+                      color: active ? Colors.white : p.textTertiary,
+                      fontSize: 12.5,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                      letterSpacing: -0.1,
                     ),
                   ),
                 ],
