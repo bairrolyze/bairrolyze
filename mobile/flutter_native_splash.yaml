@@ -3,7 +3,7 @@ flutter_native_splash:
   color: "#060B14"
   color_dark: "#060B14"
 
-  # Centered HomeScope donut logo
+  # Centered HomeScope brand logo (blue→purple "B"/house mark)
   image: assets/images/splash_logo.png
   image_dark: assets/images/splash_logo.png
 
