@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -40,6 +41,10 @@ class NeighborhoodScreen extends ConsumerStatefulWidget {
 class _NeighborhoodScreenState extends ConsumerState<NeighborhoodScreen> {
   int _tab = 0;
 
+  // Header collapses into a compact card once any tab is scrolled past a small
+  // threshold; the state is shared across tabs so it persists on switch.
+  final ValueNotifier<bool> _collapsed = ValueNotifier<bool>(false);
+
   static const _tabs = [
     ('📊', 'Summary'),
     ('🗺', 'Map'),
@@ -49,6 +54,19 @@ class _NeighborhoodScreenState extends ConsumerState<NeighborhoodScreen> {
     ('✨', 'Story'),
     ('🔮', 'Future'),
   ];
+
+  void _onScroll(ScrollNotification n) {
+    if (n.metrics.axis != Axis.vertical) return;
+    // Hysteresis so it doesn't flicker right at the boundary.
+    final next = n.metrics.pixels > (_collapsed.value ? 24 : 48);
+    if (next != _collapsed.value) _collapsed.value = next;
+  }
+
+  @override
+  void dispose() {
+    _collapsed.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +81,14 @@ class _NeighborhoodScreenState extends ConsumerState<NeighborhoodScreen> {
     return Column(
       children: [
         SizedBox(height: top),
-        _ScoreHeader(score: result.score, address: analysis.address),
+        ValueListenableBuilder<bool>(
+          valueListenable: _collapsed,
+          builder: (_, collapsed, __) => _ScoreHeader(
+            score: result.score,
+            address: analysis.address,
+            collapsed: collapsed,
+          ),
+        ),
         // Compare / Follow / Alerts — hidden until v2 (needs real data behind them).
         // ignore: dead_code
         if (_kShowActionBar) _ActionBar(score: result.score, address: analysis.address),
@@ -72,7 +97,15 @@ class _NeighborhoodScreenState extends ConsumerState<NeighborhoodScreen> {
           tabs: _tabs,
           onSelect: (i) => setState(() => _tab = i),
         ),
-        Expanded(child: _buildContent(result, analysis.address)),
+        Expanded(
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (n) {
+              _onScroll(n);
+              return false;
+            },
+            child: _buildContent(result, analysis.address),
+          ),
+        ),
       ],
     );
   }
@@ -409,9 +442,11 @@ class _ScoreHeader extends ConsumerWidget {
   final LocationScore score;
   final AddressModel? address;
 
+  final bool collapsed;
   const _ScoreHeader({
     required this.score,
     this.address,
+    this.collapsed = false,
   });
 
   String _article(String label) =>
@@ -429,7 +464,7 @@ class _ScoreHeader extends ConsumerWidget {
         : (address?.shortSecondary ?? '');
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: p.border)),
       ),
@@ -437,9 +472,9 @@ class _ScoreHeader extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ── Status row ──────────────────────────────────────────────────
+          // ── Status + actions (share, refresh, favourite) ────────────────
           Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Row(
               children: [
                 const Icon(Icons.verified_user_rounded,
@@ -455,184 +490,309 @@ class _ScoreHeader extends ConsumerWidget {
                   ),
                 ),
                 const Spacer(),
-                _RefreshButton(
+                _HeaderActionButton(
+                  icon: Icons.ios_share_rounded,
+                  onTap: () => _share(context),
+                ),
+                const SizedBox(width: 8),
+                _HeaderActionButton(
+                  icon: Icons.refresh_rounded,
                   loading: ref.watch(analysisProvider).isLoading,
-                  onTap: () {
-                    final addr = address;
-                    if (addr == null) return;
-                    ref.read(analysisProvider.notifier).analyze(
-                          addr.displayAddress,
-                          profile: profile.jsonValue,
-                          countryCode:
-                              ref.read(preferencesProvider).defaultCountry,
-                          forceRefresh: true,
-                        );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Refreshing analysis…'),
-                        behavior: SnackBarBehavior.floating,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-          // ── Title + city + score ring ───────────────────────────────────
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      address?.headerTitle ?? '—',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: p.textPrimary,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.8,
-                        height: 1.1,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 5),
-                      child: Row(
-                        children: [
-                          Icon(Icons.location_on_rounded,
-                              size: 15, color: p.textTertiary),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              cityLine,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  color: p.textSecondary, fontSize: 14),
-                            ),
-                          ),
-                          if (address?.lat != null &&
-                              address?.lng != null) ...[
-                            Text(
-                              '  ·  ',
-                              style: TextStyle(
-                                  color: p.textTertiary, fontSize: 14),
-                            ),
-                            GestureDetector(
-                              onTap: () => _openStreetView(
-                                  address!.lat!, address!.lng!),
-                              behavior: HitTestBehavior.opaque,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.streetview_rounded,
-                                      size: 14, color: AppColors.accent2),
-                                  const SizedBox(width: 3),
-                                  const Text(
-                                    'Street View',
-                                    style: TextStyle(
-                                      color: AppColors.accent2,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Score ring — holds the score inside.
-              _ScoreRing(
-                percent: (score.overall / 100).clamp(0.0, 1.0),
-                color: color,
-                size: 76,
-                label: tenth,
-              ),
-            ],
-          ),
-          // ── Profile + verdict + save ────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Profile selector — tappable to re-score for another profile.
-                if (address != null) ...[
-                  GestureDetector(
-                    onTap: () => _openProfilePicker(context, ref, profile),
-                    behavior: HitTestBehavior.opaque,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Profile',
-                          style: TextStyle(
-                            color: p.textTertiary,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.1,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          profile.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.accent,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Container(width: 1, height: 34, color: p.border),
-                  const SizedBox(width: 14),
-                ],
-                Expanded(
-                  child: RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        color: p.textSecondary,
-                        fontSize: 13,
-                        height: 1.35,
-                        letterSpacing: -0.1,
-                      ),
-                      children: [
-                        TextSpan(text: 'This is ${_article(label)} '),
-                        TextSpan(
-                          text: label.toLowerCase(),
-                          style: TextStyle(
-                              color: color, fontWeight: FontWeight.w700),
-                        ),
-                        const TextSpan(text: ' neighbourhood to live in.'),
-                      ],
-                    ),
-                  ),
+                  onTap: () => _refresh(context, ref, profile),
                 ),
                 if (address != null) ...[
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   _SaveButton(address: address!),
                 ],
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          // ── Hero: full details ⇄ compact card, driven by [collapsed] ─────
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 220),
+            sizeCurve: Curves.easeInOut,
+            firstCurve: Curves.easeInOut,
+            secondCurve: Curves.easeInOut,
+            crossFadeState:
+                collapsed ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            firstChild:
+                _expandedHero(context, ref, p, color, tenth, profile, cityLine),
+            secondChild: _collapsedCard(context, p, color, tenth, cityLine),
+          ),
+          const SizedBox(height: 12),
+          // ── Verdict ─────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  color: p.textSecondary,
+                  fontSize: 13,
+                  height: 1.35,
+                  letterSpacing: -0.1,
+                ),
+                children: [
+                  TextSpan(text: 'This is ${_article(label)} '),
+                  TextSpan(
+                    text: label.toLowerCase(),
+                    style:
+                        TextStyle(color: color, fontWeight: FontWeight.w700),
+                  ),
+                  const TextSpan(text: ' neighbourhood to live in.'),
+                ],
+              ),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  // Expanded hero: skyline backdrop behind the title + big score ring + profile.
+  Widget _expandedHero(
+    BuildContext context,
+    WidgetRef ref,
+    AppPalette p,
+    Color color,
+    String tenth,
+    UserProfile profile,
+    String cityLine,
+  ) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(
+        children: [
+          // City-skyline backdrop, faded and scrimmed for legibility.
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.45,
+              child: Image.asset(
+                'assets/images/city_sky.png',
+                fit: BoxFit.cover,
+                alignment: const Alignment(0, 0.3),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [p.bg, p.bg.withValues(alpha: 0.35)],
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        address?.headerTitle ?? '—',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: p.textPrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.8,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      _cityLine(context, p, cityLine),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _ScoreRing(
+                      percent: (score.overall / 100).clamp(0.0, 1.0),
+                      color: color,
+                      size: 76,
+                      label: tenth,
+                    ),
+                    if (address != null) ...[
+                      const SizedBox(height: 8),
+                      _profileSelector(context, ref, p, profile),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Collapsed hero: compact card with a small ring + title + city.
+  Widget _collapsedCard(
+    BuildContext context,
+    AppPalette p,
+    Color color,
+    String tenth,
+    String cityLine,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: p.surface2,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: p.border),
+      ),
+      child: Row(
+        children: [
+          _ScoreRing(
+            percent: (score.overall / 100).clamp(0.0, 1.0),
+            color: color,
+            size: 46,
+            label: tenth,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  address?.headerTitle ?? '—',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: p.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                    height: 1.15,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                _cityLine(context, p, cityLine),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Shared "📍 city · Street View" line used by both hero states.
+  Widget _cityLine(BuildContext context, AppPalette p, String cityLine) {
+    return Row(
+      children: [
+        Icon(Icons.location_on_rounded, size: 15, color: p.textTertiary),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            cityLine,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: p.textSecondary, fontSize: 14),
+          ),
+        ),
+        if (address?.lat != null && address?.lng != null) ...[
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => _openStreetView(address!.lat!, address!.lng!),
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.streetview_rounded,
+                    size: 15, color: AppColors.accent2),
+                SizedBox(width: 4),
+                Text(
+                  'Street View',
+                  style: TextStyle(
+                    color: AppColors.accent2,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _profileSelector(
+    BuildContext context,
+    WidgetRef ref,
+    AppPalette p,
+    UserProfile profile,
+  ) {
+    return GestureDetector(
+      onTap: () => _openProfilePicker(context, ref, profile),
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Profile: ',
+            style: TextStyle(
+              color: p.textTertiary,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            profile.label,
+            style: const TextStyle(
+              color: AppColors.accent,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Icon(Icons.keyboard_arrow_down_rounded,
+              size: 16, color: p.textTertiary),
+        ],
+      ),
+    );
+  }
+
+  void _refresh(BuildContext context, WidgetRef ref, UserProfile profile) {
+    final addr = address;
+    if (addr == null) return;
+    ref.read(analysisProvider.notifier).analyze(
+          addr.displayAddress,
+          profile: profile.jsonValue,
+          countryCode: ref.read(preferencesProvider).defaultCountry,
+          forceRefresh: true,
+        );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Refreshing analysis…'),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _share(BuildContext context) {
+    final addr = address;
+    final title = addr?.headerTitle ?? addr?.displayAddress ?? 'this location';
+    final text =
+        '$title scored ${scoreTenth(score.overall)}/10 on Bairrolyze';
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Summary copied to clipboard'),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 2),
       ),
     );
   }
@@ -777,17 +937,63 @@ class _ProfilePickerSheet extends StatelessWidget {
 // ── Street View pill ──────────────────────────────────────────────────────────
 
 // Bookmark toggle — saves/removes the current analysis from the Saved tab.
+// ── Header action button — rounded square (share / refresh / favourite) ──────
+
+class _HeaderActionButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool loading;
+  final bool active;
+  final Color? activeColor;
+  const _HeaderActionButton({
+    required this.icon,
+    required this.onTap,
+    this.loading = false,
+    this.active = false,
+    this.activeColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    final ac = activeColor ?? AppColors.accent;
+    return GestureDetector(
+      onTap: loading ? null : onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        // Padding only — no background box — keeps a comfortable tap target
+        // without adding visual bulk to the header.
+        padding: const EdgeInsets.all(6),
+        child: loading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation(AppColors.accent),
+                ),
+              )
+            : Icon(icon, size: 20, color: active ? ac : p.textSecondary),
+      ),
+    );
+  }
+}
+
+// ── Favourite (save) button — heart square that toggles the saved list ───────
+
 class _SaveButton extends ConsumerWidget {
   final AddressModel address;
   const _SaveButton({required this.address});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final p = AppPalette.of(context);
     final saved = ref.watch(savedProvider).any(
         (e) => SavedNotifier.keyFor(e.address) == SavedNotifier.keyFor(address));
 
-    return GestureDetector(
+    return _HeaderActionButton(
+      icon: saved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+      active: saved,
+      activeColor: const Color(0xFFEF4444),
       onTap: () {
         final result = ref.read(analysisProvider).result;
         if (result == null) return;
@@ -798,70 +1004,10 @@ class _SaveButton extends ConsumerWidget {
           ..showSnackBar(SnackBar(
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 2),
-            content: Text(nowSaved ? 'Saved to your list' : 'Removed from Saved'),
+            content:
+                Text(nowSaved ? 'Saved to your list' : 'Removed from Saved'),
           ));
       },
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: saved ? AppColors.accent.withValues(alpha: 0.14) : p.surface2,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.35)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                size: 15, color: AppColors.accent),
-            const SizedBox(width: 6),
-            Text(
-              saved ? 'Saved' : 'Save',
-              style: const TextStyle(
-                color: AppColors.accent,
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Refresh button — re-runs the live analysis, bypassing the cache ──────────
-
-class _RefreshButton extends StatelessWidget {
-  final bool loading;
-  final VoidCallback onTap;
-  const _RefreshButton({required this.loading, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final p = AppPalette.of(context);
-    return GestureDetector(
-      onTap: loading ? null : onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: p.surface2,
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.35)),
-        ),
-        child: loading
-            ? const Padding(
-                padding: EdgeInsets.all(8),
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation(AppColors.accent),
-                ),
-              )
-            : const Icon(Icons.refresh_rounded,
-                size: 17, color: AppColors.accent),
-      ),
     );
   }
 }
