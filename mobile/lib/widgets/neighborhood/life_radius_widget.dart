@@ -420,7 +420,10 @@ class _RadialPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           text: ringLabels[i],
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 9),
+          style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.62),
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -435,7 +438,7 @@ class _RadialPainter extends CustomPainter {
       compassPaint
         ..text = TextSpan(
             text: label,
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.15), fontSize: 10, fontWeight: FontWeight.w700))
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 11, fontWeight: FontWeight.w700))
         ..layout();
       compassPaint.paint(
         canvas,
