@@ -1,0 +1,376 @@
+{
+  "@@locale": "en",
+
+  "settingsTitle": "You",
+  "settingsSectionProfile": "PROFILE",
+  "settingsSectionCountry": "COUNTRY",
+  "settingsSectionLanguage": "LANGUAGE",
+  "settingsSectionSearchRadius": "SEARCH RADIUS",
+  "settingsSectionAppearance": "APPEARANCE",
+  "settingsSectionAiFeatures": "AI FEATURES",
+  "settingsSectionHelp": "HELP",
+
+  "profileGeneral": "General",
+  "profileFamily": "Family",
+  "profileStudent": "Student",
+  "profilePro": "Pro",
+  "profileRetired": "Retired",
+  "profileInvestor": "Investor",
+
+  "languageEnglish": "English",
+  "languagePortuguese": "Português",
+
+  "settingsRadiusLabel": "{km} km radius",
+  "@settingsRadiusLabel": {
+    "placeholders": {
+      "km": { "type": "String" }
+    }
+  },
+  "settingsRadiusMeters": "{meters}m",
+  "@settingsRadiusMeters": {
+    "placeholders": {
+      "meters": { "type": "int" }
+    }
+  },
+
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+
+  "aiSummaryTitle": "AI Neighbourhood Summary",
+  "aiSummarySubtitle": "Powered by OpenAI",
+
+  "helpGuidesTitle": "Guides & Help",
+  "helpGuidesSubtitle": "8 in-depth guides for every feature",
+  "helpTourTitle": "Quick Tour",
+  "helpTourSubtitle": "5-screen intro to Bairrolyze",
+
+  "profileProfessional": "Professional",
+
+  "prioritySchools": "Good schools",
+  "priorityCommute": "Short commute",
+  "prioritySocial": "Shops & nightlife",
+  "priorityHealthcare": "Healthcare nearby",
+  "prioritySafety": "Safe & quiet",
+  "priorityRental": "Rental potential",
+
+  "commonContinue": "Continue",
+
+  "onboardingSkip": "Skip",
+  "onboardingWelcomeTitle": "Let's tailor your scores",
+  "onboardingWelcomeSubtitle": "Bairrolyze scores every address around what matters to you.",
+  "onboardingGetStarted": "Get started",
+  "onboardingPrioritiesTitle": "What matters most where you'll live?",
+  "onboardingPickUpTo3": "Pick up to 3.",
+  "onboardingThatsTheMax": "That's the max",
+  "onboardingConfirmPrioritize": "Perfect — we'll prioritize {profile}.",
+  "@onboardingConfirmPrioritize": {
+    "placeholders": {
+      "profile": { "type": "String" }
+    }
+  },
+  "onboardingYourPriorities": "Your priorities",
+  "onboardingBalancedProfile": "We'll use a balanced, general profile — you can refine this any time in settings.",
+  "onboardingStartExploring": "Start exploring",
+
+  "commonClear": "Clear",
+
+  "homeLocationServicesOff": "Turn on location services to use this.",
+  "homeLocationPermissionNeeded": "Location permission is needed to detect your area.",
+  "homeLocationFailed": "Could not get your current location.",
+  "homeSearchHint": "Search any address, city or area",
+  "homeUseMyLocation": "Use my current location",
+  "homeHeroSubtitle": "The Smarter Way to Choose Home",
+  "homeCtaAnalyse": "Analyse Neighbourhood",
+  "homePopularTitle": "Popular Searches",
+  "homePopularSubtitle": "Most-visited places in {country}",
+  "@homePopularSubtitle": {
+    "placeholders": {
+      "country": { "type": "String" }
+    }
+  },
+  "homePopularSeeAll": "See all",
+  "homePopularTrending": "Trending",
+  "homePopularAreasSubtitle": "Popular areas people are exploring in {region}",
+  "@homePopularAreasSubtitle": {
+    "placeholders": {
+      "region": { "type": "String" }
+    }
+  },
+  "homeRecentTitle": "Recent Searches",
+  "homeTrustedBy": "Trusted by thousands of users worldwide",
+
+  "featureSmartDataTitle": "Smart Data",
+  "featureSmartDataDesc": "Real-time and reliable sources",
+  "featureAiAnalysisTitle": "AI Analysis",
+  "featureAiAnalysisDesc": "25+ factors analysed in seconds",
+  "featureAccurateScoreTitle": "Accurate Score",
+  "featureAccurateScoreDesc": "A clear score to decide with confidence",
+  "featurePrivateSecureTitle": "Private & Secure",
+  "featurePrivateSecureDesc": "Your searches and data stay protected",
+
+  "homeAnalyseTitle": "What we analyse",
+  "homeAnalyseSubtitle": "Seven signals we score for every address · swipe to explore",
+
+  "catTransportLabel": "Transport",
+  "catTransportDesc": "Nearby train stations, bus routes, commute times and walkability.",
+  "catEducationLabel": "Education",
+  "catEducationDesc": "Schools, universities, libraries and learning options close by.",
+  "catHealthLabel": "Health",
+  "catHealthDesc": "Hospitals, clinics, pharmacies and everyday healthcare access.",
+  "catSafetyLabel": "Safety",
+  "catSafetyDesc": "Emergency services, plus real crime stats where available.",
+  "catLifestyleLabel": "Lifestyle",
+  "catLifestyleDesc": "Shops, markets, cafés and the daily conveniences within reach.",
+  "catNatureLabel": "Nature",
+  "catNatureDesc": "Parks, gardens and green open spaces for the outdoors.",
+  "catInvestmentLabel": "Investment",
+  "catInvestmentDesc": "Price trends, rental demand and long-term value potential.",
+
+  "homeHowTitle": "How it works",
+  "homeHowSubtitle": "From an address to a score in three steps",
+  "homeHowBody": "We pull live data from OpenStreetMap and score every category against your profile, so the result reflects what actually matters to you.",
+  "homeStepLocate": "Locate",
+  "homeStepAnalyse": "Analyse",
+  "homeStepScore": "Score",
+
+  "commonViewMap": "View Map",
+  "commonShare": "Share",
+  "commonDismiss": "Dismiss",
+
+  "dashAnalyzing": "Analyzing...",
+  "dashTitle": "Dashboard",
+  "dashNoData": "No analysis data available",
+  "dashSearchAddress": "Search an Address",
+  "dashCategoryScores": "Category Scores",
+  "dashNearbyPlaces": "Nearby Places",
+  "dashViewAllPlaces": "View all {count} places on map",
+  "@dashViewAllPlaces": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "dashOpenMap": "Open Map",
+  "dashShareMessage": "{address} — Score: {score}/100",
+  "@dashShareMessage": {
+    "placeholders": {
+      "address": { "type": "String" },
+      "score": { "type": "int" }
+    }
+  },
+  "dashLivingIndex": "Living Index",
+  "dashLivingIndexSubtitle": "Your primary view — DNA, Timeline, Story & more",
+  "pillDna": "DNA",
+  "pillRadius": "Radius",
+  "pillTimeline": "Timeline",
+  "pillStory": "Story",
+  "pillFuture": "Future",
+
+  "commonCancel": "Cancel",
+  "commonAnalyze": "Analyze",
+  "commonClearAll": "Clear all",
+
+  "savedTitle": "Saved",
+  "savedEmptyTitle": "No saved places yet",
+  "savedEmptyBody": "Tap the bookmark on any analysis to save it here for quick access.",
+
+  "historyTitle": "Search History",
+  "historyClearTooltip": "Clear history",
+  "historyEmptyTitle": "No search history yet",
+  "historyEmptyBody": "Your analyzed addresses will appear here",
+  "historyClearTitle": "Clear History",
+  "historyClearBody": "Remove all search history?",
+  "timeMinutesAgo": "{minutes}m ago",
+  "@timeMinutesAgo": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "timeHoursAgo": "{hours}h ago",
+  "@timeHoursAgo": {
+    "placeholders": { "hours": { "type": "int" } }
+  },
+  "timeDaysAgo": "{days}d ago",
+  "@timeDaysAgo": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+
+  "validationRequired": "{field} is required",
+  "@validationRequired": {
+    "placeholders": { "field": { "type": "String" } }
+  },
+  "validationAddressRequired": "Address is required",
+  "validationAddressTooShort": "Address is too short",
+  "validationPostalInvalid": "Invalid format. Expected: {format}",
+  "@validationPostalInvalid": {
+    "placeholders": { "format": { "type": "String" } }
+  },
+
+  "advTitle": "Advanced Search",
+  "advSectionLocation": "Location",
+  "advFailedCountries": "Failed to load countries",
+  "advAnalyzeAddress": "Analyze Address",
+  "advHintApartment": "3rd floor, apt 4",
+  "advPostalHelp": "Postal code format: {format}  (e.g. {example})",
+  "@advPostalHelp": {
+    "placeholders": {
+      "format": { "type": "String" },
+      "example": { "type": "String" }
+    }
+  },
+  "fieldCountry": "Country",
+  "fieldStreet": "Street",
+  "fieldNumber": "No.",
+  "fieldApartment": "Apartment / Floor",
+  "fieldPostalCode": "Postal Code",
+  "fieldCity": "City",
+  "fieldDistrict": "District / Region (optional)",
+
+  "explorerTitle": "Explore",
+  "explorerSubtitle": "Find the neighbourhoods that fit how you want to live.",
+  "explorerFeatured": "FEATURED",
+  "explorerBestFor": "Best for {profile}",
+  "@explorerBestFor": {
+    "placeholders": {
+      "profile": { "type": "String" }
+    }
+  },
+  "explorerBestMatch": "Best match",
+  "explorerCityAll": "All areas",
+  "explorerTrendingIn": "Trending in {region}",
+  "@explorerTrendingIn": {
+    "placeholders": {
+      "region": { "type": "String" }
+    }
+  },
+  "explorerStepProfile": "1. Choose your profile",
+  "explorerStepArea": "2. Choose your area",
+  "explorerSearchHint": "Search areas in {country}",
+  "@explorerSearchHint": {
+    "placeholders": {
+      "country": { "type": "String" }
+    }
+  },
+  "explorerNoAreas": "No matching areas in {country}",
+  "@explorerNoAreas": {
+    "placeholders": {
+      "country": { "type": "String" }
+    }
+  },
+  "explorerSearchPrompt": "Search for any area in {country} above to analyse it.",
+  "@explorerSearchPrompt": {
+    "placeholders": {
+      "country": { "type": "String" }
+    }
+  },
+  "explorerProfileFamilyDesc": "Great for growth & family life",
+  "explorerProfileStudentDesc": "Close to campuses & transit",
+  "explorerProfileProfessionalDesc": "Well connected & convenient",
+  "explorerProfileRetiredDesc": "Peaceful & quieter",
+  "explorerProfileInvestorDesc": "Strong demand & upside",
+  "filterAll": "All",
+  "tagTransport": "Transport",
+  "tagFamily": "Family",
+  "tagInvestment": "Investment",
+  "tagNature": "Nature",
+  "tagCulture": "Culture",
+  "statTransit": "Transit",
+  "statEducation": "Education",
+  "statSafety": "Safety",
+
+  "nbParqueNacoesDesc": "Modern waterfront district with excellent transit and contemporary architecture.",
+  "nbParqueNacoesHighlight": "Best connected in Lisbon",
+  "nbPrincipeRealDesc": "Sophisticated hilltop quarter known for boutiques, galleries and vibrant café culture.",
+  "nbPrincipeRealHighlight": "Top walkability score",
+  "nbCascaisDesc": "Prestigious seaside town with marina, beaches and an exceptional quality of life.",
+  "nbCascaisHighlight": "Top coastal quality of life",
+  "nbBaixaChiadoDesc": "Lisbon's beating heart — historic grandeur meets a lively commercial and cultural scene.",
+  "nbBaixaChiadoHighlight": "Historic centre, great transit",
+  "nbBoavistaDesc": "Porto's prestigious business and residential corridor with excellent urban amenities.",
+  "nbBoavistaHighlight": "Porto's premier investment district",
+  "nbFozDouroDesc": "Exclusive riverside neighbourhood with ocean views, parks and upscale dining.",
+  "nbFozDouroHighlight": "Porto's most desirable address",
+  "nbSantoAntonioDesc": "Central Lisbon neighbourhood with top-tier healthcare, schools and safety scores.",
+  "nbSantoAntonioHighlight": "Best for families in central Lisbon",
+  "nbBragaCentroDesc": "Northern gem combining historic charm with a thriving university city energy.",
+  "nbBragaCentroHighlight": "Fastest growing city centre",
+
+  "amenityTransportation": "Transport",
+  "amenityEducation": "Schools",
+  "amenityHealthcare": "Healthcare",
+  "amenityShopping": "Shopping",
+  "amenitySafety": "Safety",
+  "amenityReligion": "Religion",
+  "amenityRecreation": "Parks",
+
+  "mapTitleFallback": "Map",
+  "mapCenterTooltip": "Center map",
+  "mapPlacesFound": "{total} places found",
+  "@mapPlacesFound": {
+    "placeholders": { "total": { "type": "int" } }
+  },
+  "mapPlacesNearby": "{total} places nearby",
+  "@mapPlacesNearby": {
+    "placeholders": { "total": { "type": "int" } }
+  },
+  "mapCategoryCount": "{total} {category}",
+  "@mapCategoryCount": {
+    "placeholders": {
+      "total": { "type": "int" },
+      "category": { "type": "String" }
+    }
+  },
+  "amenityCountLabel": "{label} ({count})",
+  "@amenityCountLabel": {
+    "placeholders": {
+      "label": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "amenityMinWalk": "{minutes} min walk",
+  "@amenityMinWalk": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "amenityMinDrive": "{minutes} min drive",
+  "@amenityMinDrive": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+
+  "paywallBadge": "Go Pro",
+  "paywallTitle": "Unlock the full Bairrolyze",
+  "paywallSubtitle": "Make confident decisions with every insight at your fingertips.",
+  "paywallRestore": "Restore purchases",
+  "paywallCancelAnytime": "Cancel anytime. Billed monthly.",
+  "paywallMostPopular": "MOST POPULAR",
+  "paywallStartPro": "Start Pro — {price}/mo",
+  "@paywallStartPro": {
+    "placeholders": { "price": { "type": "String" } }
+  },
+  "paywallTryPremium": "Try Premium — {price}/mo",
+  "@paywallTryPremium": {
+    "placeholders": { "price": { "type": "String" } }
+  },
+  "paywallFreePrice": "€0 / forever",
+  "paywallPerMonth": "{price} / month",
+  "@paywallPerMonth": {
+    "placeholders": { "price": { "type": "String" } }
+  },
+  "tierFree": "Free",
+  "tierPro": "Pro",
+  "tierPremium": "Premium",
+  "featFree2Comparisons": "2 property comparisons",
+  "featFree1Alert": "1 neighbourhood alert",
+  "featFreeCoreAnalysis": "Core analysis & maps",
+  "featProUnlimitedComparisons": "Unlimited comparisons",
+  "featPro10Alerts": "10 neighbourhood alerts",
+  "featProPriority": "Priority analysis",
+  "featProTimeline": "Historical timeline",
+  "featPremiumEverythingPro": "Everything in Pro",
+  "featPremium99Alerts": "99 alerts with push notifications",
+  "featPremiumAiInsights": "AI investment insights",
+  "featPremiumForecasting": "Trend forecasting",
+  "paywallErrProductUnavailable": "Product not available. Please try again.",
+  "paywallErrGeneric": "Something went wrong. Please try again.",
+  "paywallErrNoPurchases": "No active purchases found on this account.",
+  "paywallErrPaymentPending": "Payment is pending. Check your payment method.",
+  "paywallErrRegion": "Product not available in your region.",
+  "paywallErrPurchaseFailed": "Purchase failed. Please try again."
+}

@@ -142,4 +142,86 @@ class ApiService {
     );
     return response.data!;
   }
+
+  /// Most-searched areas within [region] (aggregated across users), most
+  /// popular first. Returns an empty list when the backend has no data yet —
+  /// callers fall back to their curated list.
+  Future<List<PopularAreaStat>> fetchPopularAreas({
+    required String country,
+    required String region,
+    int limit = 8,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/popular',
+      queryParameters: {
+        'country': country,
+        'region': region,
+        'limit': limit,
+      },
+    );
+    final areas = response.data?['areas'] as List<dynamic>? ?? const [];
+    return areas
+        .whereType<Map<String, dynamic>>()
+        .map(PopularAreaStat.fromJson)
+        .toList();
+  }
+}
+
+extension AreaSearchApi on ApiService {
+  /// Country-scoped area/neighbourhood autocomplete (backend
+  /// `GET /api/v1/areas/search`). Returns an empty list on error so the caller
+  /// can fall back to curated/trending results.
+  Future<List<AreaSuggestion>> searchAreas({
+    required String query,
+    required String country,
+    int limit = 8,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/areas/search',
+      queryParameters: {'q': query, 'country': country, 'limit': limit},
+    );
+    final results = response.data?['results'] as List<dynamic>? ?? const [];
+    return results
+        .whereType<Map<String, dynamic>>()
+        .map(AreaSuggestion.fromJson)
+        .toList();
+  }
+}
+
+/// One area match from country-scoped autocomplete.
+class AreaSuggestion {
+  final String name;
+  final String region;
+  final double lat;
+  final double lng;
+  final String type;
+
+  const AreaSuggestion({
+    required this.name,
+    required this.region,
+    required this.lat,
+    required this.lng,
+    this.type = '',
+  });
+
+  factory AreaSuggestion.fromJson(Map<String, dynamic> json) => AreaSuggestion(
+        name: json['name'] as String? ?? '',
+        region: json['region'] as String? ?? '',
+        lat: (json['lat'] as num?)?.toDouble() ?? 0,
+        lng: (json['lng'] as num?)?.toDouble() ?? 0,
+        type: json['type'] as String? ?? '',
+      );
+}
+
+/// One aggregated most-searched area (backend `GET /api/v1/popular`).
+class PopularAreaStat {
+  final String name;
+  final int count;
+
+  const PopularAreaStat({required this.name, required this.count});
+
+  factory PopularAreaStat.fromJson(Map<String, dynamic> json) => PopularAreaStat(
+        name: json['name'] as String? ?? '',
+        count: (json['count'] as num?)?.toInt() ?? 0,
+      );
 }

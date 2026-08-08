@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../providers/analysis_provider.dart';
 import '../../widgets/home/score_badge.dart';
 
@@ -11,17 +12,18 @@ class HistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     final history = ref.watch(searchHistoryProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Search History'),
+        title: Text(l.historyTitle),
         actions: [
           if (history.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep_rounded),
               onPressed: () => _confirmClear(context, ref),
-              tooltip: 'Clear history',
+              tooltip: l.historyClearTooltip,
             ),
         ],
       ),
@@ -37,14 +39,14 @@ class HistoryScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No search history yet',
+                    l.historyEmptyTitle,
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Your analyzed addresses will appear here',
+                    l.historyEmptyBody,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -78,7 +80,7 @@ class HistoryScreen extends ConsumerWidget {
                         style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                       ),
                       subtitle: Text(
-                        _formatDate(entry.timestamp),
+                        _formatDate(l, entry.timestamp),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -99,32 +101,33 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 
-  String _formatDate(DateTime dt) {
+  String _formatDate(AppLocalizations l, DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt);
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inMinutes < 60) return l.timeMinutesAgo(diff.inMinutes);
+    if (diff.inHours < 24) return l.timeHoursAgo(diff.inHours);
+    if (diff.inDays < 7) return l.timeDaysAgo(diff.inDays);
     return '${dt.day}/${dt.month}/${dt.year}';
   }
 
   void _confirmClear(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Clear History'),
-        content: const Text('Remove all search history?'),
+        title: Text(l.historyClearTitle),
+        content: Text(l.historyClearBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l.commonCancel),
           ),
           FilledButton(
             onPressed: () {
               ref.read(searchHistoryProvider.notifier).clear();
               Navigator.pop(ctx);
             },
-            child: const Text('Clear'),
+            child: Text(l.commonClear),
           ),
         ],
       ),

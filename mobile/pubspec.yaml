@@ -10,6 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Localization (PT + EN)
+  flutter_localizations:
+    sdk: flutter
+
   # State management
   flutter_riverpod: ^2.4.9
 
@@ -37,7 +41,7 @@ dependencies:
   url_launcher: ^6.3.0
 
   # Utils
-  intl: ^0.20.3
+  intl: ^0.20.2
   uuid: ^4.3.3
   logger: ^2.1.0
   connectivity_plus: ^7.3.1
@@ -62,6 +66,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
   assets:
     - assets/images/
     - assets/icons/

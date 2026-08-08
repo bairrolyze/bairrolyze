@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/address_model.dart';
 import '../../models/amenity_model.dart';
 import '../../providers/analysis_provider.dart';
@@ -26,6 +27,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     final analysisState = ref.watch(analysisProvider);
     final filteredAmenities = ref.watch(filteredAmenitiesProvider);
     final activeFilter = ref.watch(mapFilterProvider);
@@ -39,7 +41,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.95),
         title: Text(
-          address?.displayAddress ?? 'Map',
+          address?.displayAddress ?? l.mapTitleFallback,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.titleSmall,
@@ -157,6 +159,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             child: _MapStatsBar(
               total: filteredAmenities.length,
               filter: activeFilter,
+              l: l,
             ),
           ),
 
@@ -175,7 +178,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
       floatingActionButton: FloatingActionButton.small(
         onPressed: () => _mapController.move(LatLng(centerLat, centerLng), 15.0),
-        tooltip: 'Center map',
+        tooltip: l.mapCenterTooltip,
         child: const Icon(Icons.my_location_rounded),
       ),
     );
@@ -185,8 +188,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 class _MapStatsBar extends StatelessWidget {
   final int total;
   final AmenityCategory? filter;
+  final AppLocalizations l;
 
-  const _MapStatsBar({required this.total, this.filter});
+  const _MapStatsBar({required this.total, this.filter, required this.l});
 
   @override
   Widget build(BuildContext context) {
@@ -200,7 +204,9 @@ class _MapStatsBar extends StatelessWidget {
             Icon(Icons.place_rounded, size: 16, color: theme.colorScheme.primary),
             const SizedBox(width: 8),
             Text(
-              filter == null ? '$total places found' : '$total ${filter!.name} places',
+              filter == null
+                  ? l.mapPlacesFound(total)
+                  : l.mapCategoryCount(total, filter!.label(l)),
               style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
             ),
           ],

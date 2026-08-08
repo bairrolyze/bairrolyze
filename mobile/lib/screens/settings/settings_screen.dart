@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/address_model.dart';
 import '../../models/user_preferences_model.dart';
 import '../../providers/country_provider.dart';
+import '../../providers/locale_provider.dart';
 import '../../providers/preferences_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../docs/docs_screen.dart';
@@ -17,10 +19,12 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final prefs           = ref.watch(preferencesProvider);
     final themeMode       = ref.watch(themeModeProvider);
+    final locale          = ref.watch(localeProvider);
     final countriesAsync  = ref.watch(countriesProvider);
     final selectedCountry = ref.watch(selectedCountryProvider);
     final top             = MediaQuery.of(context).padding.top;
     final p                = AppPalette.of(context);
+    final l                = AppLocalizations.of(context);
 
     return Container(
       color: p.bg,
@@ -31,7 +35,7 @@ class SettingsScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
               child: Text(
-                'You',
+                l.settingsTitle,
                 style: TextStyle(
                   color: p.textPrimary,
                   fontSize: 24,
@@ -42,7 +46,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
 
             // ── Profile ──────────────────────────────────────────────────
-            _SectionHeader('PROFILE'),
+            _SectionHeader(l.settingsSectionProfile),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _ProfileGrid(
@@ -52,8 +56,37 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
 
+            // ── Language ─────────────────────────────────────────────────
+            _SectionHeader(l.settingsSectionLanguage),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _DarkCard(
+                child: Row(
+                  children: [
+                    _LanguageChip(
+                      label: l.languagePortuguese,
+                      flag: '🇵🇹',
+                      active: locale.languageCode == 'pt',
+                      onTap: () => ref
+                          .read(localeProvider.notifier)
+                          .setLocale(const Locale('pt')),
+                    ),
+                    const SizedBox(width: 8),
+                    _LanguageChip(
+                      label: l.languageEnglish,
+                      flag: '🇬🇧',
+                      active: locale.languageCode == 'en',
+                      onTap: () => ref
+                          .read(localeProvider.notifier)
+                          .setLocale(const Locale('en')),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
             // ── Country ──────────────────────────────────────────────────
-            _SectionHeader('COUNTRY'),
+            _SectionHeader(l.settingsSectionCountry),
             countriesAsync.when(
               data: (countries) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -101,7 +134,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
 
             // ── Search radius ─────────────────────────────────────────────
-            _SectionHeader('SEARCH RADIUS'),
+            _SectionHeader(l.settingsSectionSearchRadius),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _DarkCard(
@@ -112,7 +145,8 @@ class SettingsScreen extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${(prefs.searchRadius / 1000).toStringAsFixed(1)} km radius',
+                          l.settingsRadiusLabel(
+                              (prefs.searchRadius / 1000).toStringAsFixed(1)),
                           style: TextStyle(
                             color: p.textPrimary,
                             fontSize: 14,
@@ -120,7 +154,7 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                         ),
                         Text(
-                          '${(prefs.searchRadius).round()}m',
+                          l.settingsRadiusMeters(prefs.searchRadius.round()),
                           style: TextStyle(
                             color: p.textTertiary,
                             fontSize: 12,
@@ -167,7 +201,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
 
             // ── Appearance ───────────────────────────────────────────────
-            _SectionHeader('APPEARANCE'),
+            _SectionHeader(l.settingsSectionAppearance),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _DarkCard(
@@ -175,7 +209,7 @@ class SettingsScreen extends ConsumerWidget {
                   children: [
                     _ThemeChip(
                       icon: Icons.brightness_auto_rounded,
-                      label: 'System',
+                      label: l.themeSystem,
                       active: themeMode == ThemeMode.system,
                       onTap: () => ref
                           .read(themeModeProvider.notifier)
@@ -184,7 +218,7 @@ class SettingsScreen extends ConsumerWidget {
                     const SizedBox(width: 8),
                     _ThemeChip(
                       icon: Icons.light_mode_rounded,
-                      label: 'Light',
+                      label: l.themeLight,
                       active: themeMode == ThemeMode.light,
                       onTap: () => ref
                           .read(themeModeProvider.notifier)
@@ -193,7 +227,7 @@ class SettingsScreen extends ConsumerWidget {
                     const SizedBox(width: 8),
                     _ThemeChip(
                       icon: Icons.dark_mode_rounded,
-                      label: 'Dark',
+                      label: l.themeDark,
                       active: themeMode == ThemeMode.dark,
                       onTap: () => ref
                           .read(themeModeProvider.notifier)
@@ -205,7 +239,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
 
             // ── AI Summary ───────────────────────────────────────────────
-            _SectionHeader('AI FEATURES'),
+            _SectionHeader(l.settingsSectionAiFeatures),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _DarkCard(
@@ -227,7 +261,7 @@ class SettingsScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'AI Neighbourhood Summary',
+                            l.aiSummaryTitle,
                             style: TextStyle(
                               color: p.textPrimary,
                               fontSize: 13.5,
@@ -236,7 +270,7 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Powered by OpenAI',
+                            l.aiSummarySubtitle,
                             style: TextStyle(
                               color: p.textTertiary,
                               fontSize: 11.5,
@@ -258,7 +292,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
 
             // ── Help ─────────────────────────────────────────────────────
-            _SectionHeader('HELP'),
+            _SectionHeader(l.settingsSectionHelp),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _DarkCard(
@@ -286,7 +320,7 @@ class SettingsScreen extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Guides & Help',
+                                  l.helpGuidesTitle,
                                   style: TextStyle(
                                     color: p.textPrimary,
                                     fontSize: 13.5,
@@ -295,7 +329,7 @@ class SettingsScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '8 in-depth guides for every feature',
+                                  l.helpGuidesSubtitle,
                                   style: TextStyle(
                                     color: p.textTertiary,
                                     fontSize: 11.5,
@@ -332,7 +366,7 @@ class SettingsScreen extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Quick Tour',
+                                  l.helpTourTitle,
                                   style: TextStyle(
                                     color: p.textPrimary,
                                     fontSize: 13.5,
@@ -341,7 +375,7 @@ class SettingsScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '5-screen intro to Bairrolyze',
+                                  l.helpTourSubtitle,
                                   style: TextStyle(
                                     color: p.textTertiary,
                                     fontSize: 11.5,
@@ -396,17 +430,28 @@ class _ProfileGrid extends StatelessWidget {
   const _ProfileGrid({required this.selected, required this.onSelect});
 
   static const _profiles = [
-    (UserProfile.defaultProfile, '🏠', 'General'),
-    (UserProfile.family,         '👨‍👩‍👧', 'Family'),
-    (UserProfile.student,        '🎓', 'Student'),
-    (UserProfile.professional,   '💼', 'Pro'),
-    (UserProfile.retired,        '🌿', 'Retired'),
-    (UserProfile.investor,       '📈', 'Investor'),
+    (UserProfile.defaultProfile, '🏠'),
+    (UserProfile.family,         '👨‍👩‍👧'),
+    (UserProfile.student,        '🎓'),
+    (UserProfile.professional,   '💼'),
+    (UserProfile.retired,        '🌿'),
+    (UserProfile.investor,       '📈'),
   ];
+
+  static String _label(AppLocalizations l, UserProfile profile) =>
+      switch (profile) {
+        UserProfile.defaultProfile => l.profileGeneral,
+        UserProfile.family => l.profileFamily,
+        UserProfile.student => l.profileStudent,
+        UserProfile.professional => l.profilePro,
+        UserProfile.retired => l.profileRetired,
+        UserProfile.investor => l.profileInvestor,
+      };
 
   @override
   Widget build(BuildContext context) {
     final pal = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
     return GridView.count(
       crossAxisCount: 3,
       crossAxisSpacing: 8,
@@ -436,7 +481,7 @@ class _ProfileGrid extends StatelessWidget {
                 Text(profile.$2, style: const TextStyle(fontSize: 20)),
                 const SizedBox(height: 4),
                 Text(
-                  profile.$3,
+                  _label(l, profile.$1),
                   style: TextStyle(
                     color: active ? AppColors.accent : pal.textSecondary,
                     fontSize: 11.5,
@@ -499,6 +544,58 @@ class _ThemeChip extends StatelessWidget {
                   fontSize: 11,
                   fontWeight:
                       active ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Language chip ─────────────────────────────────────────────────────────────
+
+class _LanguageChip extends StatelessWidget {
+  final String label;
+  final String flag;
+  final bool active;
+  final VoidCallback onTap;
+  const _LanguageChip({
+    required this.label,
+    required this.flag,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = AppPalette.of(context);
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          decoration: BoxDecoration(
+            color: active ? AppColors.accent.withValues(alpha: 0.14) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: active ? AppColors.accent : pal.border,
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(flag, style: const TextStyle(fontSize: 16)),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: active ? AppColors.accent : pal.textSecondary,
+                  fontSize: 13,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
             ],

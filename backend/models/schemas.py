@@ -25,6 +25,9 @@ class GeocodeResponse(BaseModel):
     display_name: str
     country: str
     city: Optional[str] = None
+    # Neighbourhood / suburb granularity (below city), when the geocoder
+    # resolves one — used for region-scoped "popular areas" aggregation.
+    district: Optional[str] = None
     confidence: float = 1.0
 
 
@@ -130,6 +133,33 @@ class ErrorResponse(BaseModel):
     error: str
     detail: Optional[str] = None
     code: Optional[str] = None
+
+
+class AreaSearchResult(BaseModel):
+    """One area/neighbourhood match from country-scoped autocomplete."""
+    name: str
+    region: str
+    lat: float
+    lng: float
+    type: str = ""
+
+
+class AreaSearchResponse(BaseModel):
+    country: str
+    query: str
+    results: List[AreaSearchResult]
+
+
+class PopularAreaStat(BaseModel):
+    """One aggregated most-searched area within a region."""
+    name: str
+    count: int
+
+
+class PopularAreasResponse(BaseModel):
+    country: str
+    region: str
+    areas: List[PopularAreaStat]
 
 
 # ── Job-based analyze pipeline (Phase B) ─────────────────────────────────────

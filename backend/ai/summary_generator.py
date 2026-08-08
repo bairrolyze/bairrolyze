@@ -13,7 +13,7 @@ Write in plain English without bullet points — flowing paragraphs only."""
 USER_PROMPT_TEMPLATE = """Analyze this neighborhood for someone considering moving here:
 
 Address: {address}
-Overall Location Score: {overall_score}/100
+Overall Location Score: {overall_score}/10
 
 Category Scores:
 {category_scores}
@@ -43,7 +43,7 @@ def _build_category_scores_text(score: LocationScore) -> str:
             if mins:
                 closest_info += f", {mins}min walk"
             closest_info += ")"
-        lines.append(f"- {cat_score.label}: {cat_score.score:.0f}/100 ({cat_score.count} places){closest_info}")
+        lines.append(f"- {cat_score.label}: {cat_score.score / 10:.1f}/10 ({cat_score.count} places){closest_info}")
     return "\n".join(lines)
 
 
@@ -77,7 +77,7 @@ class SummaryGenerator:
 
         user_prompt = USER_PROMPT_TEMPLATE.format(
             address=address,
-            overall_score=score.overall,
+            overall_score=f"{score.overall / 10:.1f}",
             category_scores=category_scores_text,
             amenity_summary=amenity_summary,
         )
@@ -111,7 +111,7 @@ class SummaryGenerator:
         best_names = " and ".join(c.label.lower() for c in best_cats)
 
         return (
-            f"This location has a {quality} location score of {overall:.0f}/100. "
+            f"This location has a {quality} location score of {overall / 10:.1f}/10. "
             f"The area scores particularly well in {best_names}. "
             f"Explore the map to see all nearby amenities within 2km."
         )

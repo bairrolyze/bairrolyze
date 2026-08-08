@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/app_localizations.dart';
 import '../providers/country_provider.dart';
 
 final validationServiceProvider = Provider<ValidationService>((ref) {
@@ -11,24 +12,25 @@ class ValidationService {
 
   ValidationService(this._ref);
 
-  String? validatePostalCode(String? value) {
+  String? validatePostalCode(String? value, AppLocalizations l) {
     if (value == null || value.isEmpty) return null; // optional field
     final country = _ref.read(selectedCountryProvider);
     if (country == null) return null;
     if (!RegExp(country.postalPattern).hasMatch(value)) {
-      return 'Invalid format. Expected: ${country.postalFormat}';
+      return l.validationPostalInvalid(country.postalFormat);
     }
     return null;
   }
 
-  String? validateRequired(String? value, String field) {
-    if (value == null || value.trim().isEmpty) return '$field is required';
+  /// [field] is an already-localized field label (e.g. "Street" / "Rua").
+  String? validateRequired(String? value, String field, AppLocalizations l) {
+    if (value == null || value.trim().isEmpty) return l.validationRequired(field);
     return null;
   }
 
-  String? validateAddress(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Address is required';
-    if (value.trim().length < 5) return 'Address is too short';
+  String? validateAddress(String? value, AppLocalizations l) {
+    if (value == null || value.trim().isEmpty) return l.validationAddressRequired;
+    if (value.trim().length < 5) return l.validationAddressTooShort;
     return null;
   }
 }
