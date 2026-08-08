@@ -520,29 +520,38 @@ class _ScoreHeader extends ConsumerWidget {
                 _expandedHero(context, ref, p, color, tenth, profile, cityLine),
             secondChild: _collapsedCard(context, p, color, tenth, cityLine),
           ),
-          const SizedBox(height: 12),
-          // ── Verdict ─────────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: RichText(
-              text: TextSpan(
-                style: TextStyle(
-                  color: p.textSecondary,
-                  fontSize: 13,
-                  height: 1.35,
-                  letterSpacing: -0.1,
-                ),
-                children: [
-                  TextSpan(text: 'This is ${_article(label)} '),
-                  TextSpan(
-                    text: label.toLowerCase(),
-                    style:
-                        TextStyle(color: color, fontWeight: FontWeight.w700),
+          // ── Verdict — hidden when the header is collapsed ───────────────
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 220),
+            sizeCurve: Curves.easeInOut,
+            firstCurve: Curves.easeInOut,
+            secondCurve: Curves.easeInOut,
+            crossFadeState: collapsed
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            firstChild: Padding(
+              padding: const EdgeInsets.fromLTRB(4, 12, 4, 0),
+              child: RichText(
+                text: TextSpan(
+                  style: TextStyle(
+                    color: p.textSecondary,
+                    fontSize: 13,
+                    height: 1.35,
+                    letterSpacing: -0.1,
                   ),
-                  const TextSpan(text: ' neighbourhood to live in.'),
-                ],
+                  children: [
+                    TextSpan(text: 'This is ${_article(label)} '),
+                    TextSpan(
+                      text: label.toLowerCase(),
+                      style:
+                          TextStyle(color: color, fontWeight: FontWeight.w700),
+                    ),
+                    const TextSpan(text: ' neighbourhood to live in.'),
+                  ],
+                ),
               ),
             ),
+            secondChild: const SizedBox(width: double.infinity),
           ),
         ],
       ),
@@ -586,18 +595,26 @@ class _ScoreHeader extends ConsumerWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(14),
+            // Horizontal 4 aligns hero content with the status/verdict rows so
+            // the title and ring share the same left/right margin.
+            padding: const EdgeInsets.fromLTRB(4, 10, 4, 14),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              // Top-align so Profile + title start level with the score ring
+              // (no empty gap above the profile line).
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (address != null) ...[
+                        _profileSelector(context, ref, p, profile),
+                        const SizedBox(height: 6),
+                      ],
                       Text(
                         address?.headerTitle ?? '—',
-                        maxLines: 2,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: p.textPrimary,
@@ -613,21 +630,11 @@ class _ScoreHeader extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    _ScoreRing(
-                      percent: (score.overall / 100).clamp(0.0, 1.0),
-                      color: color,
-                      size: 76,
-                      label: tenth,
-                    ),
-                    if (address != null) ...[
-                      const SizedBox(height: 8),
-                      _profileSelector(context, ref, p, profile),
-                    ],
-                  ],
+                _ScoreRing(
+                  percent: (score.overall / 100).clamp(0.0, 1.0),
+                  color: color,
+                  size: 72,
+                  label: tenth,
                 ),
               ],
             ),
