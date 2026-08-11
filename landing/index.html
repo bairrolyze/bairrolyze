@@ -93,8 +93,16 @@
     .hero-visual{position:relative;height:560px;display:flex;justify-content:center;align-items:center}
     .hero-visual .glow{position:absolute;width:460px;height:460px;border-radius:50%;
       background:radial-gradient(circle,rgba(120,110,255,0.4),transparent 62%);filter:blur(20px)}
-    .phone{position:absolute;border-radius:38px;box-shadow:var(--shadow);}
-    .phone img{display:block;width:100%;height:auto;border-radius:38px}
+    .phone{position:absolute}
+    /* real-device frame: dark bezel + symmetric silver rim + rounded corners */
+    .device{position:relative;display:inline-block;width:100%;padding:3%;border-radius:13%/6%;
+      background:linear-gradient(155deg,#262a36,#0b0d12 62%);
+      box-shadow:0 0 0 1.5px rgba(196,206,226,0.45), var(--shadow)}
+    .device .screen{position:relative;display:block;border-radius:10%/4.6%;overflow:hidden;background:#05070c}
+    .device .screen img{display:block;width:100%;height:auto}
+    /* side buttons */
+    .device::before{content:"";position:absolute;right:-2px;top:22%;width:3px;height:8%;background:linear-gradient(#2c313c,#161920);border-radius:2px}
+    .device::after{content:"";position:absolute;left:-2px;top:15%;width:3px;height:12%;background:linear-gradient(#2c313c,#161920);border-radius:2px}
     .hero-visual .p-main{width:284px;z-index:3;transform:translateY(6px)}
     .hero-visual .p-back{width:238px;z-index:2;left:calc(50% - 250px);top:64px;transform:rotate(-8deg);opacity:.96}
     .hero-visual .p-back2{width:230px;z-index:1;right:calc(50% - 250px);top:78px;transform:rotate(8deg);opacity:.9}
@@ -132,7 +140,7 @@
     /* framed phone media */
     .f-media{display:flex;justify-content:center;position:relative}
     .f-media .halo{position:absolute;width:340px;height:340px;border-radius:50%;filter:blur(18px);opacity:.5;z-index:0}
-    .f-media img{position:relative;z-index:1;width:min(300px,78%);height:auto;border-radius:34px;box-shadow:var(--shadow)}
+    .f-media .device{position:relative;z-index:1;width:min(288px,76%)}
     .halo.blue{background:radial-gradient(circle,rgba(58,150,255,0.5),transparent 62%)}
     .halo.purple{background:radial-gradient(circle,rgba(150,100,255,0.5),transparent 62%)}
     .halo.cyan{background:radial-gradient(circle,rgba(57,211,230,0.42),transparent 62%)}
@@ -219,9 +227,9 @@
 
       <div class="hero-visual">
         <div class="glow"></div>
-        <div class="phone p-back"><img src="images/screens/home.png" alt="Bairrolyze home screen"/></div>
-        <div class="phone p-back2"><img src="images/screens/radius.png" alt="Walk-time radius radar"/></div>
-        <div class="phone p-main"><img src="images/screens/result.png" alt="Neighbourhood score result"/></div>
+        <div class="phone p-back"><div class="device"><div class="screen"><img src="images/screens/home.png" alt="Bairrolyze home screen"/></div></div></div>
+        <div class="phone p-back2"><div class="device"><div class="screen"><img src="images/screens/radius.png" alt="Walk-time radius radar"/></div></div></div>
+        <div class="phone p-main"><div class="device"><div class="screen"><img src="images/screens/result.png" alt="Neighbourhood score result"/></div></div></div>
       </div>
     </div>
 
@@ -254,12 +262,12 @@
           <li><span class="ck">✓</span> Nearest places, with real walking distances</li>
         </ul>
       </div>
-      <div class="f-media"><div class="halo blue"></div><img src="images/screens/result.png" alt="Location score with category breakdown"/></div>
+      <div class="f-media"><div class="halo blue"></div><div class="device"><div class="screen"><img src="images/screens/result.png" alt="Location score with category breakdown"/></div></div></div>
     </div>
 
     <!-- transport / live data -->
     <div class="feature rev">
-      <div class="f-media"><div class="halo cyan"></div><img src="images/screens/transport.png" alt="Live transport detail with metro, train and bus"/></div>
+      <div class="f-media"><div class="halo cyan"></div><div class="device"><div class="screen"><img src="images/screens/transport.png" alt="Live transport detail with metro, train and bus"/></div></div></div>
       <div class="f-copy">
         <div class="kicker">Live transit</div>
         <span class="live"><span class="pulse"></span> Real-time data</span>
@@ -285,12 +293,12 @@
           <li><span class="ck">✓</span> Tap any ring to dive into the detail</li>
         </ul>
       </div>
-      <div class="f-media"><div class="halo purple"></div><img src="images/screens/dna.png" alt="Neighbourhood DNA fingerprint radar"/></div>
+      <div class="f-media"><div class="halo purple"></div><div class="device"><div class="screen"><img src="images/screens/dna.png" alt="Neighbourhood DNA fingerprint radar"/></div></div></div>
     </div>
 
     <!-- map -->
     <div class="feature rev">
-      <div class="f-media"><div class="halo blue"></div><img src="images/screens/map.png" alt="Every amenity on one interactive map"/></div>
+      <div class="f-media"><div class="halo blue"></div><div class="device"><div class="screen"><img src="images/screens/map.png" alt="Every amenity on one interactive map"/></div></div></div>
       <div class="f-copy">
         <div class="kicker">On the map</div>
         <h3>Every amenity, plotted around the address</h3>
@@ -315,7 +323,7 @@
           <li><span class="ck">✓</span> Named places with distance and walk time</li>
         </ul>
       </div>
-      <div class="f-media"><div class="halo green"></div><img src="images/screens/amenities.png" alt="Places within reach by distance"/></div>
+      <div class="f-media"><div class="halo green"></div><div class="device"><div class="screen"><img src="images/screens/amenities.png" alt="Places within reach by distance"/></div></div></div>
     </div>
   </section>
 
