@@ -2,6 +2,10 @@ class AppConstants {
   static const String appName = 'Bairrolyze';
   static const String appTagline = 'Know your neighborhood before you move.';
 
+  // Legal — hosted free on GitHub Pages (see landing/privacy.html)
+  static const String privacyPolicyUrl =
+      'https://rajesharyain.github.io/bairrolyze/privacy.html';
+
  // API - override with env vars in production
   // static const String backendBaseUrl = String.fromEnvironment(
   //   'BACKEND_URL',

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../config/app_constants.dart';
 import '../../config/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/address_model.dart';
@@ -390,6 +392,48 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ),
                   ],
+                ),
+              ),
+            ),
+
+            // ── Legal ────────────────────────────────────────────────────
+            _SectionHeader('LEGAL'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _DarkCard(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () async {
+                    final uri = Uri.parse(AppConstants.privacyPolicyUrl);
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  },
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: AppColors.accent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.privacy_tip_outlined,
+                            color: AppColors.accent, size: 17),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Privacy Policy',
+                          style: TextStyle(
+                            color: p.textPrimary,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Icon(Icons.open_in_new_rounded,
+                          color: p.textTertiary, size: 18),
+                    ],
+                  ),
                 ),
               ),
             ),
