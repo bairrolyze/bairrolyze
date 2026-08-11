@@ -2,7 +2,7 @@
 
 **Last updated: 11 August 2026**
 
-This Privacy Policy explains how **[LEGAL ENTITY NAME — e.g. Tellura, Lda.]** ("we",
+This Privacy Policy explains how **Tellura** ("we",
 "us", "our") handles information in connection with the **Bairrolyze** mobile
 application (the "App"). We have designed Bairrolyze to collect as little personal
 data as possible: **the App has no user accounts and no advertising or analytics
@@ -156,9 +156,8 @@ this page.
 
 ## 11. Contact
 
-**[LEGAL ENTITY NAME]**
-[COMPANY ADDRESS, incl. country]
-Email: **[CONTACT / PRIVACY EMAIL]**
+**Tellura**
+Email: **info@bairrolyze.com**
 
 If you are in the EEA/UK and have concerns we cannot resolve, you may contact your
 local supervisory authority.
