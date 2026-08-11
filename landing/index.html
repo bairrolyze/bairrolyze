@@ -198,6 +198,10 @@
       .hero-visual .p-back,.hero-visual .p-back2{display:none}
       .hero-visual .p-main{width:238px}
     }
+    /* keep the decorative hero glow inside the viewport on small screens */
+    @media(max-width:640px){
+      .hero-visual .glow{width:300px;height:300px}
+    }
 
     /* ---------- Stats ---------- */
     .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:26px 0 8px;padding:26px;border:1px solid var(--border);border-radius:var(--radius);background:var(--panel);box-shadow:var(--card-shadow)}
