@@ -288,10 +288,19 @@
     .f-list li{list-style:none;display:flex;align-items:flex-start;gap:11px;color:var(--text);font-size:15px}
     .f-list .ck{flex:none;width:22px;height:22px;border-radius:7px;background:var(--panel-2);border:1px solid var(--border-2);display:grid;place-items:center;color:var(--blue);font-size:12px;margin-top:1px}
 
-    /* framed phone media */
-    .f-media{display:flex;justify-content:center;position:relative}
-    .f-media .halo{position:absolute;width:340px;height:340px;border-radius:50%;filter:blur(18px);opacity:.5;z-index:0}
-    .f-media .device{position:relative;z-index:1;width:min(264px,72%)}
+    /* tilted phone collage */
+    .f-media{display:flex;justify-content:center;align-items:center;position:relative;perspective:2000px}
+    .f-media .halo{position:absolute;width:380px;height:380px;border-radius:50%;filter:blur(24px);opacity:.55;z-index:0}
+    .f-stack{position:relative;z-index:1;width:min(288px,80%);transform-style:preserve-3d}
+    .f-stack .device{width:100%}
+    /* lead phone: the hero screen, tilted toward the copy */
+    .f-stack .lead{position:relative;z-index:2;transform:rotateY(-17deg) rotateX(3deg)}
+    /* trail phone: a complementary screen peeking behind */
+    .f-stack .trail{position:absolute;top:10%;left:33%;width:80%;z-index:1;opacity:.8;
+      transform:rotateY(-17deg) rotateX(3deg) scale(.94)}
+    /* reversed rows mirror the tilt so phones always face the text */
+    .feature.rev .f-stack .lead{transform:rotateY(17deg) rotateX(3deg)}
+    .feature.rev .f-stack .trail{left:auto;right:33%;transform:rotateY(17deg) rotateX(3deg) scale(.94)}
     .halo.blue{background:radial-gradient(circle,rgba(58,150,255,0.5),transparent 62%)}
     .halo.purple{background:radial-gradient(circle,rgba(150,100,255,0.5),transparent 62%)}
     .halo.cyan{background:radial-gradient(circle,rgba(57,211,230,0.42),transparent 62%)}
@@ -302,6 +311,10 @@
       .f-copy p,.f-list{margin-left:auto;margin-right:auto}
       .f-list li{text-align:left}
       .f-copy .kicker{justify-content:center}
+      /* flatten to a single upright phone on small screens */
+      .f-stack{width:min(230px,66%)}
+      .f-stack .lead,.feature.rev .f-stack .lead{transform:none}
+      .f-stack .trail{display:none}
     }
 
     /* live badge */
@@ -460,12 +473,24 @@
           <li><span class="ck">✓</span> Open <b>Street View</b> to see the actual street</li>
         </ul>
       </div>
-      <div class="f-media"><div class="halo blue"></div><div class="device"><div class="screen"><img src="images/screens/result.png" alt="Location score with category breakdown"/></div></div></div>
+      <div class="f-media">
+        <div class="halo blue"></div>
+        <div class="f-stack">
+          <div class="device trail"><div class="screen"><img src="images/screens/dna.png" alt="Neighbourhood category breakdown radar"/></div></div>
+          <div class="device lead"><div class="screen"><img src="images/screens/result.png" alt="Location score with category breakdown"/></div></div>
+        </div>
+      </div>
     </div>
 
     <!-- transport / live data -->
     <div class="feature rev">
-      <div class="f-media"><div class="halo cyan"></div><div class="device"><div class="screen"><img src="images/screens/transport.png" alt="Live transport detail with metro, train and bus"/></div></div></div>
+      <div class="f-media">
+        <div class="halo cyan"></div>
+        <div class="f-stack">
+          <div class="device trail"><div class="screen"><img src="images/screens/map.png" alt="Transit stops on the interactive map"/></div></div>
+          <div class="device lead"><div class="screen"><img src="images/screens/transport.png" alt="Live transport detail with metro, train and bus"/></div></div>
+        </div>
+      </div>
       <div class="f-copy">
         <div class="kicker">Live transit</div>
         <span class="live"><span class="pulse"></span> Live data</span>
