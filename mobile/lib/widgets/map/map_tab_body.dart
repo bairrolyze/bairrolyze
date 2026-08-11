@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../config/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/amenity_model.dart';
 import '../../providers/analysis_provider.dart';
 import 'amenity_marker.dart';
@@ -189,6 +190,7 @@ class _StatsPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -203,8 +205,8 @@ class _StatsPill extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             filter == null
-                ? '$total places nearby'
-                : '$total ${filter!.name}',
+                ? l.mapPlacesNearby(total)
+                : l.mapCategoryCount(total, filter!.label(l)),
             style: TextStyle(
               color: p.textPrimary,
               fontSize: 12,

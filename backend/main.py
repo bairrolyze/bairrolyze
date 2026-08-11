@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config.settings import settings
-from api.routes import geocode, amenities, score, ai_summary, analyze
+from api.routes import geocode, amenities, score, ai_summary, analyze, popular, areas
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,12 +23,14 @@ async def lifespan(app: FastAPI):
     from services.cache import cache_service
     from services.crime_service import crime_service
     from services.job_store import job_store
+    from services.popularity_store import popularity_store
     await nominatim_service.close()
     await overpass_service.close()
     await routing_service.close()
     await cache_service.close()
     await crime_service.close()
     await job_store.close()
+    await popularity_store.close()
 
 
 app = FastAPI(
@@ -64,6 +66,8 @@ app.include_router(amenities.router, prefix="/api/v1", tags=["Amenities"])
 app.include_router(score.router, prefix="/api/v1", tags=["Scoring"])
 app.include_router(ai_summary.router, prefix="/api/v1", tags=["AI"])
 app.include_router(analyze.router, prefix="/api/v1", tags=["Analysis"])
+app.include_router(popular.router, prefix="/api/v1", tags=["Popular"])
+app.include_router(areas.router, prefix="/api/v1", tags=["Areas"])
 
 
 @app.get("/health", tags=["Health"])

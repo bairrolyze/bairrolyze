@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -7,6 +8,8 @@ import 'package:logger/logger.dart';
 
 import 'config/app_router.dart';
 import 'config/app_theme.dart';
+import 'l10n/app_localizations.dart';
+import 'providers/locale_provider.dart';
 import 'providers/theme_provider.dart';
 import 'services/purchase_service.dart';
 
@@ -43,6 +46,7 @@ class HomeScopeApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    final locale = ref.watch(localeProvider);
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
@@ -51,6 +55,14 @@ class HomeScopeApp extends ConsumerWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
+      locale: locale,
+      supportedLocales: kSupportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       routerConfig: router,
     );
   }

@@ -1,3 +1,4 @@
+import asyncio
 import httpx
 import logging
 import math
@@ -13,6 +14,19 @@ from services.cache import cache_service
 logger = logging.getLogger(__name__)
 
 AMENITIES_CACHE_TTL_SECONDS = 604800  # 7 days
+
+# Public Overpass mirrors, tried in order after the configured primary. A single
+# flaky/rate-limited upstream is the main cause of an empty amenity list (and the
+# misleading 0 location score that follows), so we fail over rather than degrade
+# on the first error. Each endpoint also gets a short in-place retry.
+OVERPASS_MIRRORS = [
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+]
+# Per-endpoint attempts before moving to the next mirror.
+OVERPASS_ATTEMPTS_PER_ENDPOINT = 2
+# Base backoff (seconds) between attempts; grows linearly per attempt.
+OVERPASS_RETRY_BACKOFF = 0.6
 
 # Bbox is derived from the requested radius expanded by this factor, since a
 # square bbox has to fully contain the circle we actually care about. Results
@@ -134,6 +148,56 @@ class OverpassService:
             }
         )
 
+    async def _post_with_failover(
+        self, query: str, lat: float, lng: float, radius: float
+    ) -> Dict[str, Any]:
+        """POST the Overpass query, retrying each endpoint and failing over to
+        mirrors. Raises the last error only if every endpoint/attempt fails, so
+        the caller degrades to an empty result only as a true last resort."""
+        # Primary first (deduped), then the public mirrors.
+        endpoints: List[str] = [settings.overpass_url]
+        endpoints += [m for m in OVERPASS_MIRRORS if m != settings.overpass_url]
+
+        last_exc: Optional[Exception] = None
+        for endpoint in endpoints:
+            for attempt in range(1, OVERPASS_ATTEMPTS_PER_ENDPOINT + 1):
+                start = time.monotonic()
+                try:
+                    response = await self.client.post(
+                        endpoint,
+                        data={"data": query},
+                        headers={"Content-Type": "application/x-www-form-urlencoded"},
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                    duration_ms = (time.monotonic() - start) * 1000
+                    logger.info(
+                        f"Overpass query took {duration_ms:.0f}ms endpoint={endpoint} "
+                        f"attempt={attempt} lat={lat} lng={lng} radius={radius}"
+                    )
+                    return data
+                except httpx.HTTPStatusError as e:
+                    last_exc = e
+                    duration_ms = (time.monotonic() - start) * 1000
+                    logger.warning(
+                        f"Overpass API error after {duration_ms:.0f}ms "
+                        f"endpoint={endpoint} attempt={attempt}: "
+                        f"status={e.response.status_code} body={e.response.text[:300]!r}"
+                    )
+                except Exception as e:  # noqa: BLE001 - retry/failover on any error
+                    last_exc = e
+                    duration_ms = (time.monotonic() - start) * 1000
+                    logger.warning(
+                        f"Overpass request failed after {duration_ms:.0f}ms "
+                        f"endpoint={endpoint} attempt={attempt}: {e}"
+                    )
+                # Backoff before the next attempt on the same endpoint.
+                if attempt < OVERPASS_ATTEMPTS_PER_ENDPOINT:
+                    await asyncio.sleep(OVERPASS_RETRY_BACKOFF * attempt)
+
+        # Every endpoint and attempt failed — let the caller degrade gracefully.
+        raise last_exc if last_exc else RuntimeError("Overpass: no endpoints tried")
+
     async def fetch_amenities(
         self, lat: float, lng: float, radius: float = 2000.0
     ) -> List[AmenityModel]:
@@ -146,31 +210,7 @@ class OverpassService:
 
         query = _build_overpass_query(lat, lng, radius)
 
-        # Send as form data (key=value format)
-        start = time.monotonic()
-        try:
-            response = await self.client.post(
-                settings.overpass_url,
-                data={"data": query},
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
-            )
-            response.raise_for_status()
-            data = response.json()
-        except httpx.HTTPStatusError as e:
-            duration_ms = (time.monotonic() - start) * 1000
-            logger.warning(
-                f"Overpass API error after {duration_ms:.0f}ms: "
-                f"status={e.response.status_code} body={e.response.text[:500]!r}"
-            )
-            raise
-        except Exception as e:
-            duration_ms = (time.monotonic() - start) * 1000
-            logger.warning(f"Overpass request failed after {duration_ms:.0f}ms: {e}")
-            raise
-        duration_ms = (time.monotonic() - start) * 1000
-        logger.info(
-            f"Overpass query took {duration_ms:.0f}ms lat={lat} lng={lng} radius={radius}"
-        )
+        data = await self._post_with_failover(query, lat, lng, radius)
 
         amenities: List[AmenityModel] = []
         seen_names: set = set()

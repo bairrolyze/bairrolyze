@@ -1,12 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_theme.dart';
+import '../../config/score_format.dart';
+import '../../l10n/app_localizations.dart';
+import '../../data/popular_areas.dart';
 import '../../models/user_preferences_model.dart';
 import '../../providers/analysis_provider.dart';
 import '../../providers/country_provider.dart';
+import '../../providers/popular_areas_provider.dart';
 import '../../providers/preferences_provider.dart';
 import '../../providers/shell_provider.dart';
+import '../../services/api_service.dart';
 import '../../widgets/home/analyzing_progress_view.dart';
 
 // ── Tag colors ─────────────────────────────────────────────────────────────────
@@ -19,23 +26,21 @@ const _kTagCulture    = Color(0xFFFFA726);
 // ── Data model ─────────────────────────────────────────────────────────────────
 
 class _Neighborhood {
+  final String id;
   final String name;
   final String city;
-  final String description;
   final int score;
   final List<String> tags;
-  final String highlight;
   final int transportScore;
   final int educationScore;
   final int safetyScore;
 
   const _Neighborhood({
+    required this.id,
     required this.name,
     required this.city,
-    required this.description,
     required this.score,
     required this.tags,
-    required this.highlight,
     required this.transportScore,
     required this.educationScore,
     required this.safetyScore,
@@ -43,105 +48,199 @@ class _Neighborhood {
 }
 
 // ── Curated Portugal data ──────────────────────────────────────────────────────
+// Names/cities are proper nouns; the description + highlight copy is localized
+// via [_nbDesc] / [_nbHighlight], keyed off the stable [id].
 
 const _neighborhoods = <_Neighborhood>[
   _Neighborhood(
+    id: 'parqueNacoes',
     name: 'Parque das Nações',
     city: 'Lisboa',
-    description:
-        'Modern waterfront district with excellent transit and contemporary architecture.',
     score: 87,
     tags: ['Transport', 'Family', 'Investment'],
-    highlight: 'Best connected in Lisbon',
     transportScore: 94,
     educationScore: 78,
     safetyScore: 88,
   ),
   _Neighborhood(
+    id: 'principeReal',
     name: 'Príncipe Real',
     city: 'Lisboa',
-    description:
-        'Sophisticated hilltop quarter known for boutiques, galleries and vibrant café culture.',
     score: 82,
     tags: ['Culture', 'Nature'],
-    highlight: 'Top walkability score',
     transportScore: 74,
     educationScore: 70,
     safetyScore: 80,
   ),
   _Neighborhood(
+    id: 'cascais',
     name: 'Cascais',
     city: 'Cascais',
-    description:
-        'Prestigious seaside town with marina, beaches and an exceptional quality of life.',
     score: 85,
     tags: ['Nature', 'Family', 'Investment'],
-    highlight: 'Top coastal quality of life',
     transportScore: 72,
     educationScore: 82,
     safetyScore: 91,
   ),
   _Neighborhood(
+    id: 'baixaChiado',
     name: 'Baixa-Chiado',
     city: 'Lisboa',
-    description:
-        'Lisbon\'s beating heart — historic grandeur meets a lively commercial and cultural scene.',
     score: 79,
     tags: ['Culture', 'Transport'],
-    highlight: 'Historic centre, great transit',
     transportScore: 88,
     educationScore: 62,
     safetyScore: 71,
   ),
   _Neighborhood(
+    id: 'boavista',
     name: 'Boavista',
     city: 'Porto',
-    description:
-        'Porto\'s prestigious business and residential corridor with excellent urban amenities.',
     score: 81,
     tags: ['Investment', 'Transport'],
-    highlight: 'Porto\'s premier investment district',
     transportScore: 83,
     educationScore: 76,
     safetyScore: 82,
   ),
   _Neighborhood(
+    id: 'fozDouro',
     name: 'Foz do Douro',
     city: 'Porto',
-    description:
-        'Exclusive riverside neighbourhood with ocean views, parks and upscale dining.',
     score: 84,
     tags: ['Nature', 'Family', 'Investment'],
-    highlight: 'Porto\'s most desirable address',
     transportScore: 66,
     educationScore: 84,
     safetyScore: 89,
   ),
   _Neighborhood(
+    id: 'santoAntonio',
     name: 'Santo António',
     city: 'Lisboa',
-    description:
-        'Central Lisbon neighbourhood with top-tier healthcare, schools and safety scores.',
     score: 78,
     tags: ['Family', 'Culture'],
-    highlight: 'Best for families in central Lisbon',
     transportScore: 80,
     educationScore: 85,
     safetyScore: 83,
   ),
   _Neighborhood(
+    id: 'bragaCentro',
     name: 'Braga Centro',
     city: 'Braga',
-    description:
-        'Northern gem combining historic charm with a thriving university city energy.',
     score: 76,
     tags: ['Family', 'Culture', 'Investment'],
-    highlight: 'Fastest growing city centre',
     transportScore: 71,
     educationScore: 88,
     safetyScore: 84,
   ),
 ];
+
+// ── Localized content helpers (keyed off _Neighborhood.id / tag keys) ──────────
+
+String _nbDesc(AppLocalizations l, String id) => switch (id) {
+      'parqueNacoes' => l.nbParqueNacoesDesc,
+      'principeReal' => l.nbPrincipeRealDesc,
+      'cascais' => l.nbCascaisDesc,
+      'baixaChiado' => l.nbBaixaChiadoDesc,
+      'boavista' => l.nbBoavistaDesc,
+      'fozDouro' => l.nbFozDouroDesc,
+      'santoAntonio' => l.nbSantoAntonioDesc,
+      _ => l.nbBragaCentroDesc,
+    };
+
+String _nbHighlight(AppLocalizations l, String id) => switch (id) {
+      'parqueNacoes' => l.nbParqueNacoesHighlight,
+      'principeReal' => l.nbPrincipeRealHighlight,
+      'cascais' => l.nbCascaisHighlight,
+      'baixaChiado' => l.nbBaixaChiadoHighlight,
+      'boavista' => l.nbBoavistaHighlight,
+      'fozDouro' => l.nbFozDouroHighlight,
+      'santoAntonio' => l.nbSantoAntonioHighlight,
+      _ => l.nbBragaCentroHighlight,
+    };
+
+/// Display label for a tag key (the keys stay English for filter matching).
+String _tagLabel(AppLocalizations l, String tag) => switch (tag) {
+      'Transport' => l.tagTransport,
+      'Family' => l.tagFamily,
+      'Investment' => l.tagInvestment,
+      'Nature' => l.tagNature,
+      'Culture' => l.tagCulture,
+      _ => tag,
+    };
+
+/// Localized persona label (reuses the settings/onboarding profile strings).
+String _profileLabel(AppLocalizations l, UserProfile p) => switch (p) {
+      UserProfile.family => l.profileFamily,
+      UserProfile.student => l.profileStudent,
+      UserProfile.professional => l.profileProfessional,
+      UserProfile.retired => l.profileRetired,
+      UserProfile.investor => l.profileInvestor,
+      UserProfile.defaultProfile => l.profileGeneral,
+    };
+
+/// Short persona descriptor shown on the profile cards.
+String _profileDesc(AppLocalizations l, UserProfile p) => switch (p) {
+      UserProfile.family => l.explorerProfileFamilyDesc,
+      UserProfile.student => l.explorerProfileStudentDesc,
+      UserProfile.professional => l.explorerProfileProfessionalDesc,
+      UserProfile.retired => l.explorerProfileRetiredDesc,
+      UserProfile.investor => l.explorerProfileInvestorDesc,
+      UserProfile.defaultProfile => '',
+    };
+
+String _flag(String code) => const {
+      'PT': '🇵🇹',
+      'ES': '🇪🇸',
+      'GB': '🇬🇧',
+      'FR': '🇫🇷',
+      'DE': '🇩🇪',
+    }[code] ??
+    '🌍';
+
+// The personas offered as Explore's primary "who is this for" control.
+const _explorerProfiles = [
+  UserProfile.family,
+  UserProfile.student,
+  UserProfile.professional,
+  UserProfile.retired,
+  UserProfile.investor,
+];
+
+/// A lightweight client-side "fit" score: reorders the curated neighbourhoods
+/// for the chosen persona by weighting the signals we already have (transport /
+/// education / safety / overall) plus a small bonus for matching lifestyle
+/// tags. This is a browse aid only — the authoritative, profile-weighted score
+/// is computed by the backend when the user taps through to Analyze.
+double _fitScore(_Neighborhood n, UserProfile p) {
+  final t = n.transportScore.toDouble();
+  final e = n.educationScore.toDouble();
+  final s = n.safetyScore.toDouble();
+  final o = n.score.toDouble();
+  double base;
+  double bonus = 0;
+  switch (p) {
+    case UserProfile.family:
+      base = t * 0.20 + e * 0.40 + s * 0.30 + o * 0.10;
+      if (n.tags.contains('Family')) bonus += 8;
+    case UserProfile.student:
+      base = t * 0.45 + e * 0.10 + s * 0.15 + o * 0.30;
+      if (n.tags.contains('Culture')) bonus += 6;
+      if (n.tags.contains('Transport')) bonus += 4;
+    case UserProfile.professional:
+      base = t * 0.40 + e * 0.10 + s * 0.20 + o * 0.30;
+      if (n.tags.contains('Transport')) bonus += 5;
+      if (n.tags.contains('Investment')) bonus += 3;
+    case UserProfile.retired:
+      base = t * 0.15 + e * 0.10 + s * 0.45 + o * 0.30;
+      if (n.tags.contains('Nature')) bonus += 8;
+    case UserProfile.investor:
+      base = t * 0.25 + e * 0.10 + s * 0.15 + o * 0.50;
+      if (n.tags.contains('Investment')) bonus += 10;
+    case UserProfile.defaultProfile:
+      base = o;
+  }
+  return base + bonus;
+}
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
@@ -152,33 +251,212 @@ class ExplorerScreen extends ConsumerStatefulWidget {
   ConsumerState<ExplorerScreen> createState() => _ExplorerScreenState();
 }
 
+// The country the curated `_neighborhoods` (with rich stats) belong to. Other
+// countries are still fully searchable via the country-scoped area search.
+const _kCuratedCountry = 'PT';
+
 class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
-  int _filterIndex = 0;
+  UserProfile _profile = UserProfile.family;
+  String? _cityFilter; // null = all cities
   String? _analyzingLabel;
 
-  static const _filters = [
-    'All',
-    'Transport',
-    'Family',
-    'Investment',
-    'Nature',
-    'Culture',
-  ];
+  final _searchController = TextEditingController();
+  final _searchFocus = FocusNode();
+  String _query = '';
+  Timer? _debounce;
+  bool _searching = false;
+  List<AreaSuggestion> _osmResults = const [];
 
-  List<_Neighborhood> get _filtered {
-    if (_filterIndex == 0) return _neighborhoods;
-    final tag = _filters[_filterIndex];
-    return _neighborhoods.where((n) => n.tags.contains(tag)).toList();
+  @override
+  void initState() {
+    super.initState();
+    // Default to the user's saved persona; a neutral/general profile falls
+    // back to Family so the fit ranking is meaningful on first open.
+    final saved = ref.read(preferencesProvider).profile;
+    if (saved != UserProfile.defaultProfile) _profile = saved;
+    // Focusing the empty search box reveals trending suggestions.
+    _searchFocus.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchFocus.removeListener(_onFocusChange);
+    _searchController.dispose();
+    _searchFocus.dispose();
+    super.dispose();
+  }
+
+  // Whether the curated fit-ranked cards apply to the selected country.
+  bool get _curatedActive =>
+      (ref.read(selectedCountryProvider)?.code ?? 'PT') == _kCuratedCountry;
+
+  // Distinct cities present in the curated set, for the area chips.
+  List<String> get _cities {
+    if (!_curatedActive) return const [];
+    final seen = <String>[];
+    for (final n in _neighborhoods) {
+      if (!seen.contains(n.city)) seen.add(n.city);
+    }
+    return seen;
+  }
+
+  // Neighbourhoods for the chosen city, ranked best-fit-first for the persona.
+  List<_Neighborhood> get _ranked {
+    if (!_curatedActive) return const [];
+    final list = _neighborhoods
+        .where((n) => _cityFilter == null || n.city == _cityFilter)
+        .toList()
+      ..sort((a, b) => _fitScore(b, _profile).compareTo(_fitScore(a, _profile)));
+    return list;
+  }
+
+  // ── Area search (tier 1 curated + tier 3 country-scoped OSM) ───────────────
+
+  void _onQueryChanged(String value) {
+    setState(() => _query = value);
+    _debounce?.cancel();
+    final q = value.trim();
+    if (q.length < 2) {
+      setState(() {
+        _osmResults = const [];
+        _searching = false;
+      });
+      return;
+    }
+    setState(() => _searching = true);
+    _debounce = Timer(const Duration(milliseconds: 350), () => _runOsmSearch(q));
+  }
+
+  Future<void> _runOsmSearch(String q) async {
+    final country = ref.read(selectedCountryProvider);
+    try {
+      final results = await ref.read(apiServiceProvider).searchAreas(
+            query: q,
+            country: country?.code ?? 'PT',
+          );
+      if (!mounted || q != _query.trim()) return;
+      setState(() {
+        _osmResults = results;
+        _searching = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _searching = false);
+    }
+  }
+
+  // Curated areas (instant, offline) whose name/city matches the query.
+  List<AreaSuggestion> _curatedMatches(String q) {
+    if (!_curatedActive) return const [];
+    final n = q.trim().toLowerCase();
+    if (n.isEmpty) return const [];
+    return _neighborhoods
+        .where((x) =>
+            x.name.toLowerCase().contains(n) || x.city.toLowerCase().contains(n))
+        .map((x) => AreaSuggestion(
+              name: x.name,
+              region: x.city,
+              lat: 0,
+              lng: 0,
+              type: 'curated',
+            ))
+        .toList();
+  }
+
+  // Merge curated + OSM, curated first, deduped by name+region.
+  List<AreaSuggestion> get _searchResults {
+    final out = <AreaSuggestion>[];
+    final seen = <String>{};
+    for (final s in [..._curatedMatches(_query), ..._osmResults]) {
+      final key = '${s.name.toLowerCase()}|${s.region.toLowerCase()}';
+      if (seen.add(key)) out.add(s);
+    }
+    return out;
+  }
+
+  void _clearSearch() {
+    _debounce?.cancel();
+    _searchController.clear();
+    _searchFocus.unfocus();
+    setState(() {
+      _query = '';
+      _osmResults = const [];
+      _searching = false;
+    });
+  }
+
+  Future<void> _openCountryPicker() async {
+    _searchFocus.unfocus();
+    final countries = await ref.read(countriesProvider.future);
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppPalette.of(context).surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final p = AppPalette.of(ctx);
+        final selected = ref.read(selectedCountryProvider)?.code;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: p.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (final c in countries)
+                ListTile(
+                  leading: Text(_flag(c.code),
+                      style: const TextStyle(fontSize: 22)),
+                  title: Text(c.name,
+                      style: TextStyle(
+                          color: p.textPrimary, fontWeight: FontWeight.w600)),
+                  trailing: c.code == selected
+                      ? const Icon(Icons.check_circle_rounded,
+                          color: AppColors.accent)
+                      : null,
+                  onTap: () {
+                    ref.read(selectedCountryProvider.notifier).select(c);
+                    Navigator.of(ctx).pop();
+                    _clearSearch();
+                    setState(() => _cityFilter = null);
+                  },
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   // Run a real analysis for the tapped neighbourhood, then jump to results.
-  Future<void> _analyze(_Neighborhood n) async {
+  Future<void> _analyze(_Neighborhood n) => _analyzeArea(n.name, n.city);
+
+  // Analyse an arbitrary area (curated card or search result) and jump to
+  // results — the same geocode→score→AI flow the rest of the app uses.
+  Future<void> _analyzeArea(String name, String region) async {
+    _searchFocus.unfocus();
     final country = ref.read(selectedCountryProvider);
     final countryName = country?.name ?? 'Portugal';
     final profile = ref.read(preferencesProvider).profile.jsonValue;
-    setState(() => _analyzingLabel = '${n.name}, ${n.city}');
+    final label = region.isEmpty || region == name ? name : '$name, $region';
+    setState(() => _analyzingLabel = label);
     await ref.read(analysisProvider.notifier).analyze(
-          '${n.name}, ${n.city}, $countryName',
+          '$label, $countryName',
           countryCode: country?.code ?? 'PT',
           profile: profile,
         );
@@ -188,13 +466,55 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
     }
   }
 
+  // Shared pill styling for the persona + city selectors.
+  Widget _selectorChip({
+    required String label,
+    required bool active,
+    required VoidCallback onTap,
+    bool small = false,
+  }) {
+    final p = AppPalette.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: EdgeInsets.symmetric(horizontal: small ? 14 : 16),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: active ? AppColors.accent.withValues(alpha: 0.12) : p.surface2,
+          borderRadius: BorderRadius.circular(22),
+          border: active
+              ? Border.all(color: AppColors.accent.withValues(alpha: 0.70), width: 1.5)
+              : Border.all(color: p.border, width: 1),
+          gradient: active
+              ? LinearGradient(colors: [
+                  AppColors.accent.withValues(alpha: 0.10),
+                  const Color(0xFF7C3AED).withValues(alpha: 0.10),
+                ])
+              : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: active ? AppColors.accent : p.textTertiary,
+            fontSize: small ? 12 : 12.5,
+            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+            letterSpacing: 0.1,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final country = ref.watch(selectedCountryProvider);
     final countryName = country?.name ?? 'Portugal';
     final top = MediaQuery.of(context).padding.top;
-    final filtered = _filtered;
+    final ranked = _ranked;
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
 
     // While an analysis (started here) runs, show the shared progress view.
     final analysis = ref.watch(analysisProvider);
@@ -206,18 +526,22 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
       );
     }
 
+    final searching = _query.trim().isNotEmpty;
+    // Focused + empty box → trending suggestions (reuses Phase-2 /popular).
+    final showSuggestions = _searchFocus.hasFocus && !searching;
+
     return Container(
       color: p.bg,
       child: CustomScrollView(
         physics: const BouncingScrollPhysics(),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         slivers: [
-          // ── Safe area top padding ──────────────────────────────────────────
           SliverPadding(
             padding: EdgeInsets.only(top: top + 14),
             sliver: const SliverToBoxAdapter(child: SizedBox.shrink()),
           ),
 
-          // ── Header ─────────────────────────────────────────────────────────
+          // ── Header: title + subtitle, with the country picker pill ─────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(22, 0, 22, 0),
@@ -225,37 +549,34 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Explore',
-                        style: TextStyle(
-                          color: p.textPrimary,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.6,
-                          height: 1,
+                      Expanded(
+                        child: Text(
+                          l.explorerTitle,
+                          style: TextStyle(
+                            color: p.textPrimary,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.6,
+                            height: 1,
+                          ),
                         ),
                       ),
-                      const Spacer(),
-                      Text(
-                        countryName,
-                        style: TextStyle(
-                          color: p.textTertiary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.2,
-                        ),
+                      _CountryPill(
+                        flag: _flag(country?.code ?? 'PT'),
+                        name: countryName,
+                        onTap: _openCountryPicker,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Text(
-                    'Discover the neighbourhoods that match your life.',
+                    l.explorerSubtitle,
                     style: TextStyle(
                       color: p.textTertiary,
-                      fontSize: 14,
-                      height: 1.45,
+                      fontSize: 14.5,
+                      height: 1.4,
                     ),
                   ),
                 ],
@@ -263,107 +584,406 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
             ),
           ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+          const SliverToBoxAdapter(child: SizedBox(height: 26)),
 
-          // ── Filter chips ────────────────────────────────────────────────────
+          // ── Step 1: profile ────────────────────────────────────────────────
+          SliverToBoxAdapter(child: _stepHeading(p, l.explorerStepProfile)),
+          const SliverToBoxAdapter(child: SizedBox(height: 14)),
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 44,
+              height: 148,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 22),
                 physics: const BouncingScrollPhysics(),
-                itemCount: _filters.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemCount: _explorerProfiles.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (context, i) {
-                  final active = i == _filterIndex;
-                  return GestureDetector(
-                    onTap: () => setState(() => _filterIndex = i),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeInOut,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 0),
-                      decoration: BoxDecoration(
-                        color: active
-                            ? AppColors.accent.withValues(alpha: 0.12)
-                            : p.surface2,
-                        borderRadius: BorderRadius.circular(22),
-                        border: active
-                            ? Border.all(
-                                color: AppColors.accent.withValues(alpha: 0.70),
-                                width: 1.5,
-                              )
-                            : Border.all(
-                                color: p.border,
-                                width: 1,
-                              ),
-                        gradient: active
-                            ? LinearGradient(
-                                colors: [
-                                  AppColors.accent.withValues(alpha: 0.10),
-                                  const Color(0xFF7C3AED).withValues(alpha: 0.10),
-                                ],
-                              )
-                            : null,
-                      ),
-                      child: Center(
-                        child: Text(
-                          _filters[i],
-                          style: TextStyle(
-                            color: active
-                                ? AppColors.accent
-                                : p.textTertiary,
-                            fontSize: 12.5,
-                            fontWeight: active
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            letterSpacing: 0.1,
-                          ),
-                        ),
-                      ),
-                    ),
+                  final profile = _explorerProfiles[i];
+                  return _ProfileCard(
+                    emoji: profile.emoji,
+                    title: _profileLabel(l, profile),
+                    desc: _profileDesc(l, profile),
+                    selected: profile == _profile,
+                    onTap: () => setState(() => _profile = profile),
                   );
                 },
               ),
             ),
           ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          const SliverToBoxAdapter(child: SizedBox(height: 26)),
 
-          // ── Section label ──────────────────────────────────────────────────
+          // ── Step 2: area ───────────────────────────────────────────────────
+          SliverToBoxAdapter(child: _stepHeading(p, l.explorerStepArea)),
+          const SliverToBoxAdapter(child: SizedBox(height: 12)),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
-              child: Text(
-                'FEATURED',
-                style: TextStyle(
-                  color: p.textTertiary,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.6,
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              child: _searchField(p, l, countryName),
+            ),
+          ),
+
+          if (searching) ...[
+            // Live area search results (curated + country-scoped OSM).
+            const SliverToBoxAdapter(child: SizedBox(height: 6)),
+            _buildSearchResults(p, l, countryName),
+          ] else if (showSuggestions) ...[
+            // Trending suggestions for the country's headline region.
+            const SliverToBoxAdapter(child: SizedBox(height: 8)),
+            _buildTrendingSuggestions(p, l, country?.defaultCity ?? 'Lisboa',
+                country?.code ?? 'PT'),
+          ] else ...[
+            // Default: city chips + fit-ranked featured cards (or a prompt for
+            // countries we don't curate yet).
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+            if (_cities.isNotEmpty)
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 36,
+                  child: Builder(builder: (context) {
+                    final items = <String?>[null, ..._cities];
+                    return ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 22),
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: items.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, i) {
+                        final city = items[i];
+                        return _selectorChip(
+                          label: city ?? l.explorerCityAll,
+                          active: city == _cityFilter,
+                          small: true,
+                          onTap: () => setState(() => _cityFilter = city),
+                        );
+                      },
+                    );
+                  }),
                 ),
+              ),
+            const SliverToBoxAdapter(child: SizedBox(height: 22)),
+            if (ranked.isNotEmpty) ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
+                  child: Text(
+                    l.explorerBestFor(_profileLabel(l, _profile)).toUpperCase(),
+                    style: TextStyle(
+                      color: p.textTertiary,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.6,
+                    ),
+                  ),
+                ),
+              ),
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    if (index >= ranked.length) return null;
+                    return _NeighborhoodCard(
+                      neighborhood: ranked[index],
+                      isTopMatch: index == 0,
+                      onAnalyze: () => _analyze(ranked[index]),
+                    );
+                  },
+                  childCount: ranked.length,
+                ),
+              ),
+            ] else
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(22, 28, 22, 0),
+                  child: Text(
+                    l.explorerSearchPrompt(countryName),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: p.textTertiary, fontSize: 13.5, height: 1.5),
+                  ),
+                ),
+              ),
+          ],
+
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
+      ),
+    );
+  }
+
+  Widget _stepHeading(AppPalette p, String text) => Padding(
+        padding: const EdgeInsets.fromLTRB(22, 0, 22, 0),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: p.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
+          ),
+        ),
+      );
+
+  Widget _searchField(AppPalette p, AppLocalizations l, String countryName) {
+    return Container(
+      decoration: BoxDecoration(
+        color: p.surface2,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: p.border),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Row(
+        children: [
+          Icon(Icons.search_rounded, size: 20, color: p.textTertiary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              focusNode: _searchFocus,
+              onChanged: _onQueryChanged,
+              textInputAction: TextInputAction.search,
+              style: TextStyle(color: p.textPrimary, fontSize: 15),
+              decoration: InputDecoration(
+                isCollapsed: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                border: InputBorder.none,
+                hintText: l.explorerSearchHint(countryName),
+                hintStyle: TextStyle(color: p.textTertiary, fontSize: 15),
               ),
             ),
           ),
+          if (_searching)
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else if (_query.isNotEmpty)
+            GestureDetector(
+              onTap: _clearSearch,
+              child: Icon(Icons.close_rounded, size: 18, color: p.textTertiary),
+            ),
+        ],
+      ),
+    );
+  }
 
-          // ── Neighborhood cards ─────────────────────────────────────────────
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                if (index >= filtered.length) return null;
-                return _NeighborhoodCard(
-                  neighborhood: filtered[index],
-                  onAnalyze: () => _analyze(filtered[index]),
-                );
-              },
-              childCount: filtered.length,
+  Widget _buildSearchResults(AppPalette p, AppLocalizations l, String countryName) {
+    final results = _searchResults;
+    if (results.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 0),
+          child: Text(
+            _searching ? '…' : l.explorerNoAreas(countryName),
+            textAlign: TextAlign.center,
+            style: TextStyle(color: p.textTertiary, fontSize: 13.5),
+          ),
+        ),
+      );
+    }
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          if (index >= results.length) return null;
+          final r = results[index];
+          final curated = r.type == 'curated';
+          return _areaTile(
+            p,
+            icon: curated ? Icons.star_rounded : Icons.place_rounded,
+            iconColor: curated ? AppColors.accent : p.textTertiary,
+            name: r.name,
+            region: r.region,
+            onTap: () => _analyzeArea(r.name, r.region),
+          );
+        },
+        childCount: results.length,
+      ),
+    );
+  }
+
+  // Trending suggestions shown when the search box is focused but empty —
+  // reuses the Phase-2 popularity data for the country's headline region.
+  Widget _buildTrendingSuggestions(
+      AppPalette p, AppLocalizations l, String region, String countryCode) {
+    final resolved = ref
+        .watch(popularAreasProvider(
+          (country: countryCode, region: region, defaultCity: region),
+        ))
+        .asData
+        ?.value;
+    final areas = (resolved?.areas ?? popularAreasForRegion(region)).take(6).toList();
+    final label = resolved?.region ?? region;
+    if (areas.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+
+    return SliverList(
+      delegate: SliverChildListDelegate([
+        Padding(
+          padding: const EdgeInsets.fromLTRB(22, 10, 22, 8),
+          child: Text(
+            l.explorerTrendingIn(label).toUpperCase(),
+            style: TextStyle(
+              color: p.textTertiary,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.4,
             ),
           ),
+        ),
+        for (final a in areas)
+          _areaTile(
+            p,
+            icon: Icons.place_rounded,
+            iconColor: p.textTertiary,
+            name: a.name,
+            region: a.region,
+            onTap: () => _analyzeArea(a.name, a.region),
+          ),
+      ]),
+    );
+  }
 
-          // ── Bottom padding (nav bar clearance) ────────────────────────────
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
+  Widget _areaTile(
+    AppPalette p, {
+    required IconData icon,
+    required Color iconColor,
+    required String name,
+    required String region,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      leading: Icon(icon, size: 20, color: iconColor),
+      title: Text(name,
+          style: TextStyle(color: p.textPrimary, fontWeight: FontWeight.w600)),
+      subtitle: region.isEmpty || region == name
+          ? null
+          : Text(region, style: TextStyle(color: p.textTertiary, fontSize: 12)),
+      trailing:
+          Icon(Icons.chevron_right_rounded, size: 20, color: p.textTertiary),
+    );
+  }
+}
+
+// ── Country picker pill ────────────────────────────────────────────────────────
+
+class _CountryPill extends StatelessWidget {
+  final String flag;
+  final String name;
+  final VoidCallback onTap;
+
+  const _CountryPill(
+      {required this.flag, required this.name, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: p.surface2,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: p.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(flag, style: const TextStyle(fontSize: 16)),
+            const SizedBox(width: 6),
+            Text(
+              name,
+              style: TextStyle(
+                color: p.textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Icon(Icons.keyboard_arrow_down_rounded,
+                size: 18, color: p.textTertiary),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Profile card ───────────────────────────────────────────────────────────────
+
+class _ProfileCard extends StatelessWidget {
+  final String emoji;
+  final String title;
+  final String desc;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ProfileCard({
+    required this.emoji,
+    required this.title,
+    required this.desc,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: 150,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.accent.withValues(alpha: 0.10)
+              : p.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected
+                ? AppColors.accent.withValues(alpha: 0.70)
+                : p.border,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 26)),
+                const Spacer(),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: p.textPrimary,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  desc,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: p.textTertiary,
+                    fontSize: 12,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+            if (selected)
+              const Align(
+                alignment: Alignment.topRight,
+                child: Icon(Icons.check_circle_rounded,
+                    size: 20, color: AppColors.accent),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -373,18 +993,14 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
 
 class _NeighborhoodCard extends StatelessWidget {
   final _Neighborhood neighborhood;
+  final bool isTopMatch;
   final VoidCallback onAnalyze;
 
   const _NeighborhoodCard({
     required this.neighborhood,
     required this.onAnalyze,
+    this.isTopMatch = false,
   });
-
-  Color _scoreColor(int score) {
-    if (score >= 80) return const Color(0xFF22C55E);
-    if (score >= 65) return const Color(0xFF3B82F6);
-    return const Color(0xFFF59E0B);
-  }
 
   Color _tagColor(String tag) {
     switch (tag) {
@@ -406,15 +1022,21 @@ class _NeighborhoodCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final n = neighborhood;
-    final scoreColor = _scoreColor(n.score);
+    final ring = scoreColor(n.score.toDouble());
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
       decoration: BoxDecoration(
         color: p.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: p.border, width: 1),
+        border: Border.all(
+          color: isTopMatch
+              ? AppColors.accent.withValues(alpha: 0.55)
+              : p.border,
+          width: isTopMatch ? 1.5 : 1,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -431,15 +1053,16 @@ class _NeighborhoodCard extends StatelessWidget {
                   height: 44,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: scoreColor, width: 2.5),
-                    color: scoreColor.withValues(alpha: 0.10),
+                    border: Border.all(color: ring, width: 2.5),
+                    color: ring.withValues(alpha: 0.10),
                   ),
                   child: Center(
+                    // Same /10 scale as the main score (score_format.dart).
                     child: Text(
-                      n.score.toString(),
+                      scoreTenth(n.score.toDouble()),
                       style: TextStyle(
-                        color: scoreColor,
-                        fontSize: 15,
+                        color: ring,
+                        fontSize: 14,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.5,
                       ),
@@ -476,24 +1099,38 @@ class _NeighborhoodCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Highlight badge
+                // Badge: "Best match" for the #1 ranked card, else the
+                // neighbourhood's editorial highlight.
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.10),
+                    color: AppColors.accent
+                        .withValues(alpha: isTopMatch ? 0.16 : 0.10),
                     borderRadius: BorderRadius.circular(20),
-                    border:
-                        Border.all(color: AppColors.accent.withValues(alpha: 0.28)),
+                    border: Border.all(
+                        color: AppColors.accent
+                            .withValues(alpha: isTopMatch ? 0.45 : 0.28)),
                   ),
-                  child: Text(
-                    n.highlight,
-                    style: TextStyle(
-                      color: AppColors.accent.withValues(alpha: 0.90),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.1,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isTopMatch) ...[
+                        const Icon(Icons.star_rounded,
+                            size: 11, color: AppColors.accent),
+                        const SizedBox(width: 3),
+                      ],
+                      Text(
+                        isTopMatch ? l.explorerBestMatch : _nbHighlight(l, n.id),
+                        style: TextStyle(
+                          color: AppColors.accent.withValues(alpha: 0.90),
+                          fontSize: 10,
+                          fontWeight:
+                              isTopMatch ? FontWeight.w700 : FontWeight.w600,
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -503,7 +1140,7 @@ class _NeighborhoodCard extends StatelessWidget {
 
             // ── Description ──────────────────────────────────────────────────
             Text(
-              n.description,
+              _nbDesc(l, n.id),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -520,21 +1157,21 @@ class _NeighborhoodCard extends StatelessWidget {
               children: [
                 _StatPill(
                   icon: Icons.directions_transit_filled_rounded,
-                  label: 'Transit',
+                  label: l.statTransit,
                   value: n.transportScore,
                   color: _kTagTransport,
                 ),
                 const SizedBox(width: 8),
                 _StatPill(
                   icon: Icons.school_rounded,
-                  label: 'Education',
+                  label: l.statEducation,
                   value: n.educationScore,
                   color: _kTagFamily,
                 ),
                 const SizedBox(width: 8),
                 _StatPill(
                   icon: Icons.shield_rounded,
-                  label: 'Safety',
+                  label: l.statSafety,
                   value: n.safetyScore,
                   color: const Color(0xFF22C55E),
                 ),
@@ -564,7 +1201,7 @@ class _NeighborhoodCard extends StatelessWidget {
                               color: color.withValues(alpha: 0.28)),
                         ),
                         child: Text(
-                          tag,
+                          _tagLabel(l, tag),
                           style: TextStyle(
                             color: color.withValues(alpha: 0.90),
                             fontSize: 10.5,
@@ -591,18 +1228,18 @@ class _NeighborhoodCard extends StatelessWidget {
                       ),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.analytics_rounded,
                           color: Colors.white,
                           size: 13,
                         ),
-                        SizedBox(width: 5),
+                        const SizedBox(width: 5),
                         Text(
-                          'Analyze',
-                          style: TextStyle(
+                          l.commonAnalyze,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -660,7 +1297,7 @@ class _StatPill extends StatelessWidget {
           ),
           const SizedBox(width: 5),
           Text(
-            '$value',
+            scoreTenth(value.toDouble()),
             style: TextStyle(
               color: p.textPrimary,
               fontSize: 11.5,

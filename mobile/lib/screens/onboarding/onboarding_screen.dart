@@ -5,8 +5,31 @@ import 'package:go_router/go_router.dart';
 
 import '../../config/app_theme.dart';
 import '../../config/onboarding_priorities.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/user_preferences_model.dart';
 import '../../providers/preferences_provider.dart';
+
+/// Localized label for an onboarding priority, keyed off its stable [key].
+String _priorityLabel(AppLocalizations l, String key) => switch (key) {
+      'schools' => l.prioritySchools,
+      'commute' => l.priorityCommute,
+      'social' => l.prioritySocial,
+      'healthcare' => l.priorityHealthcare,
+      'safety' => l.prioritySafety,
+      'rental' => l.priorityRental,
+      _ => key,
+    };
+
+/// Localized full name for a scoring [UserProfile].
+String _profileFullLabel(AppLocalizations l, UserProfile profile) =>
+    switch (profile) {
+      UserProfile.defaultProfile => l.profileGeneral,
+      UserProfile.family => l.profileFamily,
+      UserProfile.student => l.profileStudent,
+      UserProfile.professional => l.profileProfessional,
+      UserProfile.retired => l.profileRetired,
+      UserProfile.investor => l.profileInvestor,
+    };
 
 // Shared brand gradient — mirrors the home screen's blue→violet accent.
 const _brandGradient = LinearGradient(
@@ -71,6 +94,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: p.bg,
@@ -98,7 +122,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         style: TextButton.styleFrom(
                           foregroundColor: p.textTertiary,
                         ),
-                        child: const Text('Skip'),
+                        child: Text(l.onboardingSkip),
                       ),
                     ],
                   ),
@@ -140,6 +164,7 @@ class _WelcomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(_kGutter, 0, _kGutter, _kGutter),
       child: Column(
@@ -184,7 +209,7 @@ class _WelcomePage extends StatelessWidget {
           ).animate(delay: 60.ms).fadeIn(duration: 460.ms),
           const SizedBox(height: 20),
           Text(
-            "Let's tailor your scores",
+            l.onboardingWelcomeTitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: p.textPrimary,
@@ -200,7 +225,7 @@ class _WelcomePage extends StatelessWidget {
               ),
           const SizedBox(height: 14),
           Text(
-            'Bairrolyze scores every address around\nwhat matters to you.',
+            l.onboardingWelcomeSubtitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: p.textSecondary,
@@ -211,7 +236,7 @@ class _WelcomePage extends StatelessWidget {
           ).animate(delay: 160.ms).fadeIn(duration: 460.ms),
           const Spacer(flex: 3),
           _PrimaryButton(
-            label: 'Get started',
+            label: l.onboardingGetStarted,
             onPressed: onNext,
           ).animate(delay: 220.ms).fadeIn(duration: 460.ms),
         ],
@@ -236,6 +261,7 @@ class _PrioritiesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
     final atCap = selected.length >= _kMaxPriorities;
 
     return Padding(
@@ -245,7 +271,7 @@ class _PrioritiesPage extends StatelessWidget {
         children: [
           const SizedBox(height: 8),
           Text(
-            "What matters most where you'll live?",
+            l.onboardingPrioritiesTitle,
             style: TextStyle(
               color: p.textPrimary,
               fontSize: 27,
@@ -258,7 +284,7 @@ class _PrioritiesPage extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Pick up to 3.',
+                l.onboardingPickUpTo3,
                 style: TextStyle(
                   color: p.textSecondary,
                   fontSize: 15,
@@ -270,7 +296,7 @@ class _PrioritiesPage extends StatelessWidget {
                 duration: const Duration(milliseconds: 200),
                 opacity: atCap ? 1 : 0,
                 child: Text(
-                  "That's the max",
+                  l.onboardingThatsTheMax,
                   style: TextStyle(
                     color: AppColors.accent.withValues(alpha: 0.9),
                     fontSize: 13,
@@ -291,6 +317,7 @@ class _PrioritiesPage extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: _PriorityTile(
                         priority: onboardingPriorities[i],
+                        label: _priorityLabel(l, onboardingPriorities[i].key),
                         selected: selected.contains(onboardingPriorities[i].key),
                         dimmed: atCap &&
                             !selected.contains(onboardingPriorities[i].key),
@@ -306,7 +333,7 @@ class _PrioritiesPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           _PrimaryButton(
-            label: 'Continue',
+            label: l.commonContinue,
             onPressed: onContinue,
           ),
         ],
@@ -317,12 +344,14 @@ class _PrioritiesPage extends StatelessWidget {
 
 class _PriorityTile extends StatelessWidget {
   final OnboardingPriority priority;
+  final String label;
   final bool selected;
   final bool dimmed;
   final VoidCallback onTap;
 
   const _PriorityTile({
     required this.priority,
+    required this.label,
     required this.selected,
     required this.dimmed,
     required this.onTap,
@@ -365,7 +394,7 @@ class _PriorityTile extends StatelessWidget {
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
-                    priority.label,
+                    label,
                     style: TextStyle(
                       color: p.textPrimary,
                       fontSize: 16,
@@ -417,6 +446,7 @@ class _ConfirmationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
     final profile = profileFromPriorities(selectedKeys);
     final chosen = onboardingPriorities
         .where((pr) => selectedKeys.contains(pr.key))
@@ -457,7 +487,8 @@ class _ConfirmationPage extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            "Perfect — we'll prioritize ${profile.emoji} ${profile.label}.",
+            l.onboardingConfirmPrioritize(
+                '${profile.emoji} ${_profileFullLabel(l, profile)}'),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: p.textPrimary,
@@ -470,7 +501,7 @@ class _ConfirmationPage extends StatelessWidget {
           if (chosen.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text(
-              'Your priorities',
+              l.onboardingYourPriorities,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: p.textTertiary,
@@ -500,7 +531,7 @@ class _ConfirmationPage extends StatelessWidget {
                         Text(pr.emoji, style: const TextStyle(fontSize: 16)),
                         const SizedBox(width: 8),
                         Text(
-                          pr.label,
+                          _priorityLabel(l, pr.key),
                           style: TextStyle(
                             color: p.textPrimary,
                             fontSize: 14,
@@ -516,7 +547,7 @@ class _ConfirmationPage extends StatelessWidget {
           ] else ...[
             const SizedBox(height: 14),
             Text(
-              "We'll use a balanced, general profile — you can refine this any time in settings.",
+              l.onboardingBalancedProfile,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: p.textSecondary,
@@ -528,7 +559,7 @@ class _ConfirmationPage extends StatelessWidget {
           ],
           const Spacer(flex: 3),
           _PrimaryButton(
-            label: 'Start exploring',
+            label: l.onboardingStartExploring,
             busy: finishing,
             onPressed: onFinish,
           ).animate(delay: 220.ms).fadeIn(duration: 460.ms),

@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/address_model.dart';
 import '../../models/score_model.dart';
 import '../../providers/analysis_provider.dart';
@@ -21,11 +22,12 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     final analysisState = ref.watch(analysisProvider);
 
     if (analysisState.isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Analyzing...')),
+        appBar: AppBar(title: Text(l.dashAnalyzing)),
         body: const _LoadingSkeleton(),
       );
     }
@@ -33,18 +35,18 @@ class DashboardScreen extends ConsumerWidget {
     final result = analysisState.result;
     if (result == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Dashboard')),
+        appBar: AppBar(title: Text(l.dashTitle)),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.search_off_rounded, size: 64),
               const SizedBox(height: 16),
-              const Text('No analysis data available'),
+              Text(l.dashNoData),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => context.goNamed('home'),
-                child: const Text('Search an Address'),
+                child: Text(l.dashSearchAddress),
               ),
             ],
           ),
@@ -65,12 +67,12 @@ class DashboardScreen extends ConsumerWidget {
               IconButton(
                 icon: const Icon(Icons.map_rounded),
                 onPressed: () => context.pushNamed('map', extra: analysisState.address),
-                tooltip: 'View Map',
+                tooltip: l.commonViewMap,
               ),
               IconButton(
                 icon: const Icon(Icons.share_rounded),
-                onPressed: () => _share(context, displayAddress, score),
-                tooltip: 'Share',
+                onPressed: () => _share(context, l, displayAddress, score),
+                tooltip: l.commonShare,
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
@@ -105,7 +107,7 @@ class DashboardScreen extends ConsumerWidget {
 
                 // Category Scores
                 Text(
-                  'Category Scores',
+                  l.dashCategoryScores,
                   style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 12),
@@ -142,13 +144,13 @@ class DashboardScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Nearby Places',
+                      l.dashNearbyPlaces,
                       style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     TextButton.icon(
                       onPressed: () => context.pushNamed('map', extra: analysisState.address),
                       icon: const Icon(Icons.map_rounded, size: 16),
-                      label: const Text('View Map'),
+                      label: Text(l.commonViewMap),
                     ),
                   ],
                 ),
@@ -164,7 +166,7 @@ class DashboardScreen extends ConsumerWidget {
                   Center(
                     child: TextButton(
                       onPressed: () => context.pushNamed('map', extra: analysisState.address),
-                      child: Text('View all ${result.amenities.length} places on map'),
+                      child: Text(l.dashViewAllPlaces(result.amenities.length)),
                     ),
                   ),
                 ],
@@ -178,17 +180,22 @@ class DashboardScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.pushNamed('map', extra: analysisState.address),
         icon: const Icon(Icons.map_rounded),
-        label: const Text('Open Map'),
+        label: Text(l.dashOpenMap),
       ),
     );
   }
 
-  void _share(BuildContext context, String address, LocationScore score) {
+  void _share(
+    BuildContext context,
+    AppLocalizations l,
+    String address,
+    LocationScore score,
+  ) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$address — Score: ${score.overall.round()}/100'),
+        content: Text(l.dashShareMessage(address, score.overall.round())),
         behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(label: 'Dismiss', onPressed: () {}),
+        action: SnackBarAction(label: l.commonDismiss, onPressed: () {}),
       ),
     );
   }
@@ -198,6 +205,7 @@ class DashboardScreen extends ConsumerWidget {
 class _LivingIndexCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return GestureDetector(
       onTap: () => context.pushNamed('neighborhood'),
       child: Container(
@@ -234,17 +242,17 @@ class _LivingIndexCard extends StatelessWidget {
                   child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Living Index',
-                        style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                        l.dashLivingIndex,
+                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
                       ),
                       Text(
-                        'Your primary view — DNA, Timeline, Story & more',
-                        style: TextStyle(color: Color(0xFF6C63FF), fontSize: 12, fontWeight: FontWeight.w500),
+                        l.dashLivingIndexSubtitle,
+                        style: const TextStyle(color: Color(0xFF6C63FF), fontSize: 12, fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
@@ -253,17 +261,17 @@ class _LivingIndexCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            const Row(
+            Row(
               children: [
-                _FeaturePill('🧬', 'DNA'),
-                SizedBox(width: 8),
-                _FeaturePill('🗺', 'Radius'),
-                SizedBox(width: 8),
-                _FeaturePill('⏱', 'Timeline'),
-                SizedBox(width: 8),
-                _FeaturePill('📖', 'Story'),
-                SizedBox(width: 8),
-                _FeaturePill('🔮', 'Future'),
+                _FeaturePill('🧬', l.pillDna),
+                const SizedBox(width: 8),
+                _FeaturePill('🗺', l.pillRadius),
+                const SizedBox(width: 8),
+                _FeaturePill('⏱', l.pillTimeline),
+                const SizedBox(width: 8),
+                _FeaturePill('📖', l.pillStory),
+                const SizedBox(width: 8),
+                _FeaturePill('🔮', l.pillFuture),
               ],
             ),
           ],

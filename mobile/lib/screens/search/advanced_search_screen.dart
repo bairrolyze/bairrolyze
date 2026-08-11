@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/address_model.dart';
 import '../../models/user_preferences_model.dart';
 import '../../providers/analysis_provider.dart';
@@ -78,6 +79,7 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     final analysis = ref.watch(analysisProvider);
     final countriesAsync = ref.watch(countriesProvider);
     final selectedCountry = ref.watch(selectedCountryProvider);
@@ -97,12 +99,12 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Advanced Search'),
+        title: Text(l.advTitle),
         actions: [
           TextButton.icon(
             onPressed: analysis.isLoading ? null : _search,
             icon: const Icon(Icons.analytics_rounded),
-            label: const Text('Analyze'),
+            label: Text(l.commonAnalyze),
           ),
         ],
       ),
@@ -116,16 +118,16 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _SectionHeader(title: 'Location', icon: Icons.location_on_rounded),
+                _SectionHeader(title: l.advSectionLocation, icon: Icons.location_on_rounded),
                 const SizedBox(height: 12),
 
                 // Country selector
                 countriesAsync.when(
                   data: (countries) => DropdownButtonFormField<CountryConfig>(
                     initialValue: selectedCountry,
-                    decoration: const InputDecoration(
-                      labelText: 'Country',
-                      prefixIcon: Icon(Icons.flag_rounded),
+                    decoration: InputDecoration(
+                      labelText: l.fieldCountry,
+                      prefixIcon: const Icon(Icons.flag_rounded),
                     ),
                     items: countries
                         .map((c) => DropdownMenuItem(
@@ -146,7 +148,7 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
                     },
                   ),
                   loading: () => const LinearProgressIndicator(),
-                  error: (_, __) => const Text('Failed to load countries'),
+                  error: (_, __) => Text(l.advFailedCountries),
                 ),
 
                 const SizedBox(height: 16),
@@ -158,21 +160,22 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
                       flex: 3,
                       child: TextFormField(
                         controller: _streetCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Street',
-                          prefixIcon: Icon(Icons.edit_road_rounded),
+                        decoration: InputDecoration(
+                          labelText: l.fieldStreet,
+                          prefixIcon: const Icon(Icons.edit_road_rounded),
                           hintText: 'Rua Augusta',
                         ),
                         textCapitalization: TextCapitalization.words,
-                        validator: (v) => validation.validateRequired(v, 'Street'),
+                        validator: (v) =>
+                            validation.validateRequired(v, l.fieldStreet, l),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: TextFormField(
                         controller: _numberCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'No.',
+                        decoration: InputDecoration(
+                          labelText: l.fieldNumber,
                           hintText: '150',
                         ),
                         keyboardType: TextInputType.text,
@@ -185,10 +188,10 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
 
                 TextFormField(
                   controller: _apartmentCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Apartment / Floor',
-                    prefixIcon: Icon(Icons.apartment_rounded),
-                    hintText: '3rd floor, apt 4',
+                  decoration: InputDecoration(
+                    labelText: l.fieldApartment,
+                    prefixIcon: const Icon(Icons.apartment_rounded),
+                    hintText: l.advHintApartment,
                   ),
                 ),
 
@@ -201,7 +204,7 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
                       child: TextFormField(
                         controller: _postalCtrl,
                         decoration: InputDecoration(
-                          labelText: 'Postal Code',
+                          labelText: l.fieldPostalCode,
                           prefixIcon: const Icon(Icons.pin_drop_rounded),
                           hintText: selectedCountry?.postalExample ?? '1200-109',
                         ),
@@ -209,7 +212,7 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
                         textCapitalization: TextCapitalization.characters,
                         validator: (v) {
                           if (v == null || v.isEmpty) return null;
-                          return validation.validatePostalCode(v);
+                          return validation.validatePostalCode(v, l);
                         },
                       ),
                     ),
@@ -218,12 +221,13 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
                       child: TextFormField(
                         controller: _cityCtrl,
                         decoration: InputDecoration(
-                          labelText: 'City',
+                          labelText: l.fieldCity,
                           prefixIcon: const Icon(Icons.location_city_rounded),
                           hintText: selectedCountry?.defaultCity ?? 'Lisboa',
                         ),
                         textCapitalization: TextCapitalization.words,
-                        validator: (v) => validation.validateRequired(v, 'City'),
+                        validator: (v) =>
+                            validation.validateRequired(v, l.fieldCity, l),
                       ),
                     ),
                   ],
@@ -233,9 +237,9 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
 
                 TextFormField(
                   controller: _districtCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'District / Region (optional)',
-                    prefixIcon: Icon(Icons.map_rounded),
+                  decoration: InputDecoration(
+                    labelText: l.fieldDistrict,
+                    prefixIcon: const Icon(Icons.map_rounded),
                   ),
                   textCapitalization: TextCapitalization.words,
                 ),
@@ -259,8 +263,8 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Postal code format: ${selectedCountry.postalFormat}  '
-                            '(e.g. ${selectedCountry.postalExample})',
+                            l.advPostalHelp(selectedCountry.postalFormat,
+                                selectedCountry.postalExample),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -277,7 +281,7 @@ class _AdvancedSearchScreenState extends ConsumerState<AdvancedSearchScreen> {
                   child: FilledButton.icon(
                     onPressed: analysis.isLoading ? null : _search,
                     icon: const Icon(Icons.analytics_rounded),
-                    label: const Text('Analyze Address'),
+                    label: Text(l.advAnalyzeAddress),
                   ),
                 ),
               ],

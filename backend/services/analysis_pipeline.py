@@ -48,6 +48,7 @@ from services.job_store import (
     job_store,
 )
 from services.overpass_service import _compute_bbox, overpass_service
+from services.popularity_store import popularity_store
 
 logger = logging.getLogger(__name__)
 
@@ -188,6 +189,15 @@ async def _run_geocode_stages(analysis_id: str, request: AnalyzeRequest):
     logger.info(
         "analysis_pipeline.stage_done",
         extra={"analysis_id": analysis_id, "stage": "address_found", "duration_ms": _ms(stage_start)},
+    )
+
+    # Record this search for region-scoped "popular areas" (best-effort; never
+    # blocks or fails the pipeline). Uses the authoritative request country and
+    # the geocoded region (city) + area (suburb/neighbourhood).
+    await popularity_store.record_search(
+        country_code=request.country_code,
+        region=geo.city,
+        area=geo.district,
     )
 
     map_start = time.monotonic()

@@ -1,0 +1,16 @@
+# Release signing config template for the Play Store upload keystore.
+#
+# 1. Generate an upload keystore (keep the .jks OUTSIDE the repo, e.g. ~/):
+#      keytool -genkey -v -keystore ~/bairrolyze-upload.jks \
+#        -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+# 2. Copy this file to `key.properties` (same directory) and fill in the values.
+#    `key.properties` and *.jks are gitignored — never commit them.
+#
+# 3. `flutter build appbundle` will then sign the release AAB with these keys.
+#    Without key.properties present, release builds fall back to debug signing.
+
+storeFile=/Users/you/bairrolyze-upload.jks
+storePassword=CHANGE_ME
+keyAlias=upload
+keyPassword=CHANGE_ME

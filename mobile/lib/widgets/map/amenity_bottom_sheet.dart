@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/amenity_model.dart';
 
 class AmenityBottomSheet extends StatelessWidget {
@@ -25,6 +26,7 @@ class AmenityBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     final color = _categoryColors[amenity.category] ?? theme.colorScheme.primary;
 
     return Card(
@@ -48,7 +50,7 @@ class AmenityBottomSheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          amenity.category.name.toUpperCase(),
+                          amenity.category.label(l).toUpperCase(),
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: color,
                             fontWeight: FontWeight.w700,
@@ -82,7 +84,7 @@ class AmenityBottomSheet extends StatelessWidget {
                   if (amenity.walkingMinutes != null)
                     _InfoChip(
                       icon: Icons.directions_walk_rounded,
-                      label: '${amenity.walkingMinutes} min walk',
+                      label: l.amenityMinWalk(amenity.walkingMinutes!),
                       color: color,
                     ),
                   const SizedBox(width: 8),
@@ -96,7 +98,7 @@ class AmenityBottomSheet extends StatelessWidget {
                     const SizedBox(width: 8),
                     _InfoChip(
                       icon: Icons.directions_car_rounded,
-                      label: '${amenity.drivingMinutes} min drive',
+                      label: l.amenityMinDrive(amenity.drivingMinutes!),
                       color: theme.colorScheme.secondary,
                     ),
                   ],

@@ -2,16 +2,20 @@ class AppConstants {
   static const String appName = 'Bairrolyze';
   static const String appTagline = 'Know your neighborhood before you move.';
 
- // API - override with env vars in production
-  static const String backendBaseUrl = String.fromEnvironment(
-    'BACKEND_URL',
-    defaultValue: 'http://localhost:8001',
-  );
+  // Legal — hosted free on GitHub Pages (see landing/privacy.html)
+  static const String privacyPolicyUrl =
+      'https://rajesharyain.github.io/bairrolyze/privacy.html';
 
+ // API - override with env vars in production
   // static const String backendBaseUrl = String.fromEnvironment(
   //   'BACKEND_URL',
-  //   defaultValue: 'https://api-home-scope.wonderfulplant-e443a025.eastus.azurecontainerapps.io/',
+  //   defaultValue: 'http://localhost:8001',
   // );
+
+  static const String backendBaseUrl = String.fromEnvironment(
+    'BACKEND_URL',
+    defaultValue: 'https://api-home-scope.wonderfulplant-e443a025.eastus.azurecontainerapps.io/',
+  );
 
   static const String nominatimBaseUrl = 'https://nominatim.openstreetmap.org';
   static const String overpassApiUrl = 'https://overpass-api.de/api/interpreter';

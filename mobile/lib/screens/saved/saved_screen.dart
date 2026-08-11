@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/analysis_provider.dart';
 import '../../providers/saved_provider.dart';
 import '../../providers/shell_provider.dart';
@@ -21,6 +22,7 @@ class SavedScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(savedProvider);
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: p.bg,
@@ -36,7 +38,7 @@ class SavedScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Saved',
+                      l.savedTitle,
                       style: TextStyle(
                         color: p.textPrimary,
                         fontSize: 24,
@@ -50,7 +52,7 @@ class SavedScreen extends ConsumerWidget {
                             ref.read(savedProvider.notifier).clear(),
                         behavior: HitTestBehavior.opaque,
                         child: Text(
-                          'Clear all',
+                          l.commonClearAll,
                           style: TextStyle(
                             color: p.textTertiary,
                             fontSize: 14,
@@ -97,6 +99,7 @@ class _Empty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
@@ -116,7 +119,7 @@ class _Empty extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Text(
-              'No saved places yet',
+              l.savedEmptyTitle,
               style: TextStyle(
                 color: p.textPrimary,
                 fontSize: 17,
@@ -125,7 +128,7 @@ class _Empty extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Tap the bookmark on any analysis to\nsave it here for quick access.',
+              l.savedEmptyBody,
               textAlign: TextAlign.center,
               style: TextStyle(color: p.textTertiary, fontSize: 13.5, height: 1.5),
             ),

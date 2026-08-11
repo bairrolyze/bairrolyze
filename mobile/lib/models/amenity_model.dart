@@ -1,3 +1,5 @@
+import '../l10n/app_localizations.dart';
+
 enum AmenityCategory {
   transportation,
   education,
@@ -6,6 +8,19 @@ enum AmenityCategory {
   safety,
   religion,
   recreation,
+}
+
+extension AmenityCategoryLabel on AmenityCategory {
+  /// Localized display label for this category (map filters, stats, sheets).
+  String label(AppLocalizations l) => switch (this) {
+        AmenityCategory.transportation => l.amenityTransportation,
+        AmenityCategory.education => l.amenityEducation,
+        AmenityCategory.healthcare => l.amenityHealthcare,
+        AmenityCategory.shopping => l.amenityShopping,
+        AmenityCategory.safety => l.amenitySafety,
+        AmenityCategory.religion => l.amenityReligion,
+        AmenityCategory.recreation => l.amenityRecreation,
+      };
 }
 
 class AmenityModel {

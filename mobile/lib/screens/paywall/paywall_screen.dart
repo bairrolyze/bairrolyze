@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../../config/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/pro_provider.dart';
 import '../../services/purchase_service.dart';
 
@@ -58,6 +59,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   }
 
   Future<void> _purchase(ProTier tier) async {
+    final l = AppLocalizations.of(context);
     setState(() { _purchasing = true; _error = null; });
 
     try {
@@ -76,7 +78,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
           .firstOrNull;
 
       if (pkg == null) {
-        setState(() => _error = 'Product not available. Please try again.');
+        setState(() => _error = l.paywallErrProductUnavailable);
         return;
       }
 
@@ -88,15 +90,16 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
         if (mounted) Navigator.of(context).pop();
       }
     } on PurchasesErrorCode catch (e) {
-      if (mounted) setState(() => _error = _errorMessage(e));
+      if (mounted) setState(() => _error = _errorMessage(e, l));
     } catch (e) {
-      if (mounted) setState(() => _error = 'Something went wrong. Please try again.');
+      if (mounted) setState(() => _error = l.paywallErrGeneric);
     } finally {
       if (mounted) setState(() => _purchasing = false);
     }
   }
 
   Future<void> _restore() async {
+    final l = AppLocalizations.of(context);
     setState(() { _purchasing = true; _error = null; });
     await ref.read(proProvider.notifier).restorePurchases();
     if (mounted) {
@@ -105,27 +108,28 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
       if (tier != ProTier.free) {
         Navigator.of(context).pop();
       } else {
-        setState(() => _error = 'No active purchases found on this account.');
+        setState(() => _error = l.paywallErrNoPurchases);
       }
     }
   }
 
-  String _errorMessage(PurchasesErrorCode code) {
+  String _errorMessage(PurchasesErrorCode code, AppLocalizations l) {
     switch (code) {
       case PurchasesErrorCode.purchaseCancelledError:
         return '';
       case PurchasesErrorCode.paymentPendingError:
-        return 'Payment is pending. Check your payment method.';
+        return l.paywallErrPaymentPending;
       case PurchasesErrorCode.productNotAvailableForPurchaseError:
-        return 'Product not available in your region.';
+        return l.paywallErrRegion;
       default:
-        return 'Purchase failed. Please try again.';
+        return l.paywallErrPurchaseFailed;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: p.bg,
       body: SafeArea(
@@ -161,7 +165,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                       ),
                     ),
                   _GradientButton(
-                    label: 'Start Pro — $_proPrice/mo',
+                    label: l.paywallStartPro(_proPrice),
                     gradient: const LinearGradient(
                       colors: [AppColors.accent, _kPurple],
                       begin: Alignment.centerLeft,
@@ -172,7 +176,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                   ),
                   const SizedBox(height: 12),
                   _GradientButton(
-                    label: 'Try Premium — $_premiumPrice/mo',
+                    label: l.paywallTryPremium(_premiumPrice),
                     gradient: const LinearGradient(
                       colors: [_kPurple, _kIndigo],
                       begin: Alignment.centerLeft,
@@ -188,14 +192,14 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                       style: TextButton.styleFrom(
                         foregroundColor: p.textTertiary,
                       ),
-                      child: const Text('Restore purchases',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                      child: Text(l.paywallRestore,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Center(
                     child: Text(
-                      'Cancel anytime. Billed monthly.',
+                      l.paywallCancelAnytime,
                       style: TextStyle(
                         fontSize: 11,
                         color: p.textTertiary,

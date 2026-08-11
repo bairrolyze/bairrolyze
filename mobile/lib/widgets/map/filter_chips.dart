@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/amenity_model.dart';
 
 class MapFilterChips extends StatelessWidget {
@@ -21,14 +22,15 @@ class MapFilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final chips = [
-      (category: null, label: 'All', icon: Icons.apps_rounded),
-      (category: AmenityCategory.transportation, label: 'Transport', icon: Icons.train_rounded),
-      (category: AmenityCategory.education, label: 'Schools', icon: Icons.school_rounded),
-      (category: AmenityCategory.healthcare, label: 'Healthcare', icon: Icons.local_hospital_rounded),
-      (category: AmenityCategory.shopping, label: 'Shopping', icon: Icons.shopping_cart_rounded),
-      (category: AmenityCategory.religion, label: 'Religion', icon: Icons.church_rounded),
-      (category: AmenityCategory.recreation, label: 'Parks', icon: Icons.park_rounded),
+      (category: null, label: l.filterAll, icon: Icons.apps_rounded),
+      (category: AmenityCategory.transportation, label: AmenityCategory.transportation.label(l), icon: Icons.train_rounded),
+      (category: AmenityCategory.education, label: AmenityCategory.education.label(l), icon: Icons.school_rounded),
+      (category: AmenityCategory.healthcare, label: AmenityCategory.healthcare.label(l), icon: Icons.local_hospital_rounded),
+      (category: AmenityCategory.shopping, label: AmenityCategory.shopping.label(l), icon: Icons.shopping_cart_rounded),
+      (category: AmenityCategory.religion, label: AmenityCategory.religion.label(l), icon: Icons.church_rounded),
+      (category: AmenityCategory.recreation, label: AmenityCategory.recreation.label(l), icon: Icons.park_rounded),
     ];
 
     return SingleChildScrollView(
@@ -45,7 +47,7 @@ class MapFilterChips extends StatelessWidget {
                 children: [
                   Icon(chip.icon, size: 14),
                   const SizedBox(width: 4),
-                  Text('${chip.label} ($count)'),
+                  Text(l.amenityCountLabel(chip.label, count)),
                 ],
               ),
               selected: isActive,

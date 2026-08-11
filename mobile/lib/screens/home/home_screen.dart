@@ -8,15 +8,20 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../config/app_constants.dart';
 import '../../config/app_theme.dart';
+import '../../data/popular_areas.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/user_preferences_model.dart';
 import '../../providers/analysis_provider.dart';
 import '../../providers/country_provider.dart';
+import '../../providers/popular_areas_provider.dart';
 import '../../providers/preferences_provider.dart';
 import '../../providers/shell_provider.dart';
 import '../../services/validation_service.dart';
 import '../../widgets/home/analyzing_progress_view.dart';
 import '../../widgets/home/brand.dart';
+import '../../widgets/home/popular_area_card.dart';
 import '../../widgets/home/recent_search_tile.dart';
+import '../popular/popular_areas_screen.dart';
 
 // ── Brand gradient ────────────────────────────────────────────────────────────
 // The premium blue→purple accent used on the primary CTA, active accents and
@@ -194,16 +199,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // Popular-search shortcut: skips the text field, analysing a well-known city
-  // in the currently selected country.
-  Future<void> _runPopularSearch(_PopularCity city) async {
+  // Popular-area shortcut: skips the text field, analysing a well-known area
+  // within the active region (last search, or the country's default city).
+  Future<void> _runPopularArea(PopularArea area) async {
     final country = ref.read(selectedCountryProvider);
     final countryName = country?.name ?? 'Portugal';
     _focusNode.unfocus();
     setState(() => _showSuggestions = false);
     await _runAnalysis(
-      query: '${city.name}, $countryName',
-      label: city.name,
+      query: '${area.name}, ${area.region}, $countryName',
+      label: area.name,
       countryCode: country?.code ?? 'PT',
     );
   }
@@ -238,11 +243,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // Resolve the device's current location into the search field (map-style).
   Future<void> _useCurrentLocation() async {
     if (_locating) return;
+    final l = AppLocalizations.of(context);
     _focusNode.unfocus();
     setState(() => _locating = true);
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
-        _locationError('Turn on location services to use this.');
+        _locationError(l.homeLocationServicesOff);
         return;
       }
       var perm = await Geolocator.checkPermission();
@@ -251,7 +257,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
       if (perm == LocationPermission.denied ||
           perm == LocationPermission.deniedForever) {
-        _locationError('Location permission is needed to detect your area.');
+        _locationError(l.homeLocationPermissionNeeded);
         return;
       }
 
@@ -265,7 +271,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _pickedFullAddress = null; // the field itself now holds the full address
       setState(() => _showSuggestions = false);
     } catch (_) {
-      _locationError('Could not get your current location.');
+      _locationError(l.homeLocationFailed);
     } finally {
       if (mounted) setState(() => _locating = false);
     }
@@ -371,9 +377,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                         const SliverToBoxAdapter(child: SizedBox(height: 26)),
 
-                        // 3 ── Popular searches
+                        // 3 ── Popular areas (region-aware)
                         SliverToBoxAdapter(
-                          child: _PopularSearches(onTap: _runPopularSearch),
+                          child: _PopularAreas(onTap: _runPopularArea),
                         ),
 
                         const SliverToBoxAdapter(child: SizedBox(height: 26)),
@@ -433,6 +439,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildSearchAndCta() {
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
     final focused = _focusNode.hasFocus;
     return Padding(
       padding: const EdgeInsets.fromLTRB(_kGutter, 2, _kGutter, 0),
@@ -492,9 +499,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           fontSize: 18,
                           fontWeight: FontWeight.w400,
                           letterSpacing: -0.1),
-                      decoration: const InputDecoration(
-                        hintText: 'Search any address, city or area',
-                        hintStyle:
+                      decoration: InputDecoration(
+                        hintText: l.homeSearchHint,
+                        hintStyle: const
                             TextStyle(color: Color(0xFF8B8F9D), fontSize: 16),
                         isDense: true,
                         filled: false,
@@ -515,8 +522,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         setState(() {});
                         _onChanged(v);
                       },
-                      validator:
-                          ref.read(validationServiceProvider).validateAddress,
+                      validator: (v) =>
+                          ref.read(validationServiceProvider).validateAddress(v, l),
                     ),
                   ),
                   // Clear (only when text present) then "use my location".
@@ -548,7 +555,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ? const Color(0xFF4F7DFF)
                                 : const Color(0xFF7C8598),
                             size: 20),
-                    tooltip: 'Use my current location',
+                    tooltip: l.homeUseMyLocation,
                     onPressed: _locating ? null : _useCurrentLocation,
                   ),
                 ],
@@ -610,6 +617,7 @@ class _Hero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
     final topInset = MediaQuery.of(context).padding.top;
     // The painted skyline fills the full hero and reaches under the status bar;
     // content is inset from the top so it clears the notch. The skyline sits as
@@ -646,7 +654,7 @@ class _Hero extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: _kGutter),
                   child: Text(
-                    'The Smarter Way to Choose Home',
+                    l.homeHeroSubtitle,
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     softWrap: false,
@@ -732,6 +740,7 @@ class _CtaButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     // Full-bleed bar matching the search field's width and 11px radius, with a
     // reduced height so it reads as a companion to the field above it.
     return _PressableScale(
@@ -762,9 +771,9 @@ class _CtaButton extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            const Text(
-              'Analyse Neighbourhood',
-              style: TextStyle(
+            Text(
+              l.homeCtaAnalyse,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -791,81 +800,125 @@ class _CtaButton extends StatelessWidget {
   }
 }
 
-// ── Popular searches ──────────────────────────────────────────────────────────
+// ── Popular areas (region-aware) ───────────────────────────────────────────────
 
-class _PopularCity {
-  final String name;
-  final IconData icon;
-  final Color color;
-  const _PopularCity(this.name, this.icon, this.color);
-}
-
-// Most-visited places per supported country. The active country (from
-// `selectedCountryProvider`) decides which set is shown, so a user never sees
-// another country's cities.
-const _kPopularByCountry = <String, List<_PopularCity>>{
-  'PT': [
-    _PopularCity('Lisbon', Icons.location_city_rounded, Color(0xFF5B8CFF)),
-    _PopularCity('Porto', Icons.account_balance_rounded, Color(0xFFF87171)),
-    _PopularCity('Cascais', Icons.house_rounded, Color(0xFF34D399)),
-    _PopularCity('Sintra', Icons.terrain_rounded, Color(0xFFFBBF24)),
-  ],
-  'ES': [
-    _PopularCity('Madrid', Icons.location_city_rounded, Color(0xFFF87171)),
-    _PopularCity('Barcelona', Icons.account_balance_rounded, Color(0xFF5B8CFF)),
-    _PopularCity('Valencia', Icons.beach_access_rounded, Color(0xFF34D399)),
-    _PopularCity('Seville', Icons.wb_sunny_rounded, Color(0xFFFBBF24)),
-  ],
-  'GB': [
-    _PopularCity('London', Icons.account_balance_rounded, Color(0xFF34D399)),
-    _PopularCity('Manchester', Icons.location_city_rounded, Color(0xFF5B8CFF)),
-    _PopularCity('Edinburgh', Icons.castle_rounded, Color(0xFFF87171)),
-    _PopularCity('Bristol', Icons.directions_boat_rounded, Color(0xFFFBBF24)),
-  ],
-  'FR': [
-    _PopularCity('Paris', Icons.location_city_rounded, Color(0xFF5B8CFF)),
-    _PopularCity('Lyon', Icons.account_balance_rounded, Color(0xFFF87171)),
-    _PopularCity('Nice', Icons.beach_access_rounded, Color(0xFF34D399)),
-    _PopularCity('Bordeaux', Icons.wine_bar_rounded, Color(0xFFFBBF24)),
-  ],
-  'DE': [
-    _PopularCity('Berlin', Icons.location_city_rounded, Color(0xFFFBBF24)),
-    _PopularCity('Munich', Icons.account_balance_rounded, Color(0xFF5B8CFF)),
-    _PopularCity('Hamburg', Icons.directions_boat_rounded, Color(0xFF34D399)),
-    _PopularCity('Cologne', Icons.church_rounded, Color(0xFFF87171)),
-  ],
-};
-
-List<_PopularCity> _popularFor(String code) =>
-    _kPopularByCountry[code] ?? _kPopularByCountry['PT']!;
-
-class _PopularSearches extends ConsumerWidget {
-  final ValueChanged<_PopularCity> onTap;
-  const _PopularSearches({required this.onTap});
+class _PopularAreas extends ConsumerWidget {
+  final ValueChanged<PopularArea> onTap;
+  const _PopularAreas({required this.onTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final p = AppPalette.of(context);
     final country = ref.watch(selectedCountryProvider);
-    final countryName = country?.name ?? 'Portugal';
-    final cities = _popularFor(country?.code ?? 'PT');
+
+    // Active region = the user's most recent search city, falling back to the
+    // country's default city.
+    final history = ref.watch(searchHistoryProvider);
+    final lastCity = history.isNotEmpty ? history.first.address.city?.trim() : null;
+    final defaultCity = country?.defaultCity ?? 'Lisboa';
+    final activeRegion =
+        (lastCity != null && lastCity.isNotEmpty) ? lastCity : defaultCity;
+
+    // Curated fallback renders instantly; live "most searched" trending
+    // (GET /popular) swaps in when it arrives (or on error, stays curated).
+    final fallback = resolvePopularAreas(
+      lastSearchCity: lastCity,
+      defaultCity: defaultCity,
+    );
+    final resolved = ref
+            .watch(popularAreasProvider((
+          country: country?.code ?? 'PT',
+          region: activeRegion,
+          defaultCity: defaultCity,
+        )))
+            .asData
+            ?.value ??
+        fallback;
+    final region = resolved.region;
+    final areas = resolved.areas;
+    if (areas.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(
-          title: 'Popular Searches',
-          subtitle: 'Most-visited places in $countryName',
+        // Header: gradient tick + title + "See all →" (opens the full list).
+        Padding(
+          padding: const EdgeInsets.fromLTRB(_kGutter, 0, _kGutter, 6),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 20,
+                decoration: BoxDecoration(
+                  gradient: _brandGradient,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l.homePopularTitle,
+                  style: TextStyle(
+                    color: p.textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.6,
+                  ),
+                ),
+              ),
+              _PressableScale(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        PopularAreasScreen(region: region, areas: areas),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      l.homePopularSeeAll,
+                      style: const TextStyle(
+                        color: _kPrimaryBlue,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.1,
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded,
+                        size: 18, color: _kPrimaryBlue),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(_kGutter + 14, 0, _kGutter, 16),
+          child: Text(
+            l.homePopularAreasSubtitle(region),
+            style: TextStyle(
+              color: p.textTertiary,
+              fontSize: 12.5,
+              letterSpacing: -0.1,
+            ),
+          ),
+        ),
+        // Horizontal rail of area cards.
         SizedBox(
-          height: 44,
+          height: 72,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: _kGutter),
-            itemCount: cities.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (context, i) {
-              final c = cities[i];
-              return _PopularChip(city: c, onTap: () => onTap(c));
-            },
+            itemCount: areas.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, i) => SizedBox(
+              width: 250,
+              child: PopularAreaCard(
+                area: areas[i],
+                onTap: () => onTap(areas[i]),
+              ),
+            ),
           ),
         ),
       ],
@@ -873,66 +926,35 @@ class _PopularSearches extends ConsumerWidget {
   }
 }
 
-class _PopularChip extends StatelessWidget {
-  final _PopularCity city;
-  final VoidCallback onTap;
-  const _PopularChip({required this.city, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final p = AppPalette.of(context);
-    return _PressableScale(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          // Light glassmorphism: a faint frosted fill with a thin hairline
-          // border — the accent lives only in the icon.
-          color: p.textPrimary.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-              color: p.textPrimary.withValues(alpha: 0.12), width: 1),
-        ),
-        child: Row(
-          children: [
-            Icon(city.icon, size: 17, color: city.color),
-            const SizedBox(width: 8),
-            Text(
-              city.name,
-              style: TextStyle(
-                color: p.textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.1,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ── Why trust it — 4-up feature grid ──────────────────────────────────────────
 
 class _Feature {
   final IconData icon;
-  final String title;
-  final String desc;
+  final String id;
   final Color color;
-  const _Feature(this.icon, this.title, this.desc, this.color);
+  const _Feature(this.icon, this.id, this.color);
 }
 
 const _kFeatures = <_Feature>[
-  _Feature(Icons.verified_user_rounded, 'Smart Data',
-      'Real-time and reliable sources', Color(0xFF8B5CF6)),
-  _Feature(Icons.psychology_rounded, 'AI Analysis',
-      '25+ factors analysed in seconds', Color(0xFF3B82F6)),
-  _Feature(Icons.track_changes_rounded, 'Accurate Score',
-      'A clear score to decide with confidence', Color(0xFF22C55E)),
-  _Feature(Icons.lock_rounded, 'Private & Secure',
-      'Your searches and data stay protected', Color(0xFFFBBF24)),
+  _Feature(Icons.verified_user_rounded, 'smartData', Color(0xFF8B5CF6)),
+  _Feature(Icons.psychology_rounded, 'aiAnalysis', Color(0xFF3B82F6)),
+  _Feature(Icons.track_changes_rounded, 'accurateScore', Color(0xFF22C55E)),
+  _Feature(Icons.lock_rounded, 'privateSecure', Color(0xFFFBBF24)),
 ];
+
+String _featureTitle(AppLocalizations l, String id) => switch (id) {
+      'smartData' => l.featureSmartDataTitle,
+      'aiAnalysis' => l.featureAiAnalysisTitle,
+      'accurateScore' => l.featureAccurateScoreTitle,
+      _ => l.featurePrivateSecureTitle,
+    };
+
+String _featureDesc(AppLocalizations l, String id) => switch (id) {
+      'smartData' => l.featureSmartDataDesc,
+      'aiAnalysis' => l.featureAiAnalysisDesc,
+      'accurateScore' => l.featureAccurateScoreDesc,
+      _ => l.featurePrivateSecureDesc,
+    };
 
 class _FeatureGrid extends StatelessWidget {
   const _FeatureGrid();
@@ -970,6 +992,7 @@ class _FeatureCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Column(
@@ -992,7 +1015,7 @@ class _FeatureCell extends StatelessWidget {
           ),
           const SizedBox(height: 11),
           Text(
-            f.title,
+            _featureTitle(l, f.id),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: p.textPrimary,
@@ -1004,7 +1027,7 @@ class _FeatureCell extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Text(
-            f.desc,
+            _featureDesc(l, f.id),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: p.textTertiary,
@@ -1036,6 +1059,7 @@ class _TrustedBy extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: _kGutter),
       child: Row(
@@ -1059,7 +1083,7 @@ class _TrustedBy extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Trusted by thousands of users worldwide',
+                  l.homeTrustedBy,
                   style: TextStyle(
                     color: p.textSecondary,
                     fontSize: 13,
@@ -1213,13 +1237,14 @@ class _RecentHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(_kGutter, 0, _kGutter, 14),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Recent Searches',
+            l.homeRecentTitle,
             style: TextStyle(
               color: p.textPrimary,
               fontSize: 21,
@@ -1231,7 +1256,7 @@ class _RecentHeader extends StatelessWidget {
             onTap: onClear,
             behavior: HitTestBehavior.opaque,
             child: Text(
-              'Clear',
+              l.commonClear,
               style: TextStyle(
                 color: p.textTertiary,
                 fontSize: 14,
@@ -1249,35 +1274,40 @@ class _RecentHeader extends StatelessWidget {
 
 class _Cat {
   final IconData icon;
-  final String label;
-  final String desc;
+  final String id;
   final Color color;
-  const _Cat(this.icon, this.label, this.desc, this.color);
+  const _Cat(this.icon, this.id, this.color);
 }
 
 const _kCats = <_Cat>[
-  _Cat(Icons.directions_transit_rounded, 'Transport',
-      'Nearby train stations, bus routes, commute times and walkability.',
-      Color(0xFF29B6F6)),
-  _Cat(Icons.school_rounded, 'Education',
-      'Schools, universities, libraries and learning options close by.',
-      Color(0xFF66BB6A)),
-  _Cat(Icons.local_hospital_rounded, 'Health',
-      'Hospitals, clinics, pharmacies and everyday healthcare access.',
-      Color(0xFFEF5350)),
-  _Cat(Icons.shield_rounded, 'Safety',
-      'Emergency services, plus real crime stats where available.',
-      Color(0xFFAB47BC)),
-  _Cat(Icons.shopping_bag_rounded, 'Lifestyle',
-      'Shops, markets, cafés and the daily conveniences within reach.',
-      Color(0xFFFFA726)),
-  _Cat(Icons.park_rounded, 'Nature',
-      'Parks, gardens and green open spaces for the outdoors.',
-      Color(0xFF26C6DA)),
-  _Cat(Icons.trending_up_rounded, 'Investment',
-      'Price trends, rental demand and long-term value potential.',
-      Color(0xFF8D6E63)),
+  _Cat(Icons.directions_transit_rounded, 'transport', Color(0xFF29B6F6)),
+  _Cat(Icons.school_rounded, 'education', Color(0xFF66BB6A)),
+  _Cat(Icons.local_hospital_rounded, 'health', Color(0xFFEF5350)),
+  _Cat(Icons.shield_rounded, 'safety', Color(0xFFAB47BC)),
+  _Cat(Icons.shopping_bag_rounded, 'lifestyle', Color(0xFFFFA726)),
+  _Cat(Icons.park_rounded, 'nature', Color(0xFF26C6DA)),
+  _Cat(Icons.trending_up_rounded, 'investment', Color(0xFF8D6E63)),
 ];
+
+String _catLabel(AppLocalizations l, String id) => switch (id) {
+      'transport' => l.catTransportLabel,
+      'education' => l.catEducationLabel,
+      'health' => l.catHealthLabel,
+      'safety' => l.catSafetyLabel,
+      'lifestyle' => l.catLifestyleLabel,
+      'nature' => l.catNatureLabel,
+      _ => l.catInvestmentLabel,
+    };
+
+String _catDesc(AppLocalizations l, String id) => switch (id) {
+      'transport' => l.catTransportDesc,
+      'education' => l.catEducationDesc,
+      'health' => l.catHealthDesc,
+      'safety' => l.catSafetyDesc,
+      'lifestyle' => l.catLifestyleDesc,
+      'nature' => l.catNatureDesc,
+      _ => l.catInvestmentDesc,
+    };
 
 class _CategoryCarousel extends StatefulWidget {
   const _CategoryCarousel();
@@ -1317,14 +1347,15 @@ class _CategoryCarouselState extends State<_CategoryCarousel> {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
     final active = _page.round().clamp(0, _kCats.length - 1);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(
-          title: 'What we analyse',
-          subtitle: 'Seven signals we score for every address · swipe to explore',
+        _SectionHeader(
+          title: l.homeAnalyseTitle,
+          subtitle: l.homeAnalyseSubtitle,
         ),
         SizedBox(
           height: 188,
@@ -1378,6 +1409,7 @@ class _GlassCategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
     final focus = 1 - t; // 1 at centre → 0 at the edges
 
     // Micro-interactions.
@@ -1442,7 +1474,7 @@ class _GlassCategoryCard extends StatelessWidget {
                       const SizedBox(width: 14),
                       Expanded(
                         child: Text(
-                          cat.label,
+                          _catLabel(l, cat.id),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -1457,7 +1489,7 @@ class _GlassCategoryCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    cat.desc,
+                    _catDesc(l, cat.id),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -1541,12 +1573,13 @@ class _HowItWorksCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AppPalette.of(context);
+    final l = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(
-          title: 'How it works',
-          subtitle: 'From an address to a score in three steps',
+        _SectionHeader(
+          title: l.homeHowTitle,
+          subtitle: l.homeHowSubtitle,
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: _kGutter),
@@ -1562,7 +1595,7 @@ class _HowItWorksCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'We pull live data from OpenStreetMap and score every category against your profile, so the result reflects what actually matters to you.',
+                  l.homeHowBody,
                   style: TextStyle(
                     color: p.textSecondary,
                     fontSize: 13.5,
@@ -1573,14 +1606,16 @@ class _HowItWorksCard extends StatelessWidget {
                 const SizedBox(height: 20),
                 Row(
                   children: [
-                    const _StepChip(
-                        icon: Icons.location_searching_rounded, label: 'Locate'),
+                    _StepChip(
+                        icon: Icons.location_searching_rounded,
+                        label: l.homeStepLocate),
                     _StepArrow(color: p.textTertiary),
-                    const _StepChip(
-                        icon: Icons.travel_explore_rounded, label: 'Analyse'),
+                    _StepChip(
+                        icon: Icons.travel_explore_rounded,
+                        label: l.homeStepAnalyse),
                     _StepArrow(color: p.textTertiary),
-                    const _StepChip(
-                        icon: Icons.insights_rounded, label: 'Score'),
+                    _StepChip(
+                        icon: Icons.insights_rounded, label: l.homeStepScore),
                   ],
                 ),
               ],
