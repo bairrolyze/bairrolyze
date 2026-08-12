@@ -22,7 +22,7 @@ class _Stage {
 const _kStages = [
   _Stage(AnalysisStatus.addressFound,      Icons.search_rounded,             'Verifying location'),
   _Stage(AnalysisStatus.mapReady,          Icons.layers_rounded,             'Collecting neighbourhood data'),
-  _Stage(AnalysisStatus.fetchingAmenities, Icons.school_rounded,             'Analysing schools'),
+  _Stage(AnalysisStatus.fetchingAmenities, Icons.place_rounded,              'Analysing amenities'),
   _Stage(AnalysisStatus.checkingCrime,     Icons.shield_rounded,             'Checking crime statistics'),
   _Stage(AnalysisStatus.scoring,           Icons.directions_transit_rounded, 'Evaluating transport links'),
   _Stage(AnalysisStatus.generatingSummary, Icons.auto_awesome_rounded,       'Generating AI insights'),
