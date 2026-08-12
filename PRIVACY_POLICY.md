@@ -157,7 +157,7 @@ this page.
 ## 11. Contact
 
 **Tellura**
-Email: **info@bairrolyze.com**
+Email: **bairrolyze@gmail.com**
 
 If you are in the EEA/UK and have concerns we cannot resolve, you may contact your
 local supervisory authority.
