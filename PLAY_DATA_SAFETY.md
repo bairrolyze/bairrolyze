@@ -4,7 +4,7 @@ Fill this in at **Play Console → App content → Data safety**. The answers be
 match `PRIVACY_POLICY.md` / `landing/privacy.html`. Keep the two consistent — Play
 cross-checks the form against your policy and your app's actual behaviour.
 
-**Privacy policy URL to enter:** `https://rajesharyain.github.io/bairrolyze/privacy.html`
+**Privacy policy URL to enter:** `https://bairrolyze.github.io/privacy.html`
 
 ---
 
