@@ -9,13 +9,14 @@ final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>(
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   static const _key = 'theme_mode';
 
-  ThemeModeNotifier() : super(ThemeMode.system) {
+  // Dark is the default look; falls back to it until the user picks otherwise.
+  ThemeModeNotifier() : super(ThemeMode.dark) {
     _load();
   }
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getString(_key) ?? 'system';
+    final value = prefs.getString(_key) ?? 'dark';
     state = _fromString(value);
   }
 
