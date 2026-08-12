@@ -4,7 +4,7 @@ class AppConstants {
 
   // Legal — hosted free on GitHub Pages (see landing/privacy.html)
   static const String privacyPolicyUrl =
-      'https://rajesharyain.github.io/bairrolyze/privacy.html';
+      'https://bairrolyze.github.io/bairrolyze/privacy.html';
 
  // API - override with env vars in production
   // static const String backendBaseUrl = String.fromEnvironment(
