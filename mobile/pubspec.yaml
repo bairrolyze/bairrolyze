@@ -70,7 +70,6 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
-    - assets/animations/
     - assets/config/
 
 # App launcher icon — regenerate the source with:
