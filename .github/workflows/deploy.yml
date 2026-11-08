@@ -25,7 +25,7 @@ permissions:
   id-token: write      # OIDC login to Azure
 
 env:
-  IMAGE: ghcr.io/rajesharyain/home-scope
+  IMAGE: ghcr.io/bairrolyze/home-scope
   CONTAINERAPP_NAME: api-home-scope
   RESOURCE_GROUP: homescope-rg
 
