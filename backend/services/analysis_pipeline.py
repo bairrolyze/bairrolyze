@@ -218,23 +218,26 @@ async def _run_geocode_stages(analysis_id: str, request: AnalyzeRequest):
 
 
 async def _run_amenities_stage(analysis_id: str, request: AnalyzeRequest, geo):
-    """Amenities is a soft dependency: if Overpass times out or errors,
-    degrade to an empty amenity list (and a correspondingly low score)
-    rather than blocking score/summary — same semantics as the original
-    blocking /analyze endpoint. A blocked pipeline here is worse for the
-    user than a partial/degraded result. Genuine hard failures (geocode not
-    resolving) still stop the pipeline via _run_geocode_stages.
+    """A genuine Overpass fetch failure (timeout, 5xx, network error) is a
+    hard failure here, not a soft one: it blocks score/summary the same way
+    a geocode failure does. "Overpass errored" and "Overpass returned zero
+    amenities" are different outcomes — collapsing the former into the
+    latter previously made every Overpass outage look like a real 0/100
+    "poor neighbourhood" result instead of a failed fetch.
     """
     stage_start = time.monotonic()
     await job_store.update_stage(analysis_id, "amenities_ready", STAGE_RUNNING)
     try:
         amenities = await overpass_service.fetch_amenities(lat=geo.lat, lng=geo.lng, radius=request.radius)
     except Exception as e:
-        logger.warning(
-            "analysis_pipeline.amenities_degraded",
+        error = f"amenities_fetch_failed: {e}"
+        await job_store.update_stage(analysis_id, "amenities_ready", STAGE_ERROR, error=error)
+        logger.error(
+            "analysis_pipeline.stage_failed",
             extra={"analysis_id": analysis_id, "stage": "amenities_ready", "error": str(e), "duration_ms": _ms(stage_start)},
+            exc_info=True,
         )
-        amenities = []
+        return None
 
     await job_store.update_stage(
         analysis_id,
