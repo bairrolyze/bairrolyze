@@ -1,4 +1,5 @@
 import math
+import re
 from unittest.mock import AsyncMock
 
 import pytest
@@ -149,13 +150,34 @@ class TestBuildOverpassQuery:
         bbox_str = f"{south:.6f},{west:.6f},{north:.6f},{east:.6f}"
         assert bbox_str in query
 
-    def test_query_has_one_node_and_way_clause_per_filter(self):
+    def test_query_has_one_node_and_way_clause_per_distinct_osm_key(self):
+        """Same-key filters (e.g. amenity=school, amenity=hospital, ...) are
+        combined into one regex-alternation clause per OSM key rather than
+        one clause per value — a much cheaper query for the same coverage.
+        """
         from config.scoring_config import CATEGORY_CONFIG
 
-        total_filters = sum(len(c["osm_filters"]) for c in CATEGORY_CONFIG.values())
+        distinct_keys = {
+            re.match(r'\["([^"]+)"=', f).group(1)
+            for c in CATEGORY_CONFIG.values()
+            for f in c["osm_filters"]
+        }
         query = _build_overpass_query(38.71, -9.14, 2000)
-        assert query.count("node[") == total_filters
-        assert query.count("way[") == total_filters
+        assert query.count("node[") == len(distinct_keys)
+        assert query.count("way[") == len(distinct_keys)
+
+    def test_query_combines_same_key_values_into_regex_alternation(self):
+        query = _build_overpass_query(38.71, -9.14, 2000)
+        assert '["amenity"~"^(' in query
+        assert "school" in query
+        assert "hospital" in query
+        assert "pharmacy" in query
+
+    def test_query_preserves_single_value_filters_as_exact_match(self):
+        # highway only ever has one value (bus_stop) in CATEGORY_CONFIG, so
+        # it should stay an exact match, not a one-value regex.
+        query = _build_overpass_query(38.71, -9.14, 2000)
+        assert '["highway"="bus_stop"]' in query
 
 
 class TestAmenitiesCacheKey:

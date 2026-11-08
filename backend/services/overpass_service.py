@@ -2,7 +2,9 @@ import asyncio
 import httpx
 import logging
 import math
+import re
 import time
+from collections import defaultdict
 from typing import List, Dict, Any, Optional, Tuple
 from uuid import uuid4
 
@@ -109,15 +111,55 @@ def _compute_bbox(
     return south, west, north, east
 
 
+_OSM_FILTER_RE = re.compile(r'\["([^"]+)"="([^"]+)"\]')
+
+
+def _group_filters_by_key(osm_filters: List[str]) -> Dict[str, List[str]]:
+    """CATEGORY_CONFIG lists one exact key=value filter per OSM tag (e.g.
+    '["amenity"="school"]', '["amenity"="hospital"]'). Group values sharing
+    the same key so the query can combine them into a single regex-alternation
+    filter per key instead of one node+way clause per value.
+    """
+    values_by_key: Dict[str, List[str]] = defaultdict(list)
+    for f in osm_filters:
+        match = _OSM_FILTER_RE.match(f)
+        if not match:
+            continue
+        key, value = match.group(1), match.group(2)
+        if value not in values_by_key[key]:
+            values_by_key[key].append(value)
+    return values_by_key
+
+
 def _build_overpass_query(lat: float, lng: float, radius: float) -> str:
+    """Public Overpass instances (see OVERPASS_MIRRORS) are shared,
+    capacity-limited infrastructure that explicitly deprioritizes
+    "automated, high-volume" queries under load. Issuing one node+way clause
+    per (key, value) pair — e.g. a separate clause each for
+    amenity=school, amenity=hospital, amenity=pharmacy, ... — produces a
+    query with as many clauses as there are OSM tag values across every
+    category (~29 here, ~58 node+way clauses). Grouping same-key values into
+    one regex-alternation filter (amenity=~"^(school|hospital|pharmacy|...)$")
+    returns identical results with one clause per distinct OSM key (~6 keys,
+    ~12 node+way clauses) — a much cheaper query that's less likely to be
+    capacity-rejected.
+    """
     south, west, north, east = _compute_bbox(lat, lng, radius)
     bbox = f"{south:.6f},{west:.6f},{north:.6f},{east:.6f}"
 
+    values_by_key = _group_filters_by_key(
+        [f for cat_config in CATEGORY_CONFIG.values() for f in cat_config["osm_filters"]]
+    )
+
     filters = []
-    for cat_config in CATEGORY_CONFIG.values():
-        for f in cat_config["osm_filters"]:
-            filters.append(f'node{f}({bbox});')
-            filters.append(f'way{f}({bbox});')
+    for key, values in values_by_key.items():
+        if len(values) == 1:
+            clause = f'["{key}"="{values[0]}"]'
+        else:
+            pattern = "|".join(re.escape(v) for v in values)
+            clause = f'["{key}"~"^({pattern})$"]'
+        filters.append(f'node{clause}({bbox});')
+        filters.append(f'way{clause}({bbox});')
 
     query = f"""
 [out:json][timeout:{settings.overpass_timeout}];

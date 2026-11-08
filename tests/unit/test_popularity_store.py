@@ -5,6 +5,8 @@ Uses an in-memory fake redis client (no real Redis server required) covering
 only the sorted-set surface the store actually uses.
 """
 
+import fnmatch
+
 import pytest
 
 from services.popularity_store import PopularityStore
@@ -58,6 +60,11 @@ class FakeAsyncRedis:
         if withscores:
             return [(m, s) for m, s in sliced]
         return [m for m, _ in sliced]
+
+    async def scan_iter(self, match=None):
+        for key in list(self.zsets.keys()):
+            if match is None or fnmatch.fnmatch(key, match):
+                yield key
 
     async def close(self):
         pass
@@ -114,3 +121,16 @@ class TestPopularityStore:
         await store.record_search("PT", "Lisboa", "Alfama")
         key = "hs:pop:area:pt:lisboa"
         assert store._client.expires.get(key) is not None
+
+    async def test_list_tracked_regions_discovers_every_written_region(self, store):
+        await store.record_search("PT", "Lisboa", "Alfama")
+        await store.record_search("PT", "Porto", "Bonfim")
+        await store.record_search("GB", "London", "Shoreditch")
+
+        regions = await store.list_tracked_regions()
+        assert sorted(regions) == sorted(
+            [("pt", "lisboa"), ("pt", "porto"), ("gb", "london")]
+        )
+
+    async def test_list_tracked_regions_empty_when_nothing_recorded(self, store):
+        assert await store.list_tracked_regions() == []

@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config.settings import settings
-from api.routes import geocode, amenities, score, ai_summary, analyze, popular, areas
+from api.routes import geocode, amenities, score, ai_summary, analyze, popular, areas, admin
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -68,6 +68,7 @@ app.include_router(ai_summary.router, prefix="/api/v1", tags=["AI"])
 app.include_router(analyze.router, prefix="/api/v1", tags=["Analysis"])
 app.include_router(popular.router, prefix="/api/v1", tags=["Popular"])
 app.include_router(areas.router, prefix="/api/v1", tags=["Areas"])
+app.include_router(admin.router, prefix="/api/v1", tags=["Admin"])
 
 
 @app.get("/health", tags=["Health"])

@@ -99,6 +99,24 @@ class PopularityStore:
             return []
         return [(member, int(score)) for member, score in rows]
 
+    async def list_tracked_regions(self) -> List[Tuple[str, str]]:
+        """Every (country_code, region) pair currently tracked, discovered
+        via a Redis key scan. Only used by the cache warmer to know which
+        regions have real popularity data to warm — normal reads go through
+        top_areas() for a region the caller already knows.
+        """
+        pairs: List[Tuple[str, str]] = []
+        try:
+            async for key in self.client.scan_iter(match=f"{AREA_KEY_PREFIX}*"):
+                remainder = key[len(AREA_KEY_PREFIX):]
+                if ":" not in remainder:
+                    continue
+                country_code, region = remainder.split(":", 1)
+                pairs.append((country_code, region))
+        except Exception as exc:  # noqa: BLE001 - warming is best-effort
+            logger.warning("popularity_store.list_regions_failed", extra={"error": str(exc)})
+        return pairs
+
     async def close(self) -> None:
         if self._client is not None:
             await self._client.close()
