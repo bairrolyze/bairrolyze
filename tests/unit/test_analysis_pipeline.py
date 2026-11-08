@@ -4,12 +4,10 @@ address_found -> map_ready -> amenities_ready -> score_ready -> summary_ready
 is called as a background task (address_found/map_ready both come from one
 geocode() call, split for UI granularity). These tests verify: (1) the happy
 path persists every stage and resolves the job to "done" with a final
-payload, (2) a hard failure (geocode not resolving) records that stage's
-error, marks downstream stages "blocked", and still resolves the job to
-"done" with partial_failure=True instead of leaving it stuck "running", and
-(3) a soft failure (amenities/Overpass erroring) degrades to an empty
-amenity list and lets score/summary run anyway, matching the original
-blocking /analyze endpoint's semantics.
+payload, and (2) a hard failure in either geocoding or amenities (Overpass
+erroring) records that stage's error, marks downstream stages "blocked",
+and still resolves the job to "done" with partial_failure=True instead of
+leaving it stuck "running" or fabricating a score from missing data.
 
 `nominatim_service.geocode`, `overpass_service.fetch_amenities`, and
 `calculate_location_score` are monkeypatched here as black boxes (per the
@@ -128,12 +126,12 @@ class TestPipelinePartialFailure:
         assert job["stages"]["score_ready"]["status"] == "blocked"
         assert job["stages"]["summary_ready"]["status"] == "blocked"
 
-    async def test_amenities_failure_degrades_to_empty_list_and_completes(self, job_store, request_obj, monkeypatch):
-        """Amenities is a soft dependency (matches the pre-job-pipeline
-        /analyze behavior): an Overpass failure degrades to an empty amenity
-        list rather than blocking score/ai_summary. A blocked pipeline here
-        is worse for the user than a partial/degraded result — a 502-style
-        dead end instead of a still-usable (if amenity-less) score.
+    async def test_amenities_failure_blocks_downstream_and_still_resolves_done(self, job_store, request_obj, monkeypatch):
+        """A genuine Overpass fetch failure is a hard failure, not a soft
+        one: it must not be indistinguishable from "zero amenities nearby".
+        Previously this degraded to an empty amenity list, so an Overpass
+        outage silently produced a confident (but fabricated) 0/100 "poor
+        neighbourhood" score instead of surfacing that the fetch failed.
         """
         await job_store.create_job("job-3", request_obj.model_dump(mode="json"))
 
@@ -147,20 +145,19 @@ class TestPipelinePartialFailure:
         await pipeline.run_analysis_pipeline("job-3", request_obj)
 
         job = await job_store.get_job("job-3")
-        assert job["status"] == "done"
-        assert job["partial_failure"] is False
+        assert job["status"] == "done"  # never left stuck "running"
+        assert job["partial_failure"] is True
         # geocode succeeded and its result is preserved for progressive UI.
         assert job["stages"]["address_found"]["status"] == "done"
         assert job["stages"]["address_found"]["result"]["display_name"] == "Lisboa, Portugal"
         assert job["stages"]["map_ready"]["status"] == "done"
-        # amenities degrades to an empty list rather than erroring out.
-        assert job["stages"]["amenities_ready"]["status"] == "done"
-        assert job["stages"]["amenities_ready"]["result"] == []
-        # score and summary still run against the degraded (empty) amenities.
-        assert job["stages"]["score_ready"]["status"] == "done"
-        assert job["stages"]["summary_ready"]["status"] == "done"
-        assert job["final"] is not None
-        assert job["final"]["amenities"] == []
+        # amenities records the real failure instead of swallowing it.
+        assert job["stages"]["amenities_ready"]["status"] == "error"
+        assert "amenities_fetch_failed" in job["stages"]["amenities_ready"]["error"]
+        # score/summary never ran against fabricated empty data.
+        assert job["stages"]["score_ready"]["status"] == "blocked"
+        assert job["stages"]["summary_ready"]["status"] == "blocked"
+        assert job["final"] is None
 
     async def test_ai_summary_falls_back_instead_of_failing_when_no_api_key(self, job_store, request_obj, monkeypatch):
         await job_store.create_job("job-4", request_obj.model_dump(mode="json"))
