@@ -49,11 +49,16 @@ class Settings(BaseSettings):
     default_search_radius: float = 2000.0  # meters
     max_amenity_results: int = 100
 
+    # Admin endpoints (api/routes/admin.py) — gated by the X-API-Key header
+    # matching this value. None disables every admin route (verify_admin_api_key
+    # returns 500 rather than silently accepting an unprotected request).
+    admin_api_key: Optional[str] = None
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
-        extra = "ignore"  # .env carries deploy-only vars (postgres_*, admin_api_key)
-        # that this app's own config doesn't consume directly.
+        extra = "ignore"  # .env carries deploy-only vars (postgres_*) that this
+        # app's own config doesn't consume directly.
 
 
 settings = Settings()
