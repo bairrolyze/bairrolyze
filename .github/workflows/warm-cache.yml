@@ -1,0 +1,32 @@
+name: Warm amenities cache
+
+# Keeps the amenities cache (7-day TTL, see
+# backend/services/overpass_service.py AMENITIES_CACHE_TTL_SECONDS) warm for
+# every region's top searched areas, so real user traffic mostly hits cache
+# instead of a live, capacity-limited Overpass call. Weekly matches the
+# cache TTL — this re-warms entries right as they'd otherwise expire.
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'  # 03:00 UTC every Monday
+  workflow_dispatch:
+
+jobs:
+  warm-cache:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Call POST /api/v1/admin/warm-cache
+        env:
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+        run: |
+          http_code=$(curl -s -o /tmp/warm-cache-response.json -w "%{http_code}" \
+            --max-time 600 -X POST \
+            "https://api-home-scope.wonderfulplant-e443a025.eastus.azurecontainerapps.io/api/v1/admin/warm-cache" \
+            -H "X-API-Key: $ADMIN_API_KEY")
+          echo "HTTP $http_code"
+          cat /tmp/warm-cache-response.json
+          if [ "$http_code" -ge 300 ]; then
+            echo "::error::warm-cache failed with HTTP $http_code"
+            exit 1
+          fi
