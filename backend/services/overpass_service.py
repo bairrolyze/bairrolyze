@@ -20,14 +20,20 @@ AMENITIES_CACHE_TTL_SECONDS = 604800  # 7 days
 # Public Overpass mirrors, tried in order after the configured primary. A single
 # flaky/rate-limited upstream is the main cause of an empty amenity list (and the
 # misleading 0 location score that follows), so we fail over rather than degrade
-# on the first error. Each endpoint also gets a short in-place retry.
+# on the first error.
 OVERPASS_MIRRORS = [
     "https://overpass.kumi.systems/api/interpreter",
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
 ]
-# Per-endpoint attempts before moving to the next mirror.
-OVERPASS_ATTEMPTS_PER_ENDPOINT = 2
-# Base backoff (seconds) between attempts; grows linearly per attempt.
+# One attempt per endpoint: these are capacity-limited public mirrors, so a
+# same-endpoint retry mostly just waits out the same timeout twice in a row.
+# Failing over to the next mirror immediately is strictly more useful than a
+# same-endpoint retry, and keeps the worst case (all endpoints down) bounded
+# to roughly num_endpoints * read_timeout instead of a multiple of that.
+OVERPASS_ATTEMPTS_PER_ENDPOINT = 1
+# Base backoff (seconds) between attempts; grows linearly per attempt. Only
+# applies between same-endpoint attempts, so it's inert at
+# OVERPASS_ATTEMPTS_PER_ENDPOINT = 1 — kept for easy tuning.
 OVERPASS_RETRY_BACKOFF = 0.6
 
 # Bbox is derived from the requested radius expanded by this factor, since a
@@ -179,10 +185,13 @@ class OverpassService:
     def __init__(self):
         self.client = httpx.AsyncClient(
             timeout=httpx.Timeout(
-                connect=10.0,
-                read=settings.overpass_timeout + 10.0,
-                write=10.0,
-                pool=10.0
+                connect=5.0,
+                # Small buffer over Overpass's own [timeout:N] so a response
+                # right at that boundary isn't cut off mid-transfer — not
+                # sized to outlast a genuinely stuck/overloaded endpoint.
+                read=settings.overpass_timeout + 3.0,
+                write=5.0,
+                pool=5.0
             ),
             headers={
                 "User-Agent": "HomeScope/1.0",

@@ -38,9 +38,14 @@ class Settings(BaseSettings):
     overpass_url: str = "https://overpass-api.de/api/interpreter"
     # Bbox queries (see overpass_service._build_overpass_query) are indexed
     # and fast, so a long worst-case timeout is no longer needed — a slow
-    # response now almost certainly means the upstream is genuinely down,
-    # and /api/v1/analyze degrades gracefully rather than hanging on it.
-    overpass_timeout: int = 15
+    # response now almost certainly means the upstream is genuinely at
+    # capacity or down. Kept short so the 3-endpoint failover in
+    # overpass_service (one attempt each, no same-endpoint retry) surfaces a
+    # failure in well under a minute instead of ~150s worst case —
+    # amenities_ready is now a hard failure (blocks score/summary), so how
+    # fast it fails directly bounds how long a user waits for "it didn't
+    # work" instead of a result.
+    overpass_timeout: int = 8
 
     # OpenRouteService
     openroute_url: str = "https://api.openrouteservice.org"
