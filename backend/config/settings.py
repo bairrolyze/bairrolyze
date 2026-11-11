@@ -47,6 +47,13 @@ class Settings(BaseSettings):
     # work" instead of a result.
     overpass_timeout: int = 8
 
+    # Self-hosted Overpass instance (Portugal-only extract), tried only after
+    # all public mirrors fail — see OVERPASS_MIRRORS in overpass_service.py.
+    # Set via env var so the URL (a Cloudflare Tunnel hostname that can change
+    # on restart) never needs a code change/redeploy to update, and is simply
+    # absent/skipped when unset.
+    overpass_self_hosted_url: Optional[str] = None
+
     # OpenRouteService
     openroute_url: str = "https://api.openrouteservice.org"
 

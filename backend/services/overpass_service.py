@@ -205,9 +205,14 @@ class OverpassService:
         """POST the Overpass query, retrying each endpoint and failing over to
         mirrors. Raises the last error only if every endpoint/attempt fails, so
         the caller degrades to an empty result only as a true last resort."""
-        # Primary first (deduped), then the public mirrors.
+        # Primary first (deduped), then the public mirrors, then the
+        # self-hosted Portugal-only instance (if configured) as the final,
+        # last-resort fallback — only reached once every public endpoint has
+        # already failed.
         endpoints: List[str] = [settings.overpass_url]
         endpoints += [m for m in OVERPASS_MIRRORS if m != settings.overpass_url]
+        if settings.overpass_self_hosted_url:
+            endpoints.append(settings.overpass_self_hosted_url)
 
         last_exc: Optional[Exception] = None
         for endpoint in endpoints:
